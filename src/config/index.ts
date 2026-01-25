@@ -8,6 +8,38 @@
 const isProduction = process.env.NODE_ENV === 'production'
 
 // =============================================================================
+// ENVIRONMENT VARIABLES (Single Source of Truth)
+// =============================================================================
+
+export const env = {
+  // Node environment
+  NODE_ENV: process.env.NODE_ENV || 'development',
+
+  // NextAuth
+  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || '',
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3020',
+
+  // Auth Server Integration
+  AUTH_BOOTSTRAP_TOKEN: process.env.AUTH_BOOTSTRAP_TOKEN || '',
+  AUTH_USER_SYNC_SECRET: process.env.AUTH_USER_SYNC_SECRET || '',
+
+  // Database
+  DATABASE_URL: process.env.DATABASE_URL || '',
+
+  // Redis (optional)
+  REDIS_URL: process.env.REDIS_URL || '',
+
+  // Steam API (optional)
+  STEAM_API_KEY: process.env.STEAM_API_KEY || '',
+
+  // Analytics (optional)
+  GTM_ID: process.env.GTM_ID || '',
+
+  // Data storage path for JSON files (writable in container)
+  DATA_PATH: process.env.DATA_PATH || './data',
+} as const
+
+// =============================================================================
 // SERVICE URL CONFIGURATION
 // =============================================================================
 
@@ -193,6 +225,7 @@ export function validateConfig(): { valid: boolean; missing: string[] } {
 
 export const config = {
   isProduction,
+  env,
   services,
   session,
   siteConfig,
