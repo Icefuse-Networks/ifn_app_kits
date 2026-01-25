@@ -56,9 +56,31 @@ function getNextAuthSecret(hostname: string): string {
     : DEV_NEXTAUTH_SECRET
 }
 
+/**
+ * Get the real hostname from request (handles reverse proxy)
+ */
+function getRealHostname(request: NextRequest): string {
+  // Check X-Forwarded-Host first (set by reverse proxy like Traefik)
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  if (forwardedHost) {
+    // May contain multiple hosts, take the first one
+    return forwardedHost.split(',')[0].trim().toLowerCase()
+  }
+
+  // Check Host header
+  const hostHeader = request.headers.get('host')
+  if (hostHeader) {
+    // Remove port if present
+    return hostHeader.split(':')[0].toLowerCase()
+  }
+
+  // Fallback to URL hostname
+  return request.nextUrl.hostname.toLowerCase()
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hostname = request.nextUrl.hostname
+  const hostname = getRealHostname(request)
 
   // Allow public paths
   if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
@@ -74,7 +96,9 @@ export async function middleware(request: NextRequest) {
   // If no token, redirect to auth server
   if (!token) {
     const authUrl = getAuthUrl(hostname)
-    const callbackUrl = encodeURIComponent(request.url)
+    // Build callback URL using forwarded headers for correct URL
+    const proto = request.headers.get('x-forwarded-proto') || 'https'
+    const callbackUrl = encodeURIComponent(`${proto}://${hostname}${pathname}`)
     return NextResponse.redirect(`${authUrl}/signin?callbackUrl=${callbackUrl}`)
   }
 
