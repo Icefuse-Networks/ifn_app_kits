@@ -21,26 +21,59 @@ const PUBLIC_PATHS = [
   '/logo.png',
 ]
 
+// Production domain patterns for hostname detection
+const PRODUCTION_DOMAINS = ['icefuse.com', 'icefuse.net', 'ifn.gg']
+
+// NextAuth secrets (must match auth server)
+const DEV_NEXTAUTH_SECRET = '2091cb9f77c7305308a6fc3d22f6c45ddbe70800dff5968241c2b26741a6d072'
+const PROD_NEXTAUTH_SECRET = 'cae76e544c394d0dd7b0f9a5f809d7944e25091f371581139aa42ec75353eb10'
+
+/**
+ * Check if hostname is a production domain
+ */
+function isProductionHostname(hostname: string): boolean {
+  const normalizedHost = hostname.toLowerCase()
+  return PRODUCTION_DOMAINS.some(
+    domain => normalizedHost === domain || normalizedHost.endsWith(`.${domain}`)
+  )
+}
+
+/**
+ * Get auth URL based on request hostname
+ */
+function getAuthUrl(hostname: string): string {
+  return isProductionHostname(hostname)
+    ? 'https://auth.icefuse.com'
+    : 'http://localhost:3012'
+}
+
+/**
+ * Get NextAuth secret based on request hostname
+ */
+function getNextAuthSecret(hostname: string): string {
+  return isProductionHostname(hostname)
+    ? PROD_NEXTAUTH_SECRET
+    : DEV_NEXTAUTH_SECRET
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const hostname = request.nextUrl.hostname
 
   // Allow public paths
   if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
     return NextResponse.next()
   }
 
-  // Get the session token
+  // Get the session token using hostname-based secret
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: getNextAuthSecret(hostname),
   })
 
   // If no token, redirect to auth server
   if (!token) {
-    const authUrl = process.env.NODE_ENV === 'production'
-      ? 'https://auth.icefuse.com'
-      : 'http://localhost:3012'
-
+    const authUrl = getAuthUrl(hostname)
     const callbackUrl = encodeURIComponent(request.url)
     return NextResponse.redirect(`${authUrl}/signin?callbackUrl=${callbackUrl}`)
   }
@@ -50,10 +83,7 @@ export async function middleware(request: NextRequest) {
 
   if (!userRank || !ADMIN_RANKS.includes(userRank.toLowerCase())) {
     // Not an admin - redirect to unauthorized page
-    const authUrl = process.env.NODE_ENV === 'production'
-      ? 'https://auth.icefuse.com'
-      : 'http://localhost:3012'
-
+    const authUrl = getAuthUrl(hostname)
     return NextResponse.redirect(`${authUrl}/error?error=AccessDenied`)
   }
 
