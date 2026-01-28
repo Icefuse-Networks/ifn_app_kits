@@ -119,9 +119,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(kitsMap)
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     logger.kits.error('Failed to fetch kit data for plugin', error as Error)
     return NextResponse.json(
-      { error: 'Failed to fetch kit data' },
+      { error: 'Failed to fetch kit data', detail: message },
       { status: 500 }
     )
   }

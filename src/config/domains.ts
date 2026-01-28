@@ -85,11 +85,6 @@ export function buildServiceUrl(
     return `https://${domainConfig.baseDomain}`
   }
 
-  // Kits uses icefuse.net subdomain
-  if (service === 'kits') {
-    return `https://kits.${domainConfig.websiteDomain}`
-  }
-
   return `https://${serviceSubdomains[service]}.${domainConfig.baseDomain}`
 }
 
@@ -153,7 +148,7 @@ export function getAllowedHosts(): string[] {
     baseDomain,
     `www.${baseDomain}`,
     `${serviceSubdomains.auth}.${baseDomain}`,
-    `${serviceSubdomains.kits}.${websiteDomain}`,
+    `${serviceSubdomains.kits}.${baseDomain}`,
   ]
 }
 

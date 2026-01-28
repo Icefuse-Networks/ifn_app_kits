@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   const isProduction = isProductionHostname(hostname)
 
   // Build cookie options based on environment
-  const cookieDomain = isProduction ? '.icefuse.net' : undefined
+  const cookieDomain = isProduction ? '.icefuse.com' : undefined
 
   // Clear NextAuth session cookies
   const cookieStore = await cookies()

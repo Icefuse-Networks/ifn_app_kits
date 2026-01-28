@@ -100,14 +100,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  const isProduction = isProductionHostname(hostname)
+
   // Get the session token using hostname-based secret
+  // secureCookie must match auth.ts cookie config — behind a reverse proxy
+  // the internal request is HTTP, but cookies are set with __Secure- prefix
   const token = await getToken({
     req: request,
     secret: getNextAuthSecret(hostname),
+    secureCookie: isProduction,
   })
 
   // If no token, redirect to auth server to sign in
   if (!token) {
+    // RSC/prefetch requests use fetch() which can't follow cross-origin
+    // redirects (CORS). Return 204 so Next.js falls back to browser navigation.
+    if (request.headers.get('rsc') === '1' || request.headers.get('next-router-prefetch') === '1') {
+      return new NextResponse(null, { status: 204 })
+    }
+
     const authUrl = getAuthUrl(hostname)
     // Build callback URL using forwarded headers for correct URL
     const proto = request.headers.get('x-forwarded-proto') || 'https'

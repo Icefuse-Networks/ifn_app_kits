@@ -3,9 +3,16 @@
  *
  * Singleton pattern to prevent multiple Prisma instances during development.
  * Includes utilities for JSON serialization of BigInt values.
+ *
+ * DATABASE_URL is sourced from the centralized config (src/config/index.ts)
+ * and bridged to process.env for Prisma's schema.prisma env("DATABASE_URL").
  */
 
 import { PrismaClient } from '@prisma/client'
+import { databaseConfig } from '@/config'
+
+// Bridge centralized config to process.env for Prisma
+process.env.DATABASE_URL = databaseConfig.url
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 

@@ -27,7 +27,7 @@ export const services = {
   auth: isProduction ? 'https://auth.icefuse.com' : 'http://localhost:3012',
   cms: isProduction ? 'https://cms.icefuse.com' : 'http://localhost:3001',
   store: isProduction ? 'https://store.icefuse.com' : 'http://localhost:3000',
-  kits: isProduction ? 'https://kits.icefuse.net' : 'http://localhost:3020',
+  kits: isProduction ? 'https://kits.icefuse.com' : 'http://localhost:3020',
   website: isProduction ? 'https://icefuse.com' : 'http://localhost:3002',
 }
 
@@ -36,7 +36,7 @@ const productionServices = {
   auth: 'https://auth.icefuse.com',
   cms: 'https://cms.icefuse.com',
   store: 'https://store.icefuse.com',
-  kits: 'https://kits.icefuse.net',
+  kits: 'https://kits.icefuse.com',
   website: 'https://icefuse.com',
 }
 
@@ -81,7 +81,7 @@ export function getClientAuthUrl(): string {
 export const siteConfig = {
   name: 'Icefuse Kit Manager',
   description: 'Kit management system for Icefuse Networks game servers',
-  url: 'https://kits.icefuse.net',
+  url: 'https://kits.icefuse.com',
   devUrl: 'http://localhost:3020',
 
   // Branding
