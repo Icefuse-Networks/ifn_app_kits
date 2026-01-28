@@ -6,8 +6,8 @@
 
 // Account routes for the user profile dropdown
 export const accountRoutes = {
-  dashboard: '/account',
-  settings: '/account?tab=settings',
+  dashboard: '/dashboard',
+  settings: '/dashboard?tab=settings',
 }
 
 // Legal/policy routes (external links to main site)

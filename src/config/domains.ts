@@ -46,7 +46,7 @@ export const serviceSubdomains = {
 // =============================================================================
 
 export const localPorts = {
-  auth: 3012,
+  auth: 3012, // Auth server v2 (not used - always use production auth)
   cms: 3001,
   store: 3000,
   kits: 3020,
@@ -61,6 +61,14 @@ export function buildServiceUrl(
   service: 'auth' | 'cms' | 'store' | 'kits' | 'website',
   currentUrl?: string | URL
 ): string {
+  // Auth uses localhost in development, production otherwise
+  if (service === 'auth') {
+    if (!isProduction) {
+      return `http://localhost:${localPorts.auth}`
+    }
+    return `https://${serviceSubdomains.auth}.${domainConfig.baseDomain}`
+  }
+
   let useProduction = isProduction
   if (currentUrl) {
     const url = typeof currentUrl === 'string' ? new URL(currentUrl) : currentUrl

@@ -67,6 +67,7 @@ const trustedDomains = {
   images: [
     'https://avatars.steamstatic.com',
     'https://steamcdn-a.akamaihd.net',
+    'https://images.steamusercontent.com',
     'https://cdn.discordapp.com',
     'https://*.r2.cloudflarestorage.com',
     'https://rustlabs.com',
