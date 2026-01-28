@@ -4,9 +4,9 @@
  * Uses external authentication server (ifn_app_auth_v2).
  * Sessions are created via the /api/auth/callback endpoint.
  *
- * ADMIN-ONLY ACCESS:
- * This application requires admin permissions (developer rank or higher).
- * Unauthorized users are redirected to the auth server error page.
+ * ADMIN ACCESS:
+ * Admin status is checked via Auth Server API (not stored in session).
+ * Use requireAdmin() from @/services/admin-auth for admin checks.
  */
 
 import type { NextAuthOptions } from 'next-auth'
@@ -82,7 +82,6 @@ export function authOptions(): NextAuthOptions {
             image: authUser.steamAvatar || authUser.image,
             steamId: authUser.steamId,
             steamUsername: authUser.steamName,
-            rank: authUser.rank ?? undefined,
           }
         },
       }),
@@ -140,7 +139,6 @@ export function authOptions(): NextAuthOptions {
           token.sub = user.id
           token.steamId = (user as { steamId?: string }).steamId
           token.steamUsername = (user as { steamUsername?: string }).steamUsername
-          token.rank = (user as { rank?: string }).rank
 
           // Fetch full profile from auth server
           try {
@@ -152,8 +150,7 @@ export function authOptions(): NextAuthOptions {
               token.picture = authUser.steamAvatar || authUser.image
               token.steamId = authUser.steamId
               token.steamUsername = displayName
-              token.rank = authUser.rank ?? undefined
-              logger.jwt.info('Profile fetched', { userId: user.id, rank: authUser.rank })
+              logger.jwt.info('Profile fetched', { userId: user.id, steamId: authUser.steamId })
             }
           } catch (error) {
             logger.jwt.error('Initial setup error', error as Error)
@@ -191,7 +188,6 @@ export function authOptions(): NextAuthOptions {
                 token.picture = authUser.steamAvatar || authUser.image || token.picture
                 token.steamId = authUser.steamId || token.steamId
                 token.steamUsername = displayName || token.steamUsername
-                token.rank = authUser.rank ?? token.rank ?? undefined
               }
             } catch (error) {
               logger.jwt.error('Refresh error', { userId, error: String(error) })
@@ -216,7 +212,6 @@ export function authOptions(): NextAuthOptions {
               token.picture = authUser.steamAvatar || authUser.image || token.picture
               token.steamId = authUser.steamId || token.steamId
               token.steamUsername = displayName || token.steamUsername
-              token.rank = authUser.rank ?? token.rank ?? undefined
             }
           } catch (error) {
             logger.jwt.warn('Profile refresh error', { userId, error: String(error) })
@@ -241,11 +236,10 @@ export function authOptions(): NextAuthOptions {
           session.user.image = token.picture as string | null
           session.user.steamId = token.steamId as string | undefined
           session.user.steamUsername = token.steamUsername as string | undefined
-          session.user.rank = token.rank as string | undefined
 
           logger.session.debug('Session created', {
             userId: session.user.id,
-            rank: session.user.rank,
+            steamId: session.user.steamId,
           })
         }
         return session

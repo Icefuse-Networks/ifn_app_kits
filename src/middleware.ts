@@ -1,22 +1,32 @@
 /**
  * Middleware - Route Protection
  *
- * ADMIN-ONLY ACCESS:
- * All routes except /api/auth/* require authentication and admin permissions.
- * Unauthenticated users are redirected to the auth server.
+ * PUBLIC ROUTES:
+ * - Landing page (/) and static assets are publicly accessible
+ * - Auth routes (/api/auth/*) for NextAuth callbacks
+ *
+ * PROTECTED ROUTES:
+ * - All other routes require authentication
+ * - Admin permission checks are done via /api/admin/verify-access
+ *   (NOT in middleware - matches PayNow pattern)
  */
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-// Admin ranks that can access this application
-const ADMIN_RANKS = ['developer', 'admin', 'owner', 'superadmin']
-
-// Routes that don't require authentication
-const PUBLIC_PATHS = [
+// Routes that don't require authentication (prefix matching)
+const PUBLIC_PATH_PREFIXES = [
   '/api/auth',
+  '/api/v1',
+  '/api/servers',
   '/_next',
+  '/logos',
+]
+
+// Exact paths that don't require authentication
+const PUBLIC_EXACT_PATHS = [
+  '/',
   '/favicon.ico',
   '/logo.png',
 ]
@@ -39,7 +49,7 @@ function isProductionHostname(hostname: string): boolean {
 }
 
 /**
- * Get auth URL based on request hostname
+ * Get auth URL based on environment
  */
 function getAuthUrl(hostname: string): string {
   return isProductionHostname(hostname)
@@ -82,8 +92,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hostname = getRealHostname(request)
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
+  // Allow public paths (exact matches or prefix matches)
+  if (
+    PUBLIC_EXACT_PATHS.includes(pathname) ||
+    PUBLIC_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix))
+  ) {
     return NextResponse.next()
   }
 
@@ -93,7 +106,7 @@ export async function middleware(request: NextRequest) {
     secret: getNextAuthSecret(hostname),
   })
 
-  // If no token, redirect to auth server
+  // If no token, redirect to auth server to sign in
   if (!token) {
     const authUrl = getAuthUrl(hostname)
     // Build callback URL using forwarded headers for correct URL
@@ -102,15 +115,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`${authUrl}/signin?callbackUrl=${callbackUrl}`)
   }
 
-  // SECURITY: Check for admin rank
-  const userRank = token.rank as string | undefined
-
-  if (!userRank || !ADMIN_RANKS.includes(userRank.toLowerCase())) {
-    // Not an admin - redirect to unauthorized page
-    const authUrl = getAuthUrl(hostname)
-    return NextResponse.redirect(`${authUrl}/error?error=AccessDenied`)
-  }
-
+  // User is authenticated - allow access
+  // Admin permission checks are done via /api/admin/verify-access endpoint
+  // This matches the PayNow pattern where admin checks happen at route/layout level
   return NextResponse.next()
 }
 

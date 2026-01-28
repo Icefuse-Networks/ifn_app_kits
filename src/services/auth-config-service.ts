@@ -13,18 +13,16 @@ import { getCookieDomainValue } from '@/config/domains'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-// Auth server URL
+// Auth server URL - local dev on 3012, production on auth.icefuse.com
 const AUTH_SERVER_URL = isProduction
   ? 'https://auth.icefuse.com'
   : 'http://localhost:3012'
 
-// Bootstrap token for initial auth (from env or config)
-const BOOTSTRAP_TOKEN = process.env.AUTH_BOOTSTRAP_TOKEN ||
-  'bt_kits_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2'
+// Bootstrap token for initial auth (must match auth server's BOOTSTRAP_TOKENS.kits)
+const BOOTSTRAP_TOKEN = 'bt_kits_k1t5m4n4g3r_s3cr3t_t0k3n_2025_pr0d_r34dy_4c71v3'
 
-// User sync secret (from env or hardcoded for dev)
-const USER_SYNC_SECRET = process.env.AUTH_USER_SYNC_SECRET ||
-  '78639315540636787d5b98282181cc8505fb3a933d3aa295c506dd2f520909ab'
+// User sync secret (must match auth server's secrets.userSyncSecret)
+const USER_SYNC_SECRET = '78639315540636787d5b98282181cc8505fb3a933d3aa295c506dd2f520909ab'
 
 // =============================================================================
 // LOCAL FALLBACK VALUES
