@@ -1,9 +1,20 @@
 import type { NextConfig } from "next";
 import { getSecurityHeaders, getAPISecurityHeaders, getStaticAssetHeaders } from "./src/config/security-headers";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const nextConfig: NextConfig = {
-  // Enable standalone output for Docker deployment
-  output: 'standalone',
+  // Enable standalone output for Docker deployment (production only)
+  output: isDev ? undefined : 'standalone',
+
+  // Development performance optimizations
+  reactStrictMode: !isDev, // Disable double-render in dev for faster hot reloads
+
+  // Experimental features for faster development
+  experimental: {
+    // Faster module resolution
+    optimizePackageImports: ['lucide-react', '@dnd-kit/core', '@dnd-kit/sortable'],
+  },
 
   images: {
     formats: ['image/avif', 'image/webp'],

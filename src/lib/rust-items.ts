@@ -106,6 +106,16 @@ export function getItemImageUrl(shortname: string): string {
 }
 
 /**
+ * Build item JSON data URL from shortname
+ *
+ * @param shortname - Rust item shortname (e.g., "rifle.ak")
+ * @returns Full URL to item JSON data
+ */
+export function getItemJsonUrl(shortname: string): string {
+  return `${RUST_ITEM_CDN}/${shortname}.json`
+}
+
+/**
  * Fetch all Rust items via server-side proxy
  *
  * Uses /api/v1/items which fetches from upstream server-side

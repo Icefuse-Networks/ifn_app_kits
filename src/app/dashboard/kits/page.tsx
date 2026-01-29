@@ -18,9 +18,12 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Check,
   Paintbrush,
+  Zap,
+  Tags,
 } from 'lucide-react'
 
 import { useUndoRedo, useSkinImages } from '@/hooks'
@@ -30,6 +33,8 @@ import {
   ItemEditor,
   ItemEditorEmpty,
   CategorySelector,
+  VisibilityDropdown,
+  SubcategoryEditor,
   type ItemSlot,
   type CategorySummary,
 } from '@/components/kit-manager'
@@ -132,26 +137,46 @@ export default function KitsPage() {
   // Kit ID copy state
   const [copiedKitId, setCopiedKitId] = useState(false)
 
+  // Kit drag state for reordering
+  const [draggedKitId, setDraggedKitId] = useState<string | null>(null)
+  const [dragOverKitId, setDragOverKitId] = useState<string | null>(null)
+
+  // Kit view tab state (Default Kits vs Auto Kits)
+  const [kitViewTab, setKitViewTab] = useState<'default' | 'auto'>('default')
+
+  // Subcategory collapse state (collapsed by default)
+  const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set())
+  const [subcategoryCollapsedInitialized, setSubcategoryCollapsedInitialized] = useState(false)
+
   // ---------------------------------------------------------------------------
   // Derived State
   // ---------------------------------------------------------------------------
 
   const kitList = useMemo(
     () =>
-      Object.entries(kitsData._kits || {}).map(([id, kit]) => ({ id, kit })),
+      Object.entries(kitsData._kits || {})
+        .map(([id, kit]) => ({ id, kit }))
+        .sort((a, b) => (a.kit.Order ?? 0) - (b.kit.Order ?? 0)),
     [kitsData]
   )
 
   const filteredKitList = useMemo(() => {
-    if (!kitSearch.trim()) return kitList
+    // First filter by tab (default vs auto)
+    const tabFiltered = kitList.filter(({ kit }) => {
+      const isAutoKit = kit.IsAutoKit ?? false
+      return kitViewTab === 'auto' ? isAutoKit : !isAutoKit
+    })
+
+    // Then filter by search
+    if (!kitSearch.trim()) return tabFiltered
     const q = kitSearch.toLowerCase()
-    return kitList.filter(
+    return tabFiltered.filter(
       ({ id, kit }) =>
         id.toLowerCase().includes(q) ||
         kit.Name.toLowerCase().includes(q) ||
         kit.Description.toLowerCase().includes(q)
     )
-  }, [kitList, kitSearch])
+  }, [kitList, kitSearch, kitViewTab])
 
   const selectedKit = useMemo(() => {
     if (!selectedKitId) return null
@@ -184,6 +209,58 @@ export default function KitsPage() {
 
   // Skin image resolution
   const skinImages = useSkinImages(selectedKit, showSkins)
+
+  // All unique subcategories across all kits (for suggestions)
+  const allSubcategories = useMemo(() => {
+    const subs = new Set<string>()
+    Object.values(kitsData._kits || {}).forEach((kit) => {
+      ;(kit.Subcategories || []).forEach((sub) => subs.add(sub))
+    })
+    return Array.from(subs).sort((a, b) => a.localeCompare(b))
+  }, [kitsData])
+
+  // Group filtered kits by subcategory
+  const kitsBySubcategory = useMemo(() => {
+    const groups: Record<string, { id: string; kit: Kit }[]> = {}
+    const uncategorized: { id: string; kit: Kit }[] = []
+
+    filteredKitList.forEach(({ id, kit }) => {
+      const subs = kit.Subcategories || []
+      if (subs.length === 0) {
+        uncategorized.push({ id, kit })
+      } else {
+        subs.forEach((sub) => {
+          if (!groups[sub]) groups[sub] = []
+          groups[sub].push({ id, kit })
+        })
+      }
+    })
+
+    // Sort subcategories alphabetically
+    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b))
+    return { groups, sortedKeys, uncategorized }
+  }, [filteredKitList])
+
+  // Initialize all subcategories as collapsed on first load
+  useEffect(() => {
+    if (!subcategoryCollapsedInitialized && allSubcategories.length > 0) {
+      setCollapsedSubcategories(new Set(allSubcategories))
+      setSubcategoryCollapsedInitialized(true)
+    }
+  }, [allSubcategories, subcategoryCollapsedInitialized])
+
+  // Toggle subcategory collapse
+  const toggleSubcategoryCollapse = useCallback((subcategory: string) => {
+    setCollapsedSubcategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(subcategory)) {
+        next.delete(subcategory)
+      } else {
+        next.add(subcategory)
+      }
+      return next
+    })
+  }, [])
 
   // ---------------------------------------------------------------------------
   // API
@@ -484,9 +561,19 @@ export default function KitsPage() {
   // Kit CRUD
   // ---------------------------------------------------------------------------
 
+  // Calculate the next available order number
+  const getNextOrder = useCallback(() => {
+    const kits = Object.values(kitsData._kits || {})
+    if (kits.length === 0) return 0
+    return Math.max(...kits.map((k) => k.Order ?? 0)) + 1
+  }, [kitsData])
+
   const createKit = useCallback(
     (name: string, description: string) => {
-      const kit = createEmptyKit(name, description)
+      const nextOrder = getNextOrder()
+      const kit = createEmptyKit(name, description, nextOrder)
+      // Set IsAutoKit based on current tab view
+      kit.IsAutoKit = kitViewTab === 'auto'
       const kitId = idGen.kit()
       setKitsData({
         ...kitsData,
@@ -497,7 +584,7 @@ export default function KitsPage() {
       setNewKitName('')
       setNewKitDescription('')
     },
-    [kitsData, setKitsData]
+    [kitsData, setKitsData, getNextOrder, kitViewTab]
   )
 
   const deleteKit = useCallback(
@@ -518,9 +605,11 @@ export default function KitsPage() {
       const original = kitsData._kits[id]
       if (!original) return
       const newId = idGen.kit()
+      const nextOrder = getNextOrder()
       const newKit = {
         ...JSON.parse(JSON.stringify(original)),
         Name: `${original.Name} (Copy)`,
+        Order: nextOrder,
       }
       setKitsData({
         ...kitsData,
@@ -528,8 +617,77 @@ export default function KitsPage() {
       })
       setSelectedKitId(newId)
     },
-    [kitsData, setKitsData]
+    [kitsData, setKitsData, getNextOrder]
   )
+
+  // Drag and drop reordering
+  const handleKitDragStart = useCallback(
+    (e: React.DragEvent, kitId: string) => {
+      setDraggedKitId(kitId)
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', kitId)
+    },
+    []
+  )
+
+  const handleKitDragOver = useCallback(
+    (e: React.DragEvent, kitId: string) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      if (kitId !== draggedKitId) {
+        setDragOverKitId(kitId)
+      }
+    },
+    [draggedKitId]
+  )
+
+  const handleKitDragLeave = useCallback(() => {
+    setDragOverKitId(null)
+  }, [])
+
+  const handleKitDrop = useCallback(
+    (e: React.DragEvent, targetKitId: string) => {
+      e.preventDefault()
+      setDragOverKitId(null)
+
+      if (!draggedKitId || draggedKitId === targetKitId) {
+        setDraggedKitId(null)
+        return
+      }
+
+      const sortedKits = Object.entries(kitsData._kits || {})
+        .map(([id, kit]) => ({ id, kit }))
+        .sort((a, b) => (a.kit.Order ?? 0) - (b.kit.Order ?? 0))
+
+      const draggedIndex = sortedKits.findIndex((k) => k.id === draggedKitId)
+      const targetIndex = sortedKits.findIndex((k) => k.id === targetKitId)
+
+      if (draggedIndex < 0 || targetIndex < 0) {
+        setDraggedKitId(null)
+        return
+      }
+
+      // Reorder: remove dragged item and insert at target position
+      const newOrder = [...sortedKits]
+      const [draggedItem] = newOrder.splice(draggedIndex, 1)
+      newOrder.splice(targetIndex, 0, draggedItem)
+
+      // Reassign order values based on new positions
+      const newKits = { ...kitsData._kits }
+      newOrder.forEach((item, idx) => {
+        newKits[item.id] = { ...item.kit, Order: idx }
+      })
+
+      setKitsData({ ...kitsData, _kits: newKits })
+      setDraggedKitId(null)
+    },
+    [draggedKitId, kitsData, setKitsData]
+  )
+
+  const handleKitDragEnd = useCallback(() => {
+    setDraggedKitId(null)
+    setDragOverKitId(null)
+  }, [])
 
   const renameKit = useCallback(
     (kitId: string, newName: string) => {
@@ -1269,6 +1427,48 @@ export default function KitsPage() {
             </div>
           </div>
 
+          {/* Kit Type Tabs */}
+          <div className="px-2 pt-2 shrink-0">
+            <div
+              className="flex rounded-lg p-0.5"
+              style={{
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-secondary)',
+              }}
+            >
+              <button
+                onClick={() => setKitViewTab('default')}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  kitViewTab === 'default'
+                    ? 'text-[var(--text-primary)] bg-[var(--accent-primary)]/20'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+                style={
+                  kitViewTab === 'default'
+                    ? { boxShadow: 'inset 0 0 0 1px var(--accent-primary)' }
+                    : {}
+                }
+              >
+                Default
+              </button>
+              <button
+                onClick={() => setKitViewTab('auto')}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  kitViewTab === 'auto'
+                    ? 'text-[var(--text-primary)] bg-[var(--accent-primary)]/20'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+                style={
+                  kitViewTab === 'auto'
+                    ? { boxShadow: 'inset 0 0 0 1px var(--accent-primary)' }
+                    : {}
+                }
+              >
+                Auto Kits
+              </button>
+            </div>
+          </div>
+
           {/* Search */}
           <div className="p-2 shrink-0">
             <div className="relative">
@@ -1305,75 +1505,121 @@ export default function KitsPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-1">
-                {filteredKitList.map(({ id, kit }) => (
-                  <div
-                    key={id}
-                    onClick={() => {
-                      setSelectedKitId(id)
-                      setSelection(null)
-                    }}
-                    className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
-                      selectedKitId === id
-                        ? 'bg-[var(--accent-primary)]/15'
-                        : 'hover:bg-[var(--bg-card-hover)]'
-                    }`}
-                    style={{
-                      border:
-                        selectedKitId === id
-                          ? '1px solid var(--accent-primary)'
-                          : '1px solid transparent',
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-[var(--text-primary)] truncate">
-                        {kit.Name}
-                      </div>
-                      <div className="text-xs text-[var(--text-muted)]">
-                        {kit.MainItems.length +
-                          kit.WearItems.length +
-                          kit.BeltItems.length}{' '}
-                        items
-                      </div>
+              <div className="space-y-2">
+                {/* Subcategory groups */}
+                {kitsBySubcategory.sortedKeys.map((subcategory) => {
+                  const kitsInGroup = kitsBySubcategory.groups[subcategory]
+                  const isCollapsed = collapsedSubcategories.has(subcategory)
+                  return (
+                    <div key={subcategory}>
+                      {/* Subcategory header */}
+                      <button
+                        onClick={() => toggleSubcategoryCollapse(subcategory)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)]"
+                        style={{
+                          background: 'var(--glass-bg-subtle)',
+                          border: '1px solid var(--glass-border)',
+                        }}
+                      >
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${
+                            isCollapsed ? '-rotate-90' : ''
+                          }`}
+                        />
+                        <Tags className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+                        <span className="flex-1 text-xs font-medium text-[var(--text-primary)] truncate">
+                          {subcategory}
+                        </span>
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {kitsInGroup.length}
+                        </span>
+                      </button>
+                      {/* Kits in group */}
+                      {!isCollapsed && (
+                        <div className="mt-1 ml-2 pl-2 space-y-1 border-l border-[var(--glass-border)]">
+                          {kitsInGroup.map(({ id, kit }) => (
+                            <KitListItem
+                              key={id}
+                              id={id}
+                              kit={kit}
+                              selectedKitId={selectedKitId}
+                              draggedKitId={draggedKitId}
+                              dragOverKitId={dragOverKitId}
+                              kitSearch={kitSearch}
+                              onSelect={() => {
+                                setSelectedKitId(id)
+                                setSelection(null)
+                              }}
+                              onDragStart={handleKitDragStart}
+                              onDragOver={handleKitDragOver}
+                              onDragLeave={handleKitDragLeave}
+                              onDrop={handleKitDrop}
+                              onDragEnd={handleKitDragEnd}
+                              onRename={() => {
+                                setRenameValue(kit.Name)
+                                setSelectedKitId(id)
+                                setActiveModal('rename')
+                              }}
+                              onDuplicate={() => duplicateKit(id)}
+                              onDelete={() => {
+                                if (confirm(`Delete kit "${kit.Name}"?`)) {
+                                  deleteKit(id)
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setRenameValue(kit.Name)
-                          setSelectedKitId(id)
-                          setActiveModal('rename')
-                        }}
-                        className="p-1 rounded hover:bg-[var(--bg-card)]"
-                        title="Rename"
-                      >
-                        <Edit3 className="w-3 h-3 text-[var(--text-muted)]" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          duplicateKit(id)
-                        }}
-                        className="p-1 rounded hover:bg-[var(--bg-card)]"
-                        title="Duplicate"
-                      >
-                        <Copy className="w-3 h-3 text-[var(--text-muted)]" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (confirm(`Delete kit "${kit.Name}"?`)) {
-                            deleteKit(id)
-                          }
-                        }}
-                        className="p-1 rounded hover:bg-[var(--status-error)]/20"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3 text-[var(--status-error)]" />
-                      </button>
+                  )
+                })}
+
+                {/* Uncategorized kits */}
+                {kitsBySubcategory.uncategorized.length > 0 && (
+                  <div>
+                    {kitsBySubcategory.sortedKeys.length > 0 && (
+                      <div className="flex items-center gap-2 px-2 py-1.5 mb-1">
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                          Uncategorized
+                        </span>
+                        <div className="flex-1 h-px bg-[var(--glass-border)]" />
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      {kitsBySubcategory.uncategorized.map(({ id, kit }) => (
+                        <KitListItem
+                          key={id}
+                          id={id}
+                          kit={kit}
+                          selectedKitId={selectedKitId}
+                          draggedKitId={draggedKitId}
+                          dragOverKitId={dragOverKitId}
+                          kitSearch={kitSearch}
+                          onSelect={() => {
+                            setSelectedKitId(id)
+                            setSelection(null)
+                          }}
+                          onDragStart={handleKitDragStart}
+                          onDragOver={handleKitDragOver}
+                          onDragLeave={handleKitDragLeave}
+                          onDrop={handleKitDrop}
+                          onDragEnd={handleKitDragEnd}
+                          onRename={() => {
+                            setRenameValue(kit.Name)
+                            setSelectedKitId(id)
+                            setActiveModal('rename')
+                          }}
+                          onDuplicate={() => duplicateKit(id)}
+                          onDelete={() => {
+                            if (confirm(`Delete kit "${kit.Name}"?`)) {
+                              deleteKit(id)
+                            }
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -1475,34 +1721,53 @@ export default function KitsPage() {
             width="w-14"
           />
 
-          {/* Hidden toggle */}
-          <label
-            className={`cursor-pointer select-none rounded-full px-3 py-1 text-xs font-medium transition shrink-0 ${
-              selectedKit.IsHidden
-                ? 'text-[var(--status-warning)]'
+          {/* Visibility dropdown */}
+          <VisibilityDropdown
+            isHidden={selectedKit.IsHidden}
+            hideWithoutPermission={selectedKit.HideWithoutPermission ?? false}
+            onChange={({ isHidden, hideWithoutPermission }) =>
+              updateKit(selectedKitId!, {
+                IsHidden: isHidden,
+                HideWithoutPermission: hideWithoutPermission,
+              })
+            }
+          />
+
+          {/* Subcategory editor */}
+          <SubcategoryEditor
+            subcategories={selectedKit.Subcategories || []}
+            allSubcategories={allSubcategories}
+            onChange={(subcategories) =>
+              updateKit(selectedKitId!, { Subcategories: subcategories })
+            }
+          />
+
+          {/* Auto Kit toggle */}
+          <button
+            onClick={() => {
+              const newIsAutoKit = !(selectedKit.IsAutoKit ?? false)
+              updateKit(selectedKitId!, { IsAutoKit: newIsAutoKit })
+              // Switch tab to match so kit stays visible
+              setKitViewTab(newIsAutoKit ? 'auto' : 'default')
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+              selectedKit.IsAutoKit
+                ? 'text-[var(--status-info)]'
                 : 'text-[var(--text-muted)]'
             }`}
             style={{
-              background: selectedKit.IsHidden
-                ? 'rgba(var(--status-warning-rgb), 0.15)'
+              background: selectedKit.IsAutoKit
+                ? 'rgba(var(--status-info-rgb), 0.15)'
                 : 'var(--glass-bg)',
-              border: selectedKit.IsHidden
-                ? '1px solid var(--status-warning)'
+              border: selectedKit.IsAutoKit
+                ? '1px solid var(--status-info)'
                 : '1px solid var(--glass-border)',
             }}
+            title={selectedKit.IsAutoKit ? 'Auto kit (given on spawn)' : 'Not an auto kit'}
           >
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={selectedKit.IsHidden}
-              onChange={() =>
-                updateKit(selectedKitId!, {
-                  IsHidden: !selectedKit.IsHidden,
-                })
-              }
-            />
-            Hidden
-          </label>
+            <Zap className="w-3 h-3" />
+            <span>Auto Kit</span>
+          </button>
 
           {/* Kit ID with copy */}
           <button
@@ -1808,6 +2073,109 @@ function PropField({
       {suffix && (
         <span className="text-xs text-[var(--text-muted)]">{suffix}</span>
       )}
+    </div>
+  )
+}
+
+function KitListItem({
+  id,
+  kit,
+  selectedKitId,
+  draggedKitId,
+  dragOverKitId,
+  kitSearch,
+  onSelect,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onRename,
+  onDuplicate,
+  onDelete,
+}: {
+  id: string
+  kit: Kit
+  selectedKitId: string | null
+  draggedKitId: string | null
+  dragOverKitId: string | null
+  kitSearch: string
+  onSelect: () => void
+  onDragStart: (e: React.DragEvent, id: string) => void
+  onDragOver: (e: React.DragEvent, id: string) => void
+  onDragLeave: () => void
+  onDrop: (e: React.DragEvent, id: string) => void
+  onDragEnd: () => void
+  onRename: () => void
+  onDuplicate: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div
+      draggable={!kitSearch.trim()}
+      onDragStart={(e) => onDragStart(e, id)}
+      onDragOver={(e) => onDragOver(e, id)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, id)}
+      onDragEnd={onDragEnd}
+      onClick={onSelect}
+      className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
+        selectedKitId === id
+          ? 'bg-[var(--accent-primary)]/15'
+          : dragOverKitId === id
+            ? 'bg-[var(--accent-primary)]/10'
+            : 'hover:bg-[var(--bg-card-hover)]'
+      } ${draggedKitId === id ? 'opacity-50' : ''}`}
+      style={{
+        border:
+          dragOverKitId === id
+            ? '1px solid var(--accent-primary)'
+            : selectedKitId === id
+              ? '1px solid var(--accent-primary)'
+              : '1px solid transparent',
+      }}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+          {kit.Name}
+        </div>
+        <div className="text-xs text-[var(--text-muted)]">
+          {kit.MainItems.length + kit.WearItems.length + kit.BeltItems.length}{' '}
+          items
+        </div>
+      </div>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRename()
+          }}
+          className="p-1 rounded hover:bg-[var(--bg-card)]"
+          title="Rename"
+        >
+          <Edit3 className="w-3 h-3 text-[var(--text-muted)]" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDuplicate()
+          }}
+          className="p-1 rounded hover:bg-[var(--bg-card)]"
+          title="Duplicate"
+        >
+          <Copy className="w-3 h-3 text-[var(--text-muted)]" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          className="p-1 rounded hover:bg-[var(--status-error)]/20"
+          title="Delete"
+        >
+          <Trash2 className="w-3 h-3 text-[var(--status-error)]" />
+        </button>
+      </div>
     </div>
   )
 }

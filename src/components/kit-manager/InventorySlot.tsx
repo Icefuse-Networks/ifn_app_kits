@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getItemImageUrl } from '@/lib/rust-items'
+import { ItemTooltip, useItemTooltip } from '@/components/global/ItemTooltip'
 import type { KitItem } from '@/types/kit'
 
 // =============================================================================
@@ -54,12 +55,45 @@ export function InventorySlot({
   const imgSize = Math.floor(size * 0.75)
   const [imgFailed, setImgFailed] = useState(false)
   const [skinFailed, setSkinFailed] = useState(false)
+  const { tooltip, showTooltip, updatePosition, hideTooltip } = useItemTooltip()
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Reset image error state when item changes
   useEffect(() => {
     setImgFailed(false)
     setSkinFailed(false)
   }, [item?.Shortname, item?.Skin])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (!item) return
+    // Debounce tooltip show to avoid flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      showTooltip(item.Shortname, e)
+    }, 200)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (tooltip.visible) {
+      updatePosition(e)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+    hideTooltip()
+  }
 
   const handleClick = () => {
     if (item && index !== undefined && onSelect) {
@@ -119,6 +153,9 @@ export function InventorySlot({
       onDrop={handleDrop}
       draggable={!!item}
       onDragStart={handleDragStart}
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       {item ? (
         <>
@@ -192,6 +229,16 @@ export function InventorySlot({
         <span className="text-[10px] text-[var(--text-muted)] opacity-40 select-none">
           {position + 1}
         </span>
+      )}
+
+      {/* Item tooltip on hover */}
+      {item && (
+        <ItemTooltip
+          shortname={tooltip.shortname}
+          visible={tooltip.visible}
+          x={tooltip.x}
+          y={tooltip.y}
+        />
       )}
     </div>
   )

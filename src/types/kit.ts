@@ -62,10 +62,18 @@ export interface Kit {
   Cost: number
   /** Hidden from kit list */
   IsHidden: boolean
+  /** Hide kit from users who don't have the required permission */
+  HideWithoutPermission: boolean
+  /** Whether this kit is given automatically on spawn */
+  IsAutoKit: boolean
   /** Copy/paste file reference */
   CopyPasteFile: string
   /** Kit image URL */
   KitImage: string
+  /** Display order in kit list (lower = higher priority) */
+  Order: number
+  /** Subcategories for UI organization (kit can belong to multiple) */
+  Subcategories: string[]
   /** Main inventory items (24 slots) */
   MainItems: KitItem[]
   /** Wear items - armor/clothing (8 slots) */

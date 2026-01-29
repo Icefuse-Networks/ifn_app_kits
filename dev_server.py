@@ -317,6 +317,12 @@ def get_site_env(uses_dokploy_db=False):
     env = os.environ.copy()
     if uses_dokploy_db:
         env['DATABASE_URL'] = KITS_DATABASE_URL
+
+    # Performance optimizations for Next.js development
+    env['NEXT_TELEMETRY_DISABLED'] = '1'  # Disable telemetry overhead
+    env['NODE_OPTIONS'] = '--max-old-space-size=4096'  # More memory for faster compilation
+    env['NEXT_PRIVATE_LOCAL_WEBPACK_DEV'] = '1'  # Use local webpack for faster rebuilds
+
     return env
 
 def run_prisma_generate(site_dir, site_name, uses_dokploy_db=False):
@@ -559,6 +565,11 @@ def run_site_server(site_key, site_config):
     env = os.environ.copy()
     env['PORT'] = str(port)
 
+    # Performance optimizations for Next.js development
+    env['NEXT_TELEMETRY_DISABLED'] = '1'  # Disable telemetry overhead
+    env['NODE_OPTIONS'] = '--max-old-space-size=4096'  # More memory for faster compilation
+    env['NEXT_PRIVATE_LOCAL_WEBPACK_DEV'] = '1'  # Use local webpack for faster rebuilds
+
     # Only set DATABASE_URL for sites that use Dokploy database
     if site_config.get('uses_dokploy_db', False):
         env['DATABASE_URL'] = KITS_DATABASE_URL
@@ -676,8 +687,7 @@ def setup_site(site_key, site_config, step_offset, skip_checks=False):
     log_print(f"\n{color}  Setting up {site_name}...{Colors.RESET}")
 
     if quick_mode:
-        log_print(f"  {Colors.GREEN}[QUICK]{Colors.RESET} Cleaning .next cache only...")
-        clean_next_cache(site_dir, site_name)
+        log_print(f"  {Colors.GREEN}[QUICK]{Colors.RESET} Preserving .next cache for faster startup")
         log_print(f"  {Colors.GREEN}[QUICK]{Colors.RESET} Skipping Prisma steps")
         return True
 

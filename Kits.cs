@@ -1032,6 +1032,7 @@ namespace Oxide.Plugins
                 public int RequiredAuth { get; set; }
                 public int Cooldown { get; set; }
                 public bool IsHidden { get; set; }
+                public string[] Subcategories { get; set; } = Array.Empty<string>();
 
                 public ItemData[] MainItems { get; set; } = Array.Empty<ItemData>();
                 public ItemData[] WearItems { get; set; } = Array.Empty<ItemData>();
@@ -1061,6 +1062,7 @@ namespace Oxide.Plugins
                                 ["RequiredAuth"] = RequiredAuth,
                                 ["Cooldown"] = Cooldown,
                                 ["IsHidden"] = IsHidden,
+                                ["Subcategories"] = new JArray(Subcategories ?? Array.Empty<string>()),
                                 ["MainItems"] = new JArray(),
                                 ["WearItems"] = new JArray(),
                                 ["BeltItems"] = new JArray()

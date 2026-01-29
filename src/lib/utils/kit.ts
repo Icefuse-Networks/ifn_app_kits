@@ -164,7 +164,7 @@ export function kitHasItems(kit: Kit): boolean {
 /**
  * Create an empty kit template
  */
-export function createEmptyKit(name: string, description: string = ''): Kit {
+export function createEmptyKit(name: string, description: string = '', order: number = 0): Kit {
   return {
     Name: name,
     Description: description,
@@ -174,8 +174,12 @@ export function createEmptyKit(name: string, description: string = ''): Kit {
     Cooldown: 0,
     Cost: 0,
     IsHidden: false,
+    HideWithoutPermission: false,
+    IsAutoKit: false,
     CopyPasteFile: '',
     KitImage: '',
+    Order: order,
+    Subcategories: [],
     MainItems: [],
     WearItems: [],
     BeltItems: [],
