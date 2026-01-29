@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   FolderOpen,
   ChevronDown,
@@ -9,6 +9,7 @@ import {
   Trash2,
   Plus,
   Loader2,
+  Check,
 } from 'lucide-react'
 
 // =============================================================================
@@ -49,7 +50,27 @@ export function CategorySelector({
   loading,
 }: CategorySelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const copyIdToClipboard = useCallback(async () => {
+    if (!activeCategoryId) return
+    try {
+      await navigator.clipboard.writeText(activeCategoryId)
+      setCopiedId(true)
+      setTimeout(() => setCopiedId(false), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = activeCategoryId
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedId(true)
+      setTimeout(() => setCopiedId(false), 2000)
+    }
+  }, [activeCategoryId])
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId)
 
@@ -169,6 +190,29 @@ export function CategorySelector({
             >
               <Plus className="w-3 h-3" />
               New
+            </button>
+          </div>
+        )}
+
+        {/* Category ID Display */}
+        {activeCategory && activeCategoryId && (
+          <div className="mt-2 px-1">
+            <button
+              onClick={copyIdToClipboard}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors hover:bg-[var(--bg-card-hover)] group"
+              title="Click to copy category ID"
+            >
+              <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">
+                ID
+              </span>
+              <code className="flex-1 text-[10px] text-[var(--text-secondary)] font-mono truncate">
+                {activeCategoryId}
+              </code>
+              {copiedId ? (
+                <Check className="w-3 h-3 text-[var(--status-success)] shrink-0" />
+              ) : (
+                <Copy className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              )}
             </button>
           </div>
         )}

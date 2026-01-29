@@ -96,8 +96,13 @@ export async function GET(request: NextRequest) {
       }
       break
     default:
-      // Custom redirect path
-      redirectUrl = redirectParam.startsWith('http') ? redirectParam : redirectParam
+      // Custom redirect path - only allow relative paths for security
+      // SECURITY: Prevent open redirect attacks by rejecting external URLs
+      if (redirectParam.startsWith('http') || redirectParam.startsWith('//')) {
+        redirectUrl = '/'
+      } else {
+        redirectUrl = redirectParam.startsWith('/') ? redirectParam : `/${redirectParam}`
+      }
   }
 
   // Build absolute URL for redirect

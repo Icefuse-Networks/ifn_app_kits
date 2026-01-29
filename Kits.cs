@@ -25,7 +25,7 @@ namespace Oxide.Plugins
 
         // API Configuration
         private const string API_URL = "https://kits.icefuse.com/api/servers/kits";
-        private const string CONFIG_NAME = "5x"; // Kit config to pull (e.g., "2x", "5x", "10x")
+        private const string CONFIG_ID = "category_9dd76b86-2f21-4efe-a18b-7f2757045e7c"; // Category ID from Kit Manager (prefixed CUID)
 
         // FULL API TOKEN ifn_kit_bded2aacb1e3ab09ec07db11aceb6e0f
         private const string API_KEY = "ifn_kit_ebe1ed5f9d9ae065c5f4de692cac514e";
@@ -285,14 +285,15 @@ namespace Oxide.Plugins
         #region API Fetching
         private void FetchKitsFromApi()
         {
-            if (string.IsNullOrEmpty(CONFIG_NAME))
+            if (string.IsNullOrEmpty(CONFIG_ID))
             {
-                PrintError("CONFIG_NAME is not set. Set it to your kit config name (e.g., \"2x\", \"5x\").");
+                PrintError("CONFIG_ID is not set. Copy the category ID from the Kit Manager UI.");
                 _kitsLoaded = false;
                 return;
             }
 
-            string url = API_URL + "?config=" + Uri.EscapeDataString(CONFIG_NAME);
+            // Use id= parameter for prefixed CUID lookups (preferred over legacy config= name lookups)
+            string url = API_URL + "?id=" + Uri.EscapeDataString(CONFIG_ID);
 
             Puts($"[API] Fetching kits from: {url}");
 
@@ -371,7 +372,7 @@ namespace Oxide.Plugins
                     if (skipped > 0)
                         PrintWarning($"[API] Skipped {skipped} kits with empty names");
 
-                    Puts($"[API] Successfully loaded {count} kits from config '{CONFIG_NAME}'");
+                    Puts($"[API] Successfully loaded {count} kits from category '{CONFIG_ID}'");
                 }
                 catch (Exception ex)
                 {

@@ -129,6 +129,9 @@ export default function KitsPage() {
     'current'
   )
 
+  // Kit ID copy state
+  const [copiedKitId, setCopiedKitId] = useState(false)
+
   // ---------------------------------------------------------------------------
   // Derived State
   // ---------------------------------------------------------------------------
@@ -774,6 +777,25 @@ export default function KitsPage() {
     }
     setContextMenu(null)
   }, [selectedKitId, selectedKit, contextMenu, selection, updateKit])
+
+  const copyKitIdToClipboard = useCallback(async () => {
+    if (!selectedKitId) return
+    try {
+      await navigator.clipboard.writeText(selectedKitId)
+      setCopiedKitId(true)
+      setTimeout(() => setCopiedKitId(false), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = selectedKitId
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedKitId(true)
+      setTimeout(() => setCopiedKitId(false), 2000)
+    }
+  }, [selectedKitId])
 
   // Close context menu on click anywhere or Escape
   useEffect(() => {
@@ -1481,6 +1503,23 @@ export default function KitsPage() {
             />
             Hidden
           </label>
+
+          {/* Kit ID with copy */}
+          <button
+            onClick={copyKitIdToClipboard}
+            className="flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors hover:bg-[var(--bg-card-hover)] group shrink-0"
+            title="Click to copy kit ID"
+          >
+            <span className="text-[var(--text-muted)] font-medium">ID:</span>
+            <code className="text-[var(--text-secondary)] font-mono text-[10px] max-w-[140px] truncate">
+              {selectedKitId}
+            </code>
+            {copiedKitId ? (
+              <Check className="w-3 h-3 text-[var(--status-success)]" />
+            ) : (
+              <Copy className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
+          </button>
 
           {/* Spacer to push skins toggle right */}
           <div className="flex-1" />

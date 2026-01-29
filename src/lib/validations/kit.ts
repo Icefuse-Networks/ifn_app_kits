@@ -191,9 +191,13 @@ export const createApiTokenSchema = z.object({
 
 /**
  * Token ID parameter validation
+ * Validates cuid format (25+ alphanumeric chars starting with 'c')
  */
 export const tokenIdSchema = z.object({
-  id: z.string().min(1, 'Invalid token ID'),
+  id: z.string()
+    .min(25, 'Invalid token ID')
+    .max(30, 'Invalid token ID')
+    .regex(/^c[a-z0-9]{20,}$/i, 'Invalid token ID format'),
 })
 
 // =============================================================================
