@@ -1,8 +1,9 @@
 /**
  * Plugin Integration Endpoint
  *
- * GET /api/servers/kits           - Returns all kit configs (backward compatible)
- * GET /api/servers/kits?config=5x - Returns kits for a specific config as flat array
+ * GET /api/servers/kits                    - Returns all kit configs (backward compatible)
+ * GET /api/servers/kits?config=5x          - Returns kits for a specific config by name (legacy)
+ * GET /api/servers/kits?id=category_xxx    - Returns kits for a specific config by ID (new)
  *
  * Auth: Token (kits:read) required
  * This is the endpoint the Rust plugin calls to fetch kit configurations.
@@ -13,15 +14,16 @@ import { prisma } from '@/lib/db'
 import { requireKitsRead } from '@/services/api-auth'
 import { safeParseKitData } from '@/lib/utils/kit'
 import { logger } from '@/lib/logger'
-import { pluginConfigQuerySchema } from '@/lib/validations/kit'
+import { isValidPrefixedId } from '@/lib/id'
 import type { KitsData } from '@/types/kit'
 
 /**
  * GET /api/servers/kits
  *
- * Two modes:
- * 1. With ?config=NAME: Returns flat Kit[] array for plugin consumption
- * 2. Without config param: Returns all configs as { configName: kitData } map
+ * Three modes:
+ * 1. With ?id=category_xxx: Returns flat Kit[] array by ID (preferred)
+ * 2. With ?config=NAME: Returns flat Kit[] array by name (legacy)
+ * 3. Without params: Returns all configs as { configName: kitData } map
  */
 export async function GET(request: NextRequest) {
   // SECURITY: Token auth required (kits:read scope)
@@ -37,28 +39,42 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const configParam = searchParams.get('config')
-
-    // SECURITY: Zod validated
-    const queryResult = pluginConfigQuerySchema.safeParse({
-      config: configParam ?? undefined,
-    })
-
-    if (!queryResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid config parameter' },
-        { status: 400 }
-      )
-    }
-
-    const { config: configName } = queryResult.data
+    const idParam = searchParams.get('id')
 
     // Single config mode: plugin requests a specific kit configuration
-    if (configName) {
-      // PERF: Select only needed fields
-      const kitConfig = await prisma.kitConfig.findUnique({
-        where: { name: configName },
-        select: { name: true, kitData: true },
-      })
+    // Prefer ID-based lookup if provided
+    if (idParam || configParam) {
+      let kitConfig: { id: string; name: string; kitData: string } | null = null
+
+      if (idParam) {
+        // SECURITY: Validate prefixed ID format
+        if (!isValidPrefixedId(idParam, 'category')) {
+          return NextResponse.json(
+            { error: 'Invalid category ID format' },
+            { status: 400 }
+          )
+        }
+
+        // PERF: Select only needed fields
+        kitConfig = await prisma.kitConfig.findUnique({
+          where: { id: idParam },
+          select: { id: true, name: true, kitData: true },
+        })
+      } else if (configParam) {
+        // SECURITY: Basic validation for legacy name-based lookup
+        if (configParam.length > 100) {
+          return NextResponse.json(
+            { error: 'Config name too long' },
+            { status: 400 }
+          )
+        }
+
+        // Legacy: lookup by name (first match)
+        kitConfig = await prisma.kitConfig.findFirst({
+          where: { name: configParam.trim() },
+          select: { id: true, name: true, kitData: true },
+        })
+      }
 
       if (!kitConfig) {
         return NextResponse.json(
@@ -70,7 +86,10 @@ export async function GET(request: NextRequest) {
       const parsed = safeParseKitData(kitConfig.kitData)
 
       if (!parsed) {
-        logger.kits.error('Failed to parse kitData for config', { name: configName })
+        logger.kits.error('Failed to parse kitData for config', {
+          id: kitConfig.id,
+          name: kitConfig.name,
+        })
         return NextResponse.json(
           { error: 'Invalid kit data' },
           { status: 500 }
@@ -83,7 +102,8 @@ export async function GET(request: NextRequest) {
       logger.kits.info('Plugin fetched specific config', {
         actorType: authResult.context.type,
         actorId: authResult.context.actorId,
-        config: configName,
+        configId: kitConfig.id,
+        configName: kitConfig.name,
         kitCount: kitList.length,
       })
 

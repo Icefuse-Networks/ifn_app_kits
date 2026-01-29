@@ -98,7 +98,7 @@ export interface KitsData {
  * KitConfig as returned from database
  */
 export interface KitConfigRecord {
-  id: number
+  id: string
   name: string
   description: string | null
   kitData: string
@@ -140,7 +140,7 @@ export interface GameServerRecord {
   iconUrl: string
   wipeConfig: string | null
   botToken: string | null
-  kitConfigId: number | null
+  kitConfigId: string | null
   createdAt: Date
   updatedAt: Date
 }

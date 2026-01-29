@@ -36,8 +36,8 @@ model ApiToken {
 // =============================================================================
 
 model KitConfig {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique @db.VarChar(100)
+  id          String       @id @db.VarChar(60)
+  name        String       @db.VarChar(100)
   description String?
   kitData     String       @map("kit_data")
   storeData   String?      @map("store_data")
@@ -45,6 +45,8 @@ model KitConfig {
   updatedAt   DateTime     @updatedAt @map("updated_at")
   gameServers GameServer[]
 
+  @@index([name])
+  @@index([updatedAt])
   @@map("kit_config")
 }
 
@@ -62,7 +64,7 @@ model GameServer {
   iconUrl     String     @map("icon_url")
   wipeConfig  String?    @map("wipe_config")
   botToken    String?    @map("bot_token") @db.VarChar(255)
-  kitConfigId Int?       @map("kit_config_id")
+  kitConfigId String?    @map("kit_config_id") @db.VarChar(60)
   kitConfig   KitConfig? @relation(fields: [kitConfigId], references: [id])
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")

@@ -13,7 +13,7 @@ import { prisma } from '@/lib/db'
 import { requireKitsRead, requireKitsWrite } from '@/services/api-auth'
 import { auditUpdate, auditDelete } from '@/services/audit'
 import { kitConfigIdSchema, updateKitConfigSchema } from '@/lib/validations/kit'
-import { parseKitData, countKits } from '@/lib/utils/kit'
+import { parseKitData } from '@/lib/utils/kit'
 import { logger } from '@/lib/logger'
 import type { KitConfigParsed } from '@/types/kit'
 

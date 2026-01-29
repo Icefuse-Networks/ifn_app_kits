@@ -1,41 +1,72 @@
-/**
- * RenameModal Component
- *
- * Modal dialog for renaming a kit.
- */
-
 'use client'
 
-import { Edit3, X } from 'lucide-react'
+import { useState } from 'react'
+import { Edit3, X, FolderOpen, ArrowRight, Loader2 } from 'lucide-react'
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface CategoryOption {
+  id: string
+  name: string
+}
 
 interface RenameModalProps {
-  /** Close modal callback */
   onClose: () => void
-  /** Rename callback */
   onRename: () => void
-  /** New name value */
+  onMoveToCategory?: (targetCategoryId: string, newName?: string) => void
   name: string
-  /** Set name callback */
   setName: (name: string) => void
-  /** Original kit name */
   originalName: string
+  categories?: CategoryOption[]
+  currentCategoryId?: string | null
+  isMoving?: boolean
 }
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export function RenameModal({
   onClose,
   onRename,
+  onMoveToCategory,
   name,
   setName,
   originalName,
+  categories,
+  currentCategoryId,
+  isMoving,
 }: RenameModalProps) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+
+  const hasNameChange = name.trim() !== '' && name !== originalName
+  const hasMove = selectedCategoryId !== null && selectedCategoryId !== currentCategoryId
+  const canSubmit = (hasNameChange || hasMove) && !isMoving
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && name.trim() && name !== originalName) {
-      onRename()
+    if (e.key === 'Enter' && canSubmit) {
+      handleSubmit()
     }
     if (e.key === 'Escape') {
       onClose()
     }
   }
+
+  const handleSubmit = () => {
+    if (hasMove && onMoveToCategory) {
+      // Move handles rename too — pass new name if changed
+      onMoveToCategory(selectedCategoryId!, hasNameChange ? name.trim() : undefined)
+    } else if (hasNameChange) {
+      // Rename only (no move)
+      onRename()
+    }
+  }
+
+  // Filter out current category from the list
+  const otherCategories = categories?.filter((c) => c.id !== currentCategoryId) ?? []
+  const showCategorySection = otherCategories.length > 0 && onMoveToCategory
 
   return (
     <div
@@ -57,7 +88,7 @@ export function RenameModal({
         >
           <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
             <Edit3 className="h-5 w-5 text-[var(--accent-primary)]" />
-            Rename Kit
+            Edit Kit
           </h3>
           <button
             onClick={onClose}
@@ -68,26 +99,76 @@ export function RenameModal({
         </div>
 
         {/* Body */}
-        <div className="p-4">
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">
-            New Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={originalName}
-            className="w-full rounded-lg px-3 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
-            style={{
-              background: 'var(--bg-input)',
-              border: '1px solid var(--border-secondary)',
-            }}
-            autoFocus
-          />
-          <p className="text-xs text-[var(--text-muted)] mt-2">
-            Renaming from &quot;{originalName}&quot;
-          </p>
+        <div className="p-4 space-y-4">
+          {/* Name Field */}
+          <div>
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">
+              Kit Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={originalName}
+              className="w-full rounded-lg px-3 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+              style={{
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-secondary)',
+              }}
+              autoFocus
+            />
+            <p className="text-xs text-[var(--text-muted)] mt-1.5">
+              Current name: &quot;{originalName}&quot;
+            </p>
+          </div>
+
+          {/* Move to Category */}
+          {showCategorySection && (
+            <div>
+              <label className="block text-sm text-[var(--text-secondary)] mb-2">
+                <span className="flex items-center gap-1.5">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  Move to Category
+                </span>
+              </label>
+              <select
+                value={selectedCategoryId ?? ''}
+                onChange={(e) =>
+                  setSelectedCategoryId(e.target.value || null)
+                }
+                className="w-full rounded-lg px-3 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] appearance-none cursor-pointer"
+                style={{
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-secondary)',
+                }}
+              >
+                <option value="">Keep in current category</option>
+                {otherCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {selectedCategoryId && (
+                <div
+                  className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs"
+                  style={{
+                    background: 'rgba(var(--accent-primary-rgb), 0.1)',
+                    border: '1px solid rgba(var(--accent-primary-rgb), 0.3)',
+                    color: 'var(--accent-primary)',
+                  }}
+                >
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    This kit will be moved to &quot;
+                    {otherCategories.find((c) => c.id === selectedCategoryId)?.name}
+                    &quot;
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -106,14 +187,22 @@ export function RenameModal({
             Cancel
           </button>
           <button
-            onClick={onRename}
-            disabled={!name.trim() || name === originalName}
-            className="flex-1 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="flex-1 px-4 py-2 rounded-lg font-medium text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             style={{
               background: 'var(--accent-primary)',
             }}
           >
-            Rename
+            {isMoving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : hasMove && hasNameChange ? (
+              'Rename & Move'
+            ) : hasMove ? (
+              'Move Kit'
+            ) : (
+              'Rename'
+            )}
           </button>
         </div>
       </div>

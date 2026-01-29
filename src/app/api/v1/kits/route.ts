@@ -14,6 +14,7 @@ import { auditCreate } from '@/services/audit'
 import { createKitConfigSchema, listKitsQuerySchema } from '@/lib/validations/kit'
 import { parseKitData, countKits } from '@/lib/utils/kit'
 import { logger } from '@/lib/logger'
+import { id } from '@/lib/id'
 import type { KitConfigParsed } from '@/types/kit'
 
 /**
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
 
     const kit = await prisma.kitConfig.create({
       data: {
+        id: id.category(),
         name,
         description: description || null,
         kitData: kitDataStr,

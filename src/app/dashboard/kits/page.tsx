@@ -7,7 +7,6 @@ import {
   Plus,
   ArrowLeft,
   Save,
-  FolderOpen,
   Trash2,
   Copy,
   Edit3,
@@ -30,14 +29,17 @@ import {
   ItemBrowser,
   ItemEditor,
   ItemEditorEmpty,
+  CategorySelector,
   type ItemSlot,
+  type CategorySummary,
 } from '@/components/kit-manager'
 import {
   NewKitModal,
   SaveModal,
-  LoadModal,
   RenameModal,
   MultiplierModal,
+  CategoryRenameModal,
+  UnsavedChangesModal,
 } from '@/components/kit-manager/modals'
 import type { Kit, KitItem, KitsData } from '@/types/kit'
 import {
@@ -46,13 +48,14 @@ import {
   parseKitData,
   stringifyKitData,
 } from '@/lib/utils/kit'
+import { id as idGen } from '@/lib/id'
 
 // =============================================================================
 // Types
 // =============================================================================
 
 interface SavedConfig {
-  id: number
+  id: string
   name: string
   description: string | null
   kitData: KitsData
@@ -64,7 +67,7 @@ interface Selection {
   index: number
 }
 
-type ModalType = 'new' | 'save' | 'load' | 'rename' | 'multiplier' | null
+type ModalType = 'new' | 'save' | 'rename' | 'multiplier' | 'categoryRename' | 'unsavedChanges' | null
 
 // =============================================================================
 // Page Component
@@ -104,8 +107,12 @@ export default function KitsPage() {
 
   // API state
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([])
-  const [loadedConfigId, setLoadedConfigId] = useState<number | null>(null)
+  const [loadedConfigId, setLoadedConfigId] = useState<string | null>(null)
   const initialLoadDone = useRef(false)
+
+  // Category switching state
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null)
+  const [saveModalMode, setSaveModalMode] = useState<'save' | 'newCategory'>('save')
 
   // Modal form state
   const [newKitName, setNewKitName] = useState('')
@@ -154,6 +161,24 @@ export default function KitsPage() {
     return items[selection.index] || null
   }, [selectedKit, selection])
 
+  // Category-related derived state
+  const activeCategory = useMemo(() => {
+    if (!loadedConfigId) return null
+    return savedConfigs.find((c) => c.id === loadedConfigId) ?? null
+  }, [savedConfigs, loadedConfigId])
+
+  const categorySummaries = useMemo<CategorySummary[]>(
+    () =>
+      savedConfigs.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        kitCount: Object.keys(c.kitData?._kits || {}).length,
+        updatedAt: c.updatedAt,
+      })),
+    [savedConfigs]
+  )
+
   // Skin image resolution
   const skinImages = useSkinImages(selectedKit, showSkins)
 
@@ -201,7 +226,7 @@ export default function KitsPage() {
       const data = await res.json()
       const configs: SavedConfig[] = data.map(
         (config: {
-          id: number
+          id: string
           name: string
           description: string | null
           kitData: string | object
@@ -237,7 +262,7 @@ export default function KitsPage() {
   }, [resetHistory])
 
   const loadConfig = useCallback(
-    async (id: number) => {
+    async (id: string) => {
       setLoading(true)
       setError(null)
       try {
@@ -296,26 +321,161 @@ export default function KitsPage() {
     [kitsData, loadedConfigId, fetchConfigs]
   )
 
-  const deleteConfig = useCallback(
-    async (id: number) => {
+  // ---------------------------------------------------------------------------
+  // Category Management
+  // ---------------------------------------------------------------------------
+
+  const switchCategory = useCallback(
+    (targetId: string) => {
+      if (targetId === loadedConfigId) return
+
+      // Check for unsaved changes
+      if (canUndo && loadedConfigId && activeCategory) {
+        setPendingSwitchId(targetId)
+        setActiveModal('unsavedChanges')
+        return
+      }
+
+      loadConfig(targetId)
+    },
+    [loadedConfigId, canUndo, activeCategory, loadConfig]
+  )
+
+  const handleUnsavedDiscard = useCallback(() => {
+    if (pendingSwitchId) {
+      loadConfig(pendingSwitchId)
+      setPendingSwitchId(null)
+      setActiveModal(null)
+    }
+  }, [pendingSwitchId, loadConfig])
+
+  const handleUnsavedSave = useCallback(async () => {
+    if (loadedConfigId && activeCategory) {
+      await saveConfig(activeCategory.name, activeCategory.description || '')
+      if (pendingSwitchId) {
+        loadConfig(pendingSwitchId)
+        setPendingSwitchId(null)
+      }
+      setActiveModal(null)
+    }
+  }, [loadedConfigId, activeCategory, saveConfig, pendingSwitchId, loadConfig])
+
+  const renameCategory = useCallback(
+    async (newName: string, newDescription: string) => {
+      if (!loadedConfigId) return
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/kits/${id}`, { method: 'DELETE' })
-        if (!res.ok) throw new Error('Failed to delete')
-        if (loadedConfigId === id) {
-          setLoadedConfigId(null)
+        const res = await fetch(`/api/v1/kits/${loadedConfigId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, description: newDescription || null }),
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.error || 'Failed to update category')
         }
-        setSuccess('Configuration deleted')
+        setSuccess(`Category updated`)
+        setActiveModal(null)
         fetchConfigs()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete')
+        setError(err instanceof Error ? err.message : 'Failed to update')
       } finally {
         setLoading(false)
       }
     },
     [loadedConfigId, fetchConfigs]
   )
+
+  const duplicateCategory = useCallback(async () => {
+    if (!loadedConfigId || !activeCategory) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/v1/kits/${loadedConfigId}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${activeCategory.name} (Copy)`,
+          description: activeCategory.description,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to duplicate category')
+      }
+      const data = await res.json()
+      setSuccess(`Duplicated as "${data.name}"`)
+      await fetchConfigs()
+      resetHistory(data.kitData)
+      setLoadedConfigId(data.id)
+      setSelectedKitId(null)
+      setSelection(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to duplicate')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadedConfigId, activeCategory, fetchConfigs, resetHistory])
+
+  const createCategory = useCallback(
+    async (name: string, description: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch('/api/v1/kits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            description: description || null,
+            kitData: JSON.stringify({ _kits: {} }),
+          }),
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.error || 'Failed to create category')
+        }
+        const data = await res.json()
+        setSuccess(`Created category "${name}"`)
+        setActiveModal(null)
+        setSaveName('')
+        setSaveDescription('')
+        await fetchConfigs()
+        resetHistory(data.kitData)
+        setLoadedConfigId(data.id)
+        setSelectedKitId(null)
+        setSelection(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [fetchConfigs, resetHistory]
+  )
+
+  const deleteCategoryHandler = useCallback(async () => {
+    if (!loadedConfigId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/v1/kits/${loadedConfigId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('Failed to delete category')
+      setLoadedConfigId(null)
+      setSelectedKitId(null)
+      setSelection(null)
+      resetHistory({ _kits: {} })
+      setSuccess('Category deleted')
+      fetchConfigs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete')
+    } finally {
+      setLoading(false)
+    }
+  }, [loadedConfigId, fetchConfigs, resetHistory])
 
   // ---------------------------------------------------------------------------
   // Kit CRUD
@@ -324,12 +484,12 @@ export default function KitsPage() {
   const createKit = useCallback(
     (name: string, description: string) => {
       const kit = createEmptyKit(name, description)
-      const id = name.toLowerCase().replace(/\s+/g, '_')
+      const kitId = idGen.kit()
       setKitsData({
         ...kitsData,
-        _kits: { ...kitsData._kits, [id]: kit },
+        _kits: { ...kitsData._kits, [kitId]: kit },
       })
-      setSelectedKitId(id)
+      setSelectedKitId(kitId)
       setActiveModal(null)
       setNewKitName('')
       setNewKitDescription('')
@@ -354,7 +514,7 @@ export default function KitsPage() {
     (id: string) => {
       const original = kitsData._kits[id]
       if (!original) return
-      const newId = `${id}_copy`
+      const newId = idGen.kit()
       const newKit = {
         ...JSON.parse(JSON.stringify(original)),
         Name: `${original.Name} (Copy)`,
@@ -369,21 +529,91 @@ export default function KitsPage() {
   )
 
   const renameKit = useCallback(
-    (oldId: string, newName: string) => {
-      const kit = kitsData._kits[oldId]
+    (kitId: string, newName: string) => {
+      const kit = kitsData._kits[kitId]
       if (!kit) return
-      const newId = newName.toLowerCase().replace(/\s+/g, '_')
-      const newKits = { ...kitsData._kits }
-      delete newKits[oldId]
-      newKits[newId] = { ...kit, Name: newName }
-      setKitsData({ ...kitsData, _kits: newKits })
-      if (selectedKitId === oldId) {
-        setSelectedKitId(newId)
-      }
+      // Keep the same ID, just update the Name property
+      setKitsData({
+        ...kitsData,
+        _kits: {
+          ...kitsData._kits,
+          [kitId]: { ...kit, Name: newName },
+        },
+      })
       setActiveModal(null)
       setRenameValue('')
     },
-    [kitsData, setKitsData, selectedKitId]
+    [kitsData, setKitsData]
+  )
+
+  const moveKitToCategory = useCallback(
+    async (kitId: string, targetCategoryId: string, newName?: string) => {
+      if (!loadedConfigId) return
+      const kit = kitsData._kits[kitId]
+      if (!kit) return
+
+      setLoading(true)
+      setError(null)
+      try {
+        // Fetch target category data
+        const targetRes = await fetch(`/api/v1/kits/${targetCategoryId}`)
+        if (!targetRes.ok) throw new Error('Failed to load target category')
+        const targetData = await targetRes.json()
+        const targetKitData = parseKitData(targetData.kitData)
+
+        // Generate a new kit ID for the target category
+        const targetKitId = idGen.kit()
+
+        // Deep copy kit, optionally with new name
+        const movedKit = JSON.parse(JSON.stringify(kit))
+        if (newName) {
+          movedKit.Name = newName
+        }
+
+        // Add kit to target category
+        targetKitData._kits[targetKitId] = movedKit
+
+        // Remove kit from current category
+        const updatedKits = { ...kitsData._kits }
+        delete updatedKits[kitId]
+        const updatedCurrentData = { ...kitsData, _kits: updatedKits }
+
+        // PERF: Parallel queries — save both categories simultaneously
+        const [sourceRes, destRes] = await Promise.all([
+          fetch(`/api/v1/kits/${loadedConfigId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kitData: stringifyKitData(updatedCurrentData) }),
+          }),
+          fetch(`/api/v1/kits/${targetCategoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kitData: stringifyKitData(targetKitData) }),
+          }),
+        ])
+
+        if (!sourceRes.ok || !destRes.ok) {
+          throw new Error('Failed to move kit between categories')
+        }
+
+        // Update local state
+        setKitsData(updatedCurrentData)
+        resetHistory(updatedCurrentData)
+        if (selectedKitId === kitId) {
+          setSelectedKitId(null)
+          setSelection(null)
+        }
+        setSuccess(`Moved "${newName || kit.Name}" to "${targetData.name}"`)
+        setActiveModal(null)
+        setRenameValue('')
+        fetchConfigs()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to move kit')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [kitsData, loadedConfigId, setKitsData, resetHistory, selectedKitId, fetchConfigs]
   )
 
   const updateKit = useCallback(
@@ -673,6 +903,18 @@ export default function KitsPage() {
     }
   }, [error])
 
+  // Auto-load first available category when current one is deleted
+  useEffect(() => {
+    if (initialLoading) return
+    if (!loadedConfigId && savedConfigs.length > 0) {
+      const mostRecent = [...savedConfigs].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )[0]
+      loadConfig(mostRecent.id)
+    }
+  }, [loadedConfigId, savedConfigs, initialLoading, loadConfig])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -697,6 +939,7 @@ export default function KitsPage() {
           }
           setSaveName('')
           setSaveDescription('')
+          setSaveModalMode('save')
           setActiveModal('save')
         }
       }
@@ -742,8 +985,10 @@ export default function KitsPage() {
             Kit Manager
           </h1>
           <p className="text-xs text-[var(--text-muted)]">
+            {activeCategory ? activeCategory.name : 'No category'}
+            {' \u00B7 '}
             {kitList.length} kit{kitList.length !== 1 ? 's' : ''}
-            {loadedConfigId && ' \u00B7 Saved'}
+            {loadedConfigId && canUndo && ' \u00B7 Unsaved'}
           </p>
         </div>
       </div>
@@ -784,17 +1029,21 @@ export default function KitsPage() {
           <Percent className="w-4 h-4" />
         </ToolbarButton>
 
-        {/* Load */}
+        {/* Save As */}
         <button
-          onClick={() => setActiveModal('load')}
+          onClick={() => {
+            setSaveName('')
+            setSaveDescription('')
+            setSaveModalMode('save')
+            setActiveModal('save')
+          }}
           className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--glass-border)',
           }}
         >
-          <FolderOpen className="w-4 h-4 text-[var(--text-secondary)]" />
-          <span className="text-sm text-[var(--text-primary)]">Load</span>
+          <span className="text-sm text-[var(--text-primary)]">Save As</span>
         </button>
 
         {/* Save */}
@@ -954,6 +1203,23 @@ export default function KitsPage() {
         </div>
       ) : (
         <>
+          {/* Category Selector */}
+          <CategorySelector
+            categories={categorySummaries}
+            activeCategoryId={loadedConfigId}
+            onSwitch={switchCategory}
+            onCreateNew={() => {
+              setSaveName('')
+              setSaveDescription('')
+              setSaveModalMode('newCategory')
+              setActiveModal('save')
+            }}
+            onRename={() => setActiveModal('categoryRename')}
+            onDuplicate={duplicateCategory}
+            onDelete={deleteCategoryHandler}
+            loading={loading}
+          />
+
           {/* Sidebar Header */}
           <div
             className="h-12 px-3 flex items-center justify-between shrink-0"
@@ -1347,7 +1613,11 @@ export default function KitsPage() {
       {activeModal === 'save' && (
         <SaveModal
           onClose={() => setActiveModal(null)}
-          onSave={() => saveConfig(saveName, saveDescription)}
+          onSave={() =>
+            saveModalMode === 'newCategory'
+              ? createCategory(saveName, saveDescription)
+              : saveConfig(saveName, saveDescription)
+          }
           name={saveName}
           setName={setSaveName}
           description={saveDescription}
@@ -1356,13 +1626,26 @@ export default function KitsPage() {
         />
       )}
 
-      {activeModal === 'load' && (
-        <LoadModal
+      {activeModal === 'categoryRename' && activeCategory && (
+        <CategoryRenameModal
           onClose={() => setActiveModal(null)}
-          onLoad={loadConfig}
-          onDelete={deleteConfig}
-          configs={savedConfigs}
-          loading={loading}
+          onRename={renameCategory}
+          currentName={activeCategory.name}
+          currentDescription={activeCategory.description || ''}
+          isRenaming={loading}
+        />
+      )}
+
+      {activeModal === 'unsavedChanges' && activeCategory && (
+        <UnsavedChangesModal
+          onClose={() => {
+            setActiveModal(null)
+            setPendingSwitchId(null)
+          }}
+          onDiscard={handleUnsavedDiscard}
+          onSave={handleUnsavedSave}
+          categoryName={activeCategory.name}
+          isSaving={loading}
         />
       )}
 
@@ -1373,9 +1656,13 @@ export default function KitsPage() {
             setRenameValue('')
           }}
           onRename={() => renameKit(selectedKitId, renameValue)}
+          onMoveToCategory={(targetId, newName) => moveKitToCategory(selectedKitId, targetId, newName)}
           name={renameValue}
           setName={setRenameValue}
           originalName={selectedKit.Name}
+          categories={savedConfigs.map((c) => ({ id: c.id, name: c.name }))}
+          currentCategoryId={loadedConfigId}
+          isMoving={loading}
         />
       )}
 

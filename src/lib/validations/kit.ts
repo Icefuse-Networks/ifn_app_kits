@@ -7,6 +7,7 @@
 
 import { z } from 'zod'
 import { API_SCOPES } from '@/types/api'
+import { validatePrefixedId } from '@/lib/id'
 
 // =============================================================================
 // Kit Item Schemas
@@ -103,10 +104,23 @@ export const updateKitConfigSchema = z.object({
 })
 
 /**
- * Kit config ID parameter validation
+ * Kit config ID parameter validation (category ID)
+ * Validates prefixed UUID format: category_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
  */
 export const kitConfigIdSchema = z.object({
-  id: z.coerce.number().int().min(1, 'Invalid kit ID'),
+  id: z.string().refine(validatePrefixedId('category'), {
+    message: 'Invalid category ID format',
+  }),
+})
+
+/**
+ * Kit ID parameter validation
+ * Validates prefixed UUID format: kit_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+ */
+export const kitIdSchema = z.object({
+  id: z.string().refine(validatePrefixedId('kit'), {
+    message: 'Invalid kit ID format',
+  }),
 })
 
 // =============================================================================
@@ -125,7 +139,13 @@ export const createGameServerSchema = z.object({
   iconUrl: z.string().url('Invalid icon URL').max(191),
   wipeConfig: z.string().nullable().optional(),
   botToken: z.string().max(255).nullable().optional(),
-  kitConfigId: z.number().int().min(1).nullable().optional(),
+  kitConfigId: z
+    .string()
+    .refine(validatePrefixedId('category'), {
+      message: 'Invalid category ID format',
+    })
+    .nullable()
+    .optional(),
 })
 
 /**
@@ -204,18 +224,43 @@ export const listKitsQuerySchema = z.object({
 
 /**
  * Plugin kit config query parameter
- * Used by Rust plugin to request a specific kit configuration by name
+ * Used by Rust plugin to request a specific kit configuration
+ * Supports both name-based (legacy) and ID-based (new) lookups
+ *
+ * @example
+ * GET /api/servers/kits?config=5x%20Server%20Kits  // Legacy: by name
+ * GET /api/servers/kits?id=category_550e8400-...   // New: by ID
  */
-export const pluginConfigQuerySchema = z.object({
-  config: z.string().min(1).max(100).trim().optional(),
-})
+export const pluginConfigQuerySchema = z
+  .object({
+    config: z.string().min(1).max(100).trim().optional(), // Name-based (legacy)
+    id: z.string().optional(), // ID-based (new)
+  })
+  .refine(
+    (data) => data.config || data.id,
+    { message: 'Either config (name) or id must be provided' }
+  )
+  .optional() // Entire object optional for "list all" mode
 
 // =============================================================================
 // Type Exports
 // =============================================================================
 
+/**
+ * Clone kit config validation
+ */
+export const cloneKitConfigSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less')
+    .trim(),
+  description: z.string().max(500).nullable().optional(),
+})
+
 export type CreateKitConfigInput = z.infer<typeof createKitConfigSchema>
 export type UpdateKitConfigInput = z.infer<typeof updateKitConfigSchema>
+export type CloneKitConfigInput = z.infer<typeof cloneKitConfigSchema>
 export type CreateGameServerInput = z.infer<typeof createGameServerSchema>
 export type UpdateGameServerInput = z.infer<typeof updateGameServerSchema>
 export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
