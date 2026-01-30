@@ -164,6 +164,7 @@ export const logger = {
   callback: createModuleLogger('callback'),
   kits: createModuleLogger('kits'),
   admin: createModuleLogger('admin'),
+  analytics: createModuleLogger('analytics'),
   log: createModuleLogger('app'),
 }
 

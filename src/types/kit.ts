@@ -39,6 +39,32 @@ export interface KitItem {
 }
 
 // =============================================================================
+// Category Types
+// =============================================================================
+
+/**
+ * Subcategory within a category
+ */
+export interface KitSubcategory {
+  /** Display name */
+  name: string
+  /** Display order */
+  order: number
+}
+
+/**
+ * Category for organizing kits
+ */
+export interface KitCategory {
+  /** Display name */
+  name: string
+  /** Display order */
+  order: number
+  /** Subcategories within this category */
+  subcategories: Record<string, KitSubcategory>
+}
+
+// =============================================================================
 // Kit Types
 // =============================================================================
 
@@ -72,8 +98,10 @@ export interface Kit {
   KitImage: string
   /** Display order in kit list (lower = higher priority) */
   Order: number
-  /** Subcategories for UI organization (kit can belong to multiple) */
-  Subcategories: string[]
+  /** Category ID for UI organization */
+  Category?: string
+  /** Subcategory ID within the category */
+  Subcategory?: string
   /** Main inventory items (24 slots) */
   MainItems: KitItem[]
   /** Wear items - armor/clothing (8 slots) */
@@ -90,8 +118,10 @@ export interface Kit {
 export interface KitsData {
   /** Optional comment/description */
   _comment?: string
-  /** Map of kit name to kit definition */
+  /** Map of kit ID to kit definition */
   _kits: Record<string, Kit>
+  /** Categories for UI organization */
+  _categories?: Record<string, KitCategory>
   /** Auto-kit priority order */
   'AutoKits Priority'?: string[]
   /** Post-wipe cooldowns (kit name -> seconds) */

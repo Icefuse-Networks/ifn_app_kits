@@ -24,6 +24,15 @@ const PREFIXES = {
   apiToken: 'apitoken',
   auditLog: 'auditlog',
   gameServer: 'gameserver',
+  // Analytics
+  kitUsageEvent: 'kitusage',
+  kitUsageDailyStats: 'kitdaily',
+  kitUsageHourlyStats: 'kithourly',
+  kitGlobalStats: 'kitglobal',
+  serverWipe: 'wipe',
+  // UI Categories (stored in JSON, not database)
+  uiCategory: 'uicat',
+  uiSubcategory: 'uisub',
 } as const
 
 export type IdType = keyof typeof PREFIXES
@@ -141,6 +150,15 @@ export const id = {
   apiToken: () => generateId('apiToken'),
   auditLog: () => generateId('auditLog'),
   gameServer: () => generateId('gameServer'),
+  // Analytics
+  kitUsageEvent: () => generateId('kitUsageEvent'),
+  kitUsageDailyStats: () => generateId('kitUsageDailyStats'),
+  kitUsageHourlyStats: () => generateId('kitUsageHourlyStats'),
+  kitGlobalStats: () => generateId('kitGlobalStats'),
+  serverWipe: () => generateId('serverWipe'),
+  // UI Categories (stored in JSON, not database)
+  uiCategory: () => generateId('uiCategory'),
+  uiSubcategory: () => generateId('uiSubcategory'),
 } as const
 
 /**

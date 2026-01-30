@@ -12,10 +12,12 @@
  * Available API token scopes
  */
 export type ApiScope =
-  | 'kits:read'      // Read kit configs
-  | 'kits:write'     // Create/update/delete kits
-  | 'servers:read'   // Read game servers
-  | 'servers:write'  // Create/update/delete servers
+  | 'kits:read'       // Read kit configs
+  | 'kits:write'      // Create/update/delete kits
+  | 'servers:read'    // Read game servers
+  | 'servers:write'   // Create/update/delete servers
+  | 'analytics:read'  // Read analytics data
+  | 'analytics:write' // Write analytics events
 
 /**
  * All available scopes
@@ -25,6 +27,8 @@ export const API_SCOPES: ApiScope[] = [
   'kits:write',
   'servers:read',
   'servers:write',
+  'analytics:read',
+  'analytics:write',
 ]
 
 /**
@@ -35,6 +39,8 @@ export const SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   'kits:write': 'Create, update, and delete kit configurations',
   'servers:read': 'Read game server information',
   'servers:write': 'Create, update, and delete game servers',
+  'analytics:read': 'Read kit usage analytics and statistics',
+  'analytics:write': 'Submit kit usage events from game servers',
 }
 
 /**

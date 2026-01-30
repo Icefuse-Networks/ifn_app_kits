@@ -5,7 +5,7 @@
  * Admin verification is done in the layout via Auth Server API.
  */
 
-import { Package, Settings, Server } from 'lucide-react'
+import { Package, Settings, BarChart2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -46,9 +46,9 @@ export default function DashboardPage() {
           </p>
         </Link>
 
-        {/* Servers Card */}
+        {/* Analytics Card */}
         <Link
-          href="/dashboard/servers"
+          href="/dashboard/analytics"
           className="group p-6 rounded-xl transition-all duration-300 hover:scale-[1.02]"
           style={{
             background: 'var(--glass-bg)',
@@ -59,13 +59,13 @@ export default function DashboardPage() {
             className="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
             style={{ background: 'var(--status-success)/20' }}
           >
-            <Server className="w-6 h-6 text-[var(--status-success)]" />
+            <BarChart2 className="w-6 h-6 text-[var(--status-success)]" />
           </div>
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2 group-hover:text-[var(--status-success)] transition-colors">
-            Servers
+            Analytics
           </h3>
           <p className="text-sm text-[var(--text-secondary)]">
-            Manage server configurations and kit assignments.
+            View kit usage statistics, trends, and popularity.
           </p>
         </Link>
 

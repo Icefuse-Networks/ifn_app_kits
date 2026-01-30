@@ -19,6 +19,7 @@ import { getToken } from 'next-auth/jwt'
 const PUBLIC_PATH_PREFIXES = [
   '/api/auth',
   '/api/v1',
+  '/api/public',
   '/api/servers',
   '/_next',
   '/logos',
@@ -29,6 +30,7 @@ const PUBLIC_EXACT_PATHS = [
   '/',
   '/favicon.ico',
   '/logo.png',
+  '/leaderboards',
 ]
 
 // Production domain patterns for hostname detection

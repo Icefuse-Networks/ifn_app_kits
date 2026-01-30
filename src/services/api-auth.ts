@@ -206,6 +206,20 @@ export async function requireServersWrite(request: NextRequest): Promise<AuthRes
 }
 
 /**
+ * Require authentication for analytics:read
+ */
+export async function requireAnalyticsRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'analytics:read')
+}
+
+/**
+ * Require authentication for analytics:write
+ */
+export async function requireAnalyticsWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'analytics:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

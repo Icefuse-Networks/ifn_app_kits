@@ -34,7 +34,7 @@ import {
   ItemEditorEmpty,
   CategorySelector,
   VisibilityDropdown,
-  SubcategoryEditor,
+  CategoryDropdown,
   type ItemSlot,
   type CategorySummary,
 } from '@/components/kit-manager'
@@ -140,6 +140,8 @@ export default function KitsPage() {
   // Kit drag state for reordering
   const [draggedKitId, setDraggedKitId] = useState<string | null>(null)
   const [dragOverKitId, setDragOverKitId] = useState<string | null>(null)
+  // Category drop target: "cat:categoryId" or "sub:categoryId:subcategoryId" or "uncategorized"
+  const [dragOverCategoryTarget, setDragOverCategoryTarget] = useState<string | null>(null)
 
   // Kit view tab state (Default Kits vs Auto Kits)
   const [kitViewTab, setKitViewTab] = useState<'default' | 'auto'>('default')
@@ -210,53 +212,61 @@ export default function KitsPage() {
   // Skin image resolution
   const skinImages = useSkinImages(selectedKit, showSkins)
 
-  // All unique subcategories across all kits (for suggestions)
-  const allSubcategories = useMemo(() => {
-    const subs = new Set<string>()
-    Object.values(kitsData._kits || {}).forEach((kit) => {
-      ;(kit.Subcategories || []).forEach((sub) => subs.add(sub))
-    })
-    return Array.from(subs).sort((a, b) => a.localeCompare(b))
-  }, [kitsData])
+  // Categories from kitsData
+  const categories = useMemo(() => kitsData._categories || {}, [kitsData])
 
-  // Group filtered kits by subcategory
-  const kitsBySubcategory = useMemo(() => {
-    const groups: Record<string, { id: string; kit: Kit }[]> = {}
+  // Sorted category list
+  const sortedCategories = useMemo(() => {
+    return Object.entries(categories)
+      .map(([id, cat]) => ({ id, ...cat }))
+      .sort((a, b) => a.order - b.order)
+  }, [categories])
+
+  // Group filtered kits by category/subcategory
+  const kitsByCategory = useMemo(() => {
+    const grouped: Record<string, Record<string, { id: string; kit: Kit }[]>> = {}
     const uncategorized: { id: string; kit: Kit }[] = []
 
     filteredKitList.forEach(({ id, kit }) => {
-      const subs = kit.Subcategories || []
-      if (subs.length === 0) {
+      const catId = kit.Category
+      const subId = kit.Subcategory
+
+      if (!catId) {
         uncategorized.push({ id, kit })
       } else {
-        subs.forEach((sub) => {
-          if (!groups[sub]) groups[sub] = []
-          groups[sub].push({ id, kit })
-        })
+        if (!grouped[catId]) grouped[catId] = {}
+        const subKey = subId || '_root'
+        if (!grouped[catId][subKey]) grouped[catId][subKey] = []
+        grouped[catId][subKey].push({ id, kit })
       }
     })
 
-    // Sort subcategories alphabetically
-    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b))
-    return { groups, sortedKeys, uncategorized }
+    return { grouped, uncategorized }
   }, [filteredKitList])
 
-  // Initialize all subcategories as collapsed on first load
+  // Initialize categories and subcategories as collapsed by default
   useEffect(() => {
-    if (!subcategoryCollapsedInitialized && allSubcategories.length > 0) {
-      setCollapsedSubcategories(new Set(allSubcategories))
+    if (!subcategoryCollapsedInitialized && sortedCategories.length > 0) {
+      const allIds = new Set<string>()
+      sortedCategories.forEach((cat) => {
+        allIds.add(cat.id)
+        Object.keys(cat.subcategories || {}).forEach((subId) => {
+          allIds.add(`${cat.id}:${subId}`)
+        })
+      })
+      setCollapsedSubcategories(allIds)
       setSubcategoryCollapsedInitialized(true)
     }
-  }, [allSubcategories, subcategoryCollapsedInitialized])
+  }, [sortedCategories, subcategoryCollapsedInitialized])
 
-  // Toggle subcategory collapse
-  const toggleSubcategoryCollapse = useCallback((subcategory: string) => {
+  // Toggle category/subcategory collapse
+  const toggleCollapse = useCallback((id: string) => {
     setCollapsedSubcategories((prev) => {
       const next = new Set(prev)
-      if (next.has(subcategory)) {
-        next.delete(subcategory)
+      if (next.has(id)) {
+        next.delete(id)
       } else {
-        next.add(subcategory)
+        next.add(id)
       }
       return next
     })
@@ -687,6 +697,22 @@ export default function KitsPage() {
   const handleKitDragEnd = useCallback(() => {
     setDraggedKitId(null)
     setDragOverKitId(null)
+    setDragOverCategoryTarget(null)
+  }, [])
+
+  // Category drag over/leave handlers (drop handler below after assignKitToCategory)
+  const handleCategoryDragOver = useCallback(
+    (e: React.DragEvent, target: string) => {
+      if (!draggedKitId) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      setDragOverCategoryTarget(target)
+    },
+    [draggedKitId]
+  )
+
+  const handleCategoryDragLeave = useCallback(() => {
+    setDragOverCategoryTarget(null)
   }, [])
 
   const renameKit = useCallback(
@@ -787,6 +813,181 @@ export default function KitsPage() {
       })
     },
     [kitsData, setKitsData]
+  )
+
+  // ---------------------------------------------------------------------------
+  // Kit Category Management (UI categories within the kit data)
+  // ---------------------------------------------------------------------------
+
+  const createKitCategory = useCallback(
+    (name: string) => {
+      const categoryId = idGen.uiCategory()
+      const order = sortedCategories.length
+      setKitsData({
+        ...kitsData,
+        _categories: {
+          ...(kitsData._categories || {}),
+          [categoryId]: { name, order, subcategories: {} },
+        },
+      })
+      return categoryId
+    },
+    [kitsData, setKitsData, sortedCategories.length]
+  )
+
+  const renameKitCategory = useCallback(
+    (categoryId: string, name: string) => {
+      const cat = kitsData._categories?.[categoryId]
+      if (!cat) return
+      setKitsData({
+        ...kitsData,
+        _categories: {
+          ...kitsData._categories,
+          [categoryId]: { ...cat, name },
+        },
+      })
+    },
+    [kitsData, setKitsData]
+  )
+
+  const deleteKitCategory = useCallback(
+    (categoryId: string) => {
+      const newCategories = { ...(kitsData._categories || {}) }
+      delete newCategories[categoryId]
+
+      // Also remove category assignment from kits
+      const newKits = { ...kitsData._kits }
+      Object.entries(newKits).forEach(([id, kit]) => {
+        if (kit.Category === categoryId) {
+          newKits[id] = { ...kit, Category: undefined, Subcategory: undefined }
+        }
+      })
+
+      setKitsData({
+        ...kitsData,
+        _categories: newCategories,
+        _kits: newKits,
+      })
+    },
+    [kitsData, setKitsData]
+  )
+
+  const createKitSubcategory = useCallback(
+    (categoryId: string, name: string) => {
+      const cat = kitsData._categories?.[categoryId]
+      if (!cat) return
+      const subcategoryId = idGen.uiSubcategory()
+      const order = Object.keys(cat.subcategories || {}).length
+      setKitsData({
+        ...kitsData,
+        _categories: {
+          ...kitsData._categories,
+          [categoryId]: {
+            ...cat,
+            subcategories: {
+              ...(cat.subcategories || {}),
+              [subcategoryId]: { name, order },
+            },
+          },
+        },
+      })
+      return subcategoryId
+    },
+    [kitsData, setKitsData]
+  )
+
+  const renameKitSubcategory = useCallback(
+    (categoryId: string, subcategoryId: string, name: string) => {
+      const cat = kitsData._categories?.[categoryId]
+      const sub = cat?.subcategories?.[subcategoryId]
+      if (!cat || !sub) return
+      setKitsData({
+        ...kitsData,
+        _categories: {
+          ...kitsData._categories,
+          [categoryId]: {
+            ...cat,
+            subcategories: {
+              ...cat.subcategories,
+              [subcategoryId]: { ...sub, name },
+            },
+          },
+        },
+      })
+    },
+    [kitsData, setKitsData]
+  )
+
+  const deleteKitSubcategory = useCallback(
+    (categoryId: string, subcategoryId: string) => {
+      const cat = kitsData._categories?.[categoryId]
+      if (!cat) return
+      const newSubcategories = { ...(cat.subcategories || {}) }
+      delete newSubcategories[subcategoryId]
+
+      // Also remove subcategory assignment from kits
+      const newKits = { ...kitsData._kits }
+      Object.entries(newKits).forEach(([id, kit]) => {
+        if (kit.Category === categoryId && kit.Subcategory === subcategoryId) {
+          newKits[id] = { ...kit, Subcategory: undefined }
+        }
+      })
+
+      setKitsData({
+        ...kitsData,
+        _categories: {
+          ...kitsData._categories,
+          [categoryId]: { ...cat, subcategories: newSubcategories },
+        },
+        _kits: newKits,
+      })
+    },
+    [kitsData, setKitsData]
+  )
+
+  const assignKitToCategory = useCallback(
+    (kitId: string, categoryId: string | undefined, subcategoryId: string | undefined) => {
+      const kit = kitsData._kits[kitId]
+      if (!kit) return
+      setKitsData({
+        ...kitsData,
+        _kits: {
+          ...kitsData._kits,
+          [kitId]: { ...kit, Category: categoryId, Subcategory: subcategoryId },
+        },
+      })
+    },
+    [kitsData, setKitsData]
+  )
+
+  // Category drop handler (uses assignKitToCategory)
+  const handleCategoryDrop = useCallback(
+    (e: React.DragEvent, target: string) => {
+      e.preventDefault()
+      setDragOverCategoryTarget(null)
+
+      if (!draggedKitId) return
+
+      // Parse target: "uncategorized", "cat:categoryId", or "sub:categoryId:subcategoryId"
+      let categoryId: string | undefined
+      let subcategoryId: string | undefined
+
+      if (target === 'uncategorized') {
+        categoryId = undefined
+        subcategoryId = undefined
+      } else if (target.startsWith('cat:')) {
+        categoryId = target.slice(4)
+        subcategoryId = undefined
+      } else if (target.startsWith('sub:')) {
+        const parts = target.slice(4).split(':')
+        categoryId = parts[0]
+        subcategoryId = parts[1]
+      }
+
+      assignKitToCategory(draggedKitId, categoryId, subcategoryId)
+      setDraggedKitId(null)
+    },
+    [draggedKitId, assignKitToCategory]
   )
 
   // ---------------------------------------------------------------------------
@@ -1487,9 +1688,25 @@ export default function KitsPage() {
             </div>
           </div>
 
-          {/* Kit List */}
+          {/* Category Tree */}
           <div className="flex-1 overflow-y-auto p-2 min-h-0">
-            {filteredKitList.length === 0 ? (
+            {/* Add Category Button */}
+            <button
+              onClick={() => {
+                const name = prompt('Enter category name:')
+                if (name?.trim()) createKitCategory(name.trim())
+              }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 mb-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)] text-[var(--accent-primary)]"
+              style={{
+                background: 'var(--glass-bg)',
+                border: '1px dashed var(--accent-primary)',
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Add Category</span>
+            </button>
+
+            {filteredKitList.length === 0 && sortedCategories.length === 0 ? (
               <div className="text-center py-8">
                 <Package className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)] opacity-50" />
                 <p className="text-xs text-[var(--text-muted)]">
@@ -1506,38 +1723,89 @@ export default function KitsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* Subcategory groups */}
-                {kitsBySubcategory.sortedKeys.map((subcategory) => {
-                  const kitsInGroup = kitsBySubcategory.groups[subcategory]
-                  const isCollapsed = collapsedSubcategories.has(subcategory)
+                {/* Category groups */}
+                {sortedCategories.map((category) => {
+                  const catKits = kitsByCategory.grouped[category.id] || {}
+                  const isCatCollapsed = collapsedSubcategories.has(category.id)
+                  const sortedSubs = Object.entries(category.subcategories || {})
+                    .map(([id, sub]) => ({ id, ...sub }))
+                    .sort((a, b) => a.order - b.order)
+                  const rootKits = catKits['_root'] || []
+                  const totalKits = Object.values(catKits).flat().length
+
+                  const catDropTarget = `cat:${category.id}`
+                  const isCatDropOver = dragOverCategoryTarget === catDropTarget
+
                   return (
-                    <div key={subcategory}>
-                      {/* Subcategory header */}
-                      <button
-                        onClick={() => toggleSubcategoryCollapse(subcategory)}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)]"
-                        style={{
-                          background: 'var(--glass-bg-subtle)',
-                          border: '1px solid var(--glass-border)',
-                        }}
-                      >
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${
-                            isCollapsed ? '-rotate-90' : ''
+                    <div key={category.id}>
+                      {/* Category header */}
+                      <div className="group flex items-center">
+                        <button
+                          onClick={() => toggleCollapse(category.id)}
+                          onDragOver={(e) => handleCategoryDragOver(e, catDropTarget)}
+                          onDragLeave={handleCategoryDragLeave}
+                          onDrop={(e) => handleCategoryDrop(e, catDropTarget)}
+                          className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
+                            isCatDropOver ? 'ring-2 ring-[var(--accent-primary)] ring-inset' : ''
                           }`}
-                        />
-                        <Tags className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                        <span className="flex-1 text-xs font-medium text-[var(--text-primary)] truncate">
-                          {subcategory}
-                        </span>
-                        <span className="text-[10px] text-[var(--text-muted)]">
-                          {kitsInGroup.length}
-                        </span>
-                      </button>
-                      {/* Kits in group */}
-                      {!isCollapsed && (
+                          style={{
+                            background: isCatDropOver ? 'rgba(var(--accent-primary-rgb), 0.1)' : 'var(--glass-bg-subtle)',
+                            border: '1px solid var(--glass-border)',
+                          }}
+                        >
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${
+                              isCatCollapsed ? '-rotate-90' : ''
+                            }`}
+                          />
+                          <Tags className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+                          <span className="flex-1 text-xs font-medium text-[var(--text-primary)] truncate">
+                            {category.name}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-muted)]">
+                            {totalKits}
+                          </span>
+                        </button>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                          <button
+                            onClick={() => {
+                              const name = prompt('Add subcategory:', '')
+                              if (name?.trim()) createKitSubcategory(category.id, name.trim())
+                            }}
+                            className="p-1 rounded hover:bg-[var(--accent-primary)]/20"
+                            title="Add Subcategory"
+                          >
+                            <Plus className="w-3 h-3 text-[var(--accent-primary)]" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const name = prompt('Rename category:', category.name)
+                              if (name?.trim()) renameKitCategory(category.id, name.trim())
+                            }}
+                            className="p-1 rounded hover:bg-[var(--bg-card)]"
+                            title="Rename"
+                          >
+                            <Edit3 className="w-3 h-3 text-[var(--text-muted)]" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete category "${category.name}" and unassign all kits?`)) {
+                                deleteKitCategory(category.id)
+                              }
+                            }}
+                            className="p-1 rounded hover:bg-[var(--status-error)]/20"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3 text-[var(--status-error)]" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Category contents */}
+                      {!isCatCollapsed && (
                         <div className="mt-1 ml-2 pl-2 space-y-1 border-l border-[var(--glass-border)]">
-                          {kitsInGroup.map(({ id, kit }) => (
+                          {/* Root kits (in category but no subcategory) */}
+                          {rootKits.map(({ id, kit }) => (
                             <KitListItem
                               key={id}
                               id={id}
@@ -1562,12 +1830,105 @@ export default function KitsPage() {
                               }}
                               onDuplicate={() => duplicateKit(id)}
                               onDelete={() => {
-                                if (confirm(`Delete kit "${kit.Name}"?`)) {
-                                  deleteKit(id)
-                                }
+                                if (confirm(`Delete kit "${kit.Name}"?`)) deleteKit(id)
                               }}
                             />
                           ))}
+
+                          {/* Subcategories */}
+                          {sortedSubs.map((sub) => {
+                            const subKits = catKits[sub.id] || []
+                            const isSubCollapsed = collapsedSubcategories.has(`${category.id}:${sub.id}`)
+                            const subDropTarget = `sub:${category.id}:${sub.id}`
+                            const isSubDropOver = dragOverCategoryTarget === subDropTarget
+                            return (
+                              <div key={sub.id}>
+                                <div className="group flex items-center">
+                                  <button
+                                    onClick={() => toggleCollapse(`${category.id}:${sub.id}`)}
+                                    onDragOver={(e) => handleCategoryDragOver(e, subDropTarget)}
+                                    onDragLeave={handleCategoryDragLeave}
+                                    onDrop={(e) => handleCategoryDrop(e, subDropTarget)}
+                                    className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
+                                      isSubDropOver ? 'ring-2 ring-[var(--accent-primary)] ring-inset' : ''
+                                    }`}
+                                    style={{
+                                      background: isSubDropOver ? 'rgba(var(--accent-primary-rgb), 0.1)' : 'var(--glass-bg)',
+                                      border: '1px solid var(--glass-border)',
+                                    }}
+                                  >
+                                    <ChevronDown
+                                      className={`w-3 h-3 text-[var(--text-muted)] transition-transform ${
+                                        isSubCollapsed ? '-rotate-90' : ''
+                                      }`}
+                                    />
+                                    <span className="flex-1 text-xs text-[var(--text-secondary)] truncate">
+                                      {sub.name}
+                                    </span>
+                                    <span className="text-[10px] text-[var(--text-muted)]">
+                                      {subKits.length}
+                                    </span>
+                                  </button>
+                                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                                    <button
+                                      onClick={() => {
+                                        const name = prompt('Rename subcategory:', sub.name)
+                                        if (name?.trim()) renameKitSubcategory(category.id, sub.id, name.trim())
+                                      }}
+                                      className="p-0.5 rounded hover:bg-[var(--bg-card)]"
+                                      title="Rename"
+                                    >
+                                      <Edit3 className="w-2.5 h-2.5 text-[var(--text-muted)]" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Delete subcategory "${sub.name}"?`)) {
+                                          deleteKitSubcategory(category.id, sub.id)
+                                        }
+                                      }}
+                                      className="p-0.5 rounded hover:bg-[var(--status-error)]/20"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-2.5 h-2.5 text-[var(--status-error)]" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {!isSubCollapsed && subKits.length > 0 && (
+                                  <div className="mt-1 ml-3 pl-2 space-y-1 border-l border-[var(--glass-border)]">
+                                    {subKits.map(({ id, kit }) => (
+                                      <KitListItem
+                                        key={id}
+                                        id={id}
+                                        kit={kit}
+                                        selectedKitId={selectedKitId}
+                                        draggedKitId={draggedKitId}
+                                        dragOverKitId={dragOverKitId}
+                                        kitSearch={kitSearch}
+                                        onSelect={() => {
+                                          setSelectedKitId(id)
+                                          setSelection(null)
+                                        }}
+                                        onDragStart={handleKitDragStart}
+                                        onDragOver={handleKitDragOver}
+                                        onDragLeave={handleKitDragLeave}
+                                        onDrop={handleKitDrop}
+                                        onDragEnd={handleKitDragEnd}
+                                        onRename={() => {
+                                          setRenameValue(kit.Name)
+                                          setSelectedKitId(id)
+                                          setActiveModal('rename')
+                                        }}
+                                        onDuplicate={() => duplicateKit(id)}
+                                        onDelete={() => {
+                                          if (confirm(`Delete kit "${kit.Name}"?`)) deleteKit(id)
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       )}
                     </div>
@@ -1575,10 +1936,17 @@ export default function KitsPage() {
                 })}
 
                 {/* Uncategorized kits */}
-                {kitsBySubcategory.uncategorized.length > 0 && (
+                {(kitsByCategory.uncategorized.length > 0 || sortedCategories.length > 0) && (
                   <div>
-                    {kitsBySubcategory.sortedKeys.length > 0 && (
-                      <div className="flex items-center gap-2 px-2 py-1.5 mb-1">
+                    {sortedCategories.length > 0 && (
+                      <div
+                        onDragOver={(e) => handleCategoryDragOver(e, 'uncategorized')}
+                        onDragLeave={handleCategoryDragLeave}
+                        onDrop={(e) => handleCategoryDrop(e, 'uncategorized')}
+                        className={`flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md transition-colors ${
+                          dragOverCategoryTarget === 'uncategorized' ? 'ring-2 ring-[var(--accent-primary)] ring-inset bg-[rgba(var(--accent-primary-rgb),0.1)]' : ''
+                        }`}
+                      >
                         <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
                           Uncategorized
                         </span>
@@ -1586,7 +1954,7 @@ export default function KitsPage() {
                       </div>
                     )}
                     <div className="space-y-1">
-                      {kitsBySubcategory.uncategorized.map(({ id, kit }) => (
+                      {kitsByCategory.uncategorized.map(({ id, kit }) => (
                         <KitListItem
                           key={id}
                           id={id}
@@ -1611,9 +1979,7 @@ export default function KitsPage() {
                           }}
                           onDuplicate={() => duplicateKit(id)}
                           onDelete={() => {
-                            if (confirm(`Delete kit "${kit.Name}"?`)) {
-                              deleteKit(id)
-                            }
+                            if (confirm(`Delete kit "${kit.Name}"?`)) deleteKit(id)
                           }}
                         />
                       ))}
@@ -1733,12 +2099,13 @@ export default function KitsPage() {
             }
           />
 
-          {/* Subcategory editor */}
-          <SubcategoryEditor
-            subcategories={selectedKit.Subcategories || []}
-            allSubcategories={allSubcategories}
-            onChange={(subcategories) =>
-              updateKit(selectedKitId!, { Subcategories: subcategories })
+          {/* Category assignment */}
+          <CategoryDropdown
+            categoryId={selectedKit.Category}
+            subcategoryId={selectedKit.Subcategory}
+            categories={kitsData._categories || {}}
+            onChange={(catId, subId) =>
+              assignKitToCategory(selectedKitId!, catId, subId)
             }
           />
 

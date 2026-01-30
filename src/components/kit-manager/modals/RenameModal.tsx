@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Edit3, X, FolderOpen, ArrowRight, Loader2 } from 'lucide-react'
+import { SelectDropdown } from '../SelectDropdown'
 
 // =============================================================================
 // Types
@@ -132,24 +133,15 @@ export function RenameModal({
                   Move to Category
                 </span>
               </label>
-              <select
-                value={selectedCategoryId ?? ''}
-                onChange={(e) =>
-                  setSelectedCategoryId(e.target.value || null)
-                }
-                className="w-full rounded-lg px-3 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] appearance-none cursor-pointer"
-                style={{
-                  background: 'var(--bg-input)',
-                  border: '1px solid var(--border-secondary)',
-                }}
-              >
-                <option value="">Keep in current category</option>
-                {otherCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              <SelectDropdown
+                value={selectedCategoryId}
+                onChange={(value) => setSelectedCategoryId(value)}
+                options={otherCategories.map((cat) => ({
+                  value: cat.id,
+                  label: cat.name,
+                }))}
+                emptyOption="Keep in current category"
+              />
               {selectedCategoryId && (
                 <div
                   className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg text-xs"

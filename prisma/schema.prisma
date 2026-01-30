@@ -45,6 +45,12 @@ model KitConfig {
   updatedAt   DateTime     @updatedAt @map("updated_at")
   gameServers GameServer[]
 
+  // Analytics relations
+  usageEvents      KitUsageEvent[]
+  usageDailyStats  KitUsageDailyStats[]
+  usageHourlyStats KitUsageHourlyStats[]
+  globalStats      KitGlobalStats[]
+
   @@index([name])
   @@index([updatedAt])
   @@map("kit_config")
@@ -68,6 +74,12 @@ model GameServer {
   kitConfig   KitConfig? @relation(fields: [kitConfigId], references: [id])
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Analytics relations
+  wipes            ServerWipe[]
+  usageEvents      KitUsageEvent[]
+  usageDailyStats  KitUsageDailyStats[]
+  usageHourlyStats KitUsageHourlyStats[]
 
   @@index([kitConfigId])
   @@map("game_server")
@@ -94,4 +106,148 @@ model AuditLog {
   @@index([actorId])
   @@index([createdAt])
   @@map("audit_log")
+}
+
+// =============================================================================
+// Analytics - Kit Usage Tracking
+// =============================================================================
+
+// Server Wipe - Tracks wipe cycles for per-wipe analytics
+model ServerWipe {
+  id           String    @id @db.VarChar(60)
+  gameServerId Int       @map("game_server_id")
+  wipeNumber   Int       @map("wipe_number")
+  wipedAt      DateTime  @map("wiped_at")
+  endedAt      DateTime? @map("ended_at")
+  mapSeed      String?   @map("map_seed") @db.VarChar(20)
+  mapSize      Int?      @map("map_size")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  gameServer  GameServer      @relation(fields: [gameServerId], references: [id])
+  usageEvents KitUsageEvent[]
+
+  @@unique([gameServerId, wipeNumber])
+  @@index([gameServerId, wipedAt])
+  @@map("server_wipe")
+}
+
+// Kit Usage Event - Individual redemption records
+model KitUsageEvent {
+  id               String   @id @db.VarChar(60)
+  eventId          String   @unique @map("event_id") @db.VarChar(64)
+
+  // Kit info
+  kitId            String   @map("kit_id") @db.VarChar(60)
+  kitName          String   @map("kit_name") @db.VarChar(100)
+  kitConfigId      String?  @map("kit_config_id") @db.VarChar(60)
+
+  // Server info
+  gameServerId     Int?     @map("game_server_id")
+  serverIdentifier String   @map("server_identifier") @db.VarChar(100)
+  wipeId           String?  @map("wipe_id") @db.VarChar(60)
+
+  // Player info
+  steamId          String   @map("steam_id") @db.VarChar(20)
+  playerName       String?  @map("player_name") @db.VarChar(100)
+  authLevel        Int      @default(0) @map("auth_level")
+
+  // Usage context
+  redemptionSource String   @map("redemption_source") @db.VarChar(30)
+  wasSuccessful    Boolean  @default(true) @map("was_successful")
+  failureReason    String?  @map("failure_reason") @db.VarChar(100)
+
+  // Time-of-day for heat maps (UTC)
+  hourOfDay        Int      @map("hour_of_day")
+  dayOfWeek        Int      @map("day_of_week")
+
+  // Kit metadata
+  cooldownSeconds  Int?     @map("cooldown_seconds")
+  itemCount        Int?     @map("item_count")
+
+  // Timestamps
+  redeemedAt       DateTime @map("redeemed_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  gameServer GameServer? @relation(fields: [gameServerId], references: [id])
+  kitConfig  KitConfig?  @relation(fields: [kitConfigId], references: [id])
+  wipe       ServerWipe? @relation(fields: [wipeId], references: [id])
+
+  @@index([kitName, redeemedAt])
+  @@index([steamId, redeemedAt])
+  @@index([gameServerId, redeemedAt])
+  @@index([kitConfigId, redeemedAt])
+  @@index([wipeId, redeemedAt])
+  @@index([hourOfDay, dayOfWeek])
+  @@index([redeemedAt])
+  @@map("kit_usage_event")
+}
+
+// Daily aggregates for fast dashboard queries
+model KitUsageDailyStats {
+  id                    String   @id @db.VarChar(60)
+  date                  DateTime @db.Date
+  kitName               String   @map("kit_name") @db.VarChar(100)
+  kitConfigId           String?  @map("kit_config_id") @db.VarChar(60)
+  gameServerId          Int?     @map("game_server_id")
+  wipeId                String?  @map("wipe_id") @db.VarChar(60)
+
+  totalRedemptions      Int      @default(0) @map("total_redemptions")
+  uniquePlayers         Int      @default(0) @map("unique_players")
+  successfulRedemptions Int      @default(0) @map("successful_redemptions")
+  failedRedemptions     Int      @default(0) @map("failed_redemptions")
+
+  chatCommandCount      Int      @default(0) @map("chat_command_count")
+  autoKitCount          Int      @default(0) @map("auto_kit_count")
+  apiCallCount          Int      @default(0) @map("api_call_count")
+
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  gameServer GameServer? @relation(fields: [gameServerId], references: [id])
+  kitConfig  KitConfig?  @relation(fields: [kitConfigId], references: [id])
+
+  @@unique([date, kitName, kitConfigId, gameServerId, wipeId])
+  @@index([date])
+  @@index([kitName])
+  @@index([wipeId])
+  @@map("kit_usage_daily_stats")
+}
+
+// Hourly heat map aggregates
+model KitUsageHourlyStats {
+  id               String   @id @db.VarChar(60)
+  hourOfDay        Int      @map("hour_of_day")
+  dayOfWeek        Int      @map("day_of_week")
+  kitConfigId      String?  @map("kit_config_id") @db.VarChar(60)
+  gameServerId     Int?     @map("game_server_id")
+
+  totalRedemptions Int      @default(0) @map("total_redemptions")
+  lastUpdated      DateTime @default(now()) @map("last_updated")
+
+  gameServer GameServer? @relation(fields: [gameServerId], references: [id])
+  kitConfig  KitConfig?  @relation(fields: [kitConfigId], references: [id])
+
+  @@unique([hourOfDay, dayOfWeek, kitConfigId, gameServerId])
+  @@map("kit_usage_hourly_stats")
+}
+
+// Global all-time kit statistics (never deleted)
+model KitGlobalStats {
+  id               String    @id @db.VarChar(60)
+  kitName          String    @unique @map("kit_name") @db.VarChar(100)
+  kitConfigId      String?   @map("kit_config_id") @db.VarChar(60)
+
+  totalRedemptions Int       @default(0) @map("total_redemptions")
+  uniquePlayers    Int       @default(0) @map("unique_players")
+  lastRedeemed     DateTime? @map("last_redeemed")
+  firstRedeemed    DateTime? @map("first_redeemed")
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  kitConfig KitConfig? @relation(fields: [kitConfigId], references: [id])
+
+  @@index([totalRedemptions])
+  @@map("kit_global_stats")
 }

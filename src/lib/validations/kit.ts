@@ -39,6 +39,27 @@ export const kitItemSchema: z.ZodType<KitItemInput> = kitItemSchemaBase.extend({
 })
 
 // =============================================================================
+// Category Schemas
+// =============================================================================
+
+/**
+ * Subcategory validation
+ */
+export const kitSubcategorySchema = z.object({
+  name: z.string().min(1).max(50),
+  order: z.number().int().min(0).default(0),
+})
+
+/**
+ * Category validation
+ */
+export const kitCategorySchema = z.object({
+  name: z.string().min(1).max(50),
+  order: z.number().int().min(0).default(0),
+  subcategories: z.record(z.string(), kitSubcategorySchema).default({}),
+})
+
+// =============================================================================
 // Kit Schemas
 // =============================================================================
 
@@ -59,7 +80,8 @@ export const kitSchema = z.object({
   CopyPasteFile: z.string().max(200).default(''),
   KitImage: z.string().max(500).default(''),
   Order: z.number().int().min(0).default(0),
-  Subcategories: z.array(z.string().max(50)).max(10).default([]),
+  Category: z.string().max(50).optional(),
+  Subcategory: z.string().max(50).optional(),
   MainItems: z.array(kitItemSchema).max(24).default([]),
   WearItems: z.array(kitItemSchema).max(8).default([]),
   BeltItems: z.array(kitItemSchema).max(6).default([]),
@@ -72,6 +94,7 @@ export const kitSchema = z.object({
 export const kitsDataSchema = z.object({
   _comment: z.string().optional(),
   _kits: z.record(z.string(), kitSchema),
+  _categories: z.record(z.string(), kitCategorySchema).optional(),
   'AutoKits Priority': z.array(z.string()).optional(),
   'Post wipe cooldowns (kit name | seconds)': z.record(z.string(), z.number()).optional(),
 })

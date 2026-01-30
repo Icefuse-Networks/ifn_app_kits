@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { RUST_ITEM_CDN } from '@/lib/rust-items'
 
 // =============================================================================
@@ -72,14 +73,16 @@ async function fetchItemJson(shortname: string): Promise<ItemJsonData | null> {
       })
 
       if (!response.ok) {
+        console.warn(`[ItemTooltip] Failed to fetch ${shortname}: HTTP ${response.status}`)
         jsonCache.set(shortname, null)
         return null
       }
 
-      const data = await response.json()
+      const data: ItemJsonData = await response.json()
       jsonCache.set(shortname, data)
       return data
-    } catch {
+    } catch (err) {
+      console.warn(`[ItemTooltip] Error fetching ${shortname}:`, err)
       jsonCache.set(shortname, null)
       return null
     } finally {
@@ -98,8 +101,14 @@ async function fetchItemJson(shortname: string): Promise<ItemJsonData | null> {
 export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
   const [data, setData] = useState<ItemJsonData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ x, y })
+
+  // Handle client-side mounting for portal
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetch data when shortname changes and tooltip is visible
   useEffect(() => {
@@ -153,44 +162,44 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
     setPosition({ x: newX, y: newY })
   }, [x, y, visible, data])
 
-  if (!visible) return null
+  // Don't render on server or when not visible
+  if (!mounted || !visible) return null
 
-  return (
+  const tooltipContent = (
     <div
       ref={tooltipRef}
       className="fixed z-[9999] pointer-events-none"
       style={{
         left: position.x,
         top: position.y,
-        background: 'var(--glass-bg-solid)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid var(--glass-border)',
+        background: 'var(--portal-bg-card-elevated)',
+        border: '1px solid var(--portal-glass-border)',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
         minWidth: 280,
         maxWidth: 360,
       }}
     >
       {loading ? (
         <div className="p-4 text-center">
-          <div className="inline-block w-5 h-5 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-5 h-5 border-2 border-[var(--portal-accent)] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : data ? (
         <div className="p-4">
           {/* Header */}
-          <div className="flex items-start gap-3 mb-3 pb-3 border-b border-[var(--glass-border)]">
+          <div className="flex items-start gap-3 mb-3 pb-3 border-b border-[var(--portal-glass-border)]">
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              <h3 className="text-sm font-semibold text-[var(--portal-text-primary)]">
                 {data.Name}
               </h3>
-              <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+              <p className="text-xs text-[var(--portal-text-muted)] font-mono mt-0.5">
                 {data.shortname}
               </p>
             </div>
             <span
               className="px-2 py-0.5 text-[10px] font-medium rounded-full"
               style={{
-                background: 'var(--accent-primary)',
+                background: 'var(--portal-accent)',
                 color: 'white',
               }}
             >
@@ -200,7 +209,7 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
 
           {/* Description */}
           {data.Description && (
-            <p className="text-xs text-[var(--text-secondary)] mb-3 leading-relaxed">
+            <p className="text-xs text-[var(--portal-text-secondary)] mb-3 leading-relaxed">
               {data.Description}
             </p>
           )}
@@ -223,7 +232,7 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
           </div>
 
           {/* Flags */}
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--glass-border)]">
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--portal-glass-border)]">
             {data.isWearable && <Flag label="Wearable" />}
             {data.isHoldable && <Flag label="Holdable" />}
             {data.isUsable && <Flag label="Usable" />}
@@ -233,13 +242,16 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
         </div>
       ) : (
         <div className="p-4 text-center">
-          <p className="text-xs text-[var(--text-muted)]">
+          <p className="text-xs text-[var(--portal-text-muted)]">
             No data available for {shortname}
           </p>
         </div>
       )}
     </div>
   )
+
+  // Use portal to render at document body level (avoids overflow clipping)
+  return createPortal(tooltipContent, document.body)
 }
 
 // =============================================================================
@@ -255,8 +267,8 @@ function StatRow({
 }) {
   return (
     <div className="flex justify-between items-center">
-      <span className="text-[var(--text-muted)]">{label}</span>
-      <span className="text-[var(--text-primary)] font-medium">{value}</span>
+      <span className="text-[var(--portal-text-muted)]">{label}</span>
+      <span className="text-[var(--portal-text-primary)] font-medium">{value}</span>
     </div>
   )
 }
@@ -271,14 +283,14 @@ function Flag({
   const colors = {
     default: {
       bg: 'rgba(255, 255, 255, 0.1)',
-      text: 'var(--text-secondary)',
+      text: 'var(--portal-text-secondary)',
     },
     accent: {
-      bg: 'var(--accent-primary)',
+      bg: 'var(--portal-accent)',
       text: 'white',
     },
     warning: {
-      bg: 'var(--status-warning)',
+      bg: 'var(--portal-warning)',
       text: 'white',
     },
   }

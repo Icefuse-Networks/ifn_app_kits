@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Trophy } from "lucide-react";
 import { UserProfileCard } from "./UserProfileCard";
 
 interface HeaderProps {
@@ -29,6 +30,17 @@ export function Header({ sticky = true }: HeaderProps) {
             Icefuse Networks
           </span>
         </Link>
+
+        {/* Navigation */}
+        <nav className="flex items-center gap-4 ml-8">
+          <Link
+            href="/leaderboards"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors rounded-[var(--radius-md)] hover:bg-[var(--glass-bg-subtle)]"
+          >
+            <Trophy className="w-4 h-4" />
+            <span className="hidden sm:inline">Leaderboards</span>
+          </Link>
+        </nav>
 
         {/* Spacer */}
         <div className="flex-1" />

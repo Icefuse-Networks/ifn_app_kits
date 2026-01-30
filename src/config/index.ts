@@ -183,6 +183,26 @@ export const apiConfig = {
 } as const
 
 // =============================================================================
+// ANALYTICS CONFIGURATION
+// =============================================================================
+
+export const analyticsConfig = {
+  // Data retention period in days (individual events deleted after this)
+  retentionDays: parseInt(process.env.ANALYTICS_RETENTION_DAYS || '90', 10),
+
+  // Batch limits
+  batch: {
+    maxEventsPerRequest: 100,
+  },
+
+  // Dashboard defaults
+  dashboard: {
+    defaultDays: 30,
+    maxDays: 365,
+  },
+} as const
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
@@ -236,4 +256,5 @@ export const config = {
   databaseConfig,
   redisConfig,
   apiConfig,
+  analytics: analyticsConfig,
 }

@@ -179,7 +179,8 @@ export function createEmptyKit(name: string, description: string = '', order: nu
     CopyPasteFile: '',
     KitImage: '',
     Order: order,
-    Subcategories: [],
+    Category: undefined,
+    Subcategory: undefined,
     MainItems: [],
     WearItems: [],
     BeltItems: [],
@@ -192,6 +193,7 @@ export function createEmptyKit(name: string, description: string = '', order: nu
 export function createEmptyKitsData(): KitsData {
   return {
     _kits: {},
+    _categories: {},
   }
 }
 
