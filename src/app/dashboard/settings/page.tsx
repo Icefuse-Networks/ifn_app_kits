@@ -4,7 +4,7 @@
  * Application settings and API token management.
  */
 
-import { Settings, Key, ArrowLeft } from 'lucide-react'
+import { Server, Key, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
@@ -41,10 +41,7 @@ export default function SettingsPage() {
           }}
         >
           <div className="flex items-start gap-4">
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'var(--accent-primary)/20' }}
-            >
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--accent-primary)]/20">
               <Key className="w-6 h-6 text-[var(--accent-primary)]" />
             </div>
             <div className="flex-1">
@@ -62,34 +59,33 @@ export default function SettingsPage() {
           </div>
         </Link>
 
-        {/* General Settings Section */}
-        <div
-          className="rounded-xl p-6"
+        {/* Server Identifiers Section */}
+        <Link
+          href="/dashboard/identifiers"
+          className="block rounded-xl p-6 transition-all hover:scale-[1.01]"
           style={{
             background: 'var(--glass-bg)',
             border: '1px solid var(--glass-border)',
           }}
         >
           <div className="flex items-start gap-4">
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'var(--text-tertiary)/20' }}
-            >
-              <Settings className="w-6 h-6 text-[var(--text-tertiary)]" />
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--status-success)]/20">
+              <Server className="w-6 h-6 text-[var(--status-success)]" />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-                General Settings
+                Server Identifiers
               </h3>
-              <p className="text-sm text-[var(--text-secondary)] mb-4">
-                Application preferences and default configurations.
-              </p>
-              <p className="text-xs text-[var(--text-muted)] italic">
-                Coming soon - additional settings will be available here.
+              <p className="text-sm text-[var(--text-secondary)]">
+                Create and manage server identifiers for plugin analytics.
+                Each server needs a unique identifier to report usage data.
               </p>
             </div>
+            <div className="text-[var(--text-muted)]">
+              <ArrowLeft className="w-5 h-5 rotate-180" />
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   )

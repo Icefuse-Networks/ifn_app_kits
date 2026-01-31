@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod'
+import type { ApiScope } from '@/types/api'
 import { API_SCOPES } from '@/types/api'
 import { validatePrefixedId } from '@/lib/id'
 
@@ -194,7 +195,7 @@ export const gameServerIdSchema = z.object({
 /**
  * API scope validation
  */
-export const apiScopeSchema = z.enum(API_SCOPES as [string, ...string[]])
+export const apiScopeSchema = z.enum(API_SCOPES as [ApiScope, ...ApiScope[]])
 
 /**
  * Create API token validation
@@ -209,11 +210,30 @@ export const createApiTokenSchema = z.object({
     .array(apiScopeSchema)
     .min(1, 'At least one scope is required')
     .max(10),
+  categoryId: z.string().max(60).nullable().optional(),
   expiresAt: z
     .string()
     .datetime()
     .optional()
     .transform((val) => (val ? new Date(val) : null)),
+})
+
+/**
+ * Update API token validation
+ */
+export const updateApiTokenSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Token name is required')
+    .max(100, 'Token name must be 100 characters or less')
+    .trim()
+    .optional(),
+  scopes: z
+    .array(apiScopeSchema)
+    .min(1, 'At least one scope is required')
+    .max(10)
+    .optional(),
+  categoryId: z.string().max(60).nullable().optional(),
 })
 
 /**
@@ -225,6 +245,52 @@ export const tokenIdSchema = z.object({
     .min(25, 'Invalid token ID')
     .max(30, 'Invalid token ID')
     .regex(/^c[a-z0-9]{20,}$/i, 'Invalid token ID format'),
+})
+
+/**
+ * Token category validation
+ */
+export const createTokenCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be 100 characters or less')
+    .trim(),
+  description: z.string().max(255).nullable().optional(),
+  color: z.string().max(20).nullable().optional(),
+})
+
+export const updateTokenCategorySchema = createTokenCategorySchema.partial()
+
+export const tokenCategoryIdSchema = z.object({
+  id: z.string().refine(validatePrefixedId('tokenCategory'), {
+    message: 'Invalid token category ID format',
+  }),
+})
+
+// =============================================================================
+// Server Identifier Schemas
+// =============================================================================
+
+/**
+ * Create server identifier validation
+ */
+export const createServerIdentifierSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less')
+    .trim(),
+  description: z.string().max(255).nullable().optional(),
+})
+
+/**
+ * Server identifier ID parameter validation
+ */
+export const serverIdentifierIdSchema = z.object({
+  id: z.string().refine(validatePrefixedId('serverIdentifier'), {
+    message: 'Invalid server identifier ID format',
+  }),
 })
 
 // =============================================================================
@@ -295,3 +361,7 @@ export type CloneKitConfigInput = z.infer<typeof cloneKitConfigSchema>
 export type CreateGameServerInput = z.infer<typeof createGameServerSchema>
 export type UpdateGameServerInput = z.infer<typeof updateGameServerSchema>
 export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
+export type UpdateApiTokenInput = z.infer<typeof updateApiTokenSchema>
+export type CreateTokenCategoryInput = z.infer<typeof createTokenCategorySchema>
+export type UpdateTokenCategoryInput = z.infer<typeof updateTokenCategorySchema>
+export type CreateServerIdentifierInput = z.infer<typeof createServerIdentifierSchema>

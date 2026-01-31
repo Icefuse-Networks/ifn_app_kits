@@ -220,6 +220,13 @@ export async function requireAnalyticsWrite(request: NextRequest): Promise<AuthR
 }
 
 /**
+ * Require authentication for telemetry:write
+ */
+export async function requireTelemetryWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'telemetry:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

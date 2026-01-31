@@ -12,12 +12,13 @@
  * Available API token scopes
  */
 export type ApiScope =
-  | 'kits:read'       // Read kit configs
-  | 'kits:write'      // Create/update/delete kits
-  | 'servers:read'    // Read game servers
-  | 'servers:write'   // Create/update/delete servers
-  | 'analytics:read'  // Read analytics data
-  | 'analytics:write' // Write analytics events
+  | 'kits:read'        // Read kit configs
+  | 'kits:write'       // Create/update/delete kits
+  | 'servers:read'     // Read game servers
+  | 'servers:write'    // Create/update/delete servers
+  | 'analytics:read'   // Read analytics data
+  | 'analytics:write'  // Write analytics events
+  | 'telemetry:write'  // Submit telemetry data
 
 /**
  * All available scopes
@@ -29,6 +30,7 @@ export const API_SCOPES: ApiScope[] = [
   'servers:write',
   'analytics:read',
   'analytics:write',
+  'telemetry:write',
 ]
 
 /**
@@ -41,6 +43,7 @@ export const SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   'servers:write': 'Create, update, and delete game servers',
   'analytics:read': 'Read kit usage analytics and statistics',
   'analytics:write': 'Submit kit usage events from game servers',
+  'telemetry:write': 'Submit telemetry and health data from game servers',
 }
 
 /**
@@ -71,6 +74,21 @@ export interface AuthContext {
 // =============================================================================
 
 /**
+ * Token category for organizing tokens by plugin/purpose
+ */
+export interface TokenCategory {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+  createdAt: Date
+  updatedAt: Date
+  _count?: {
+    tokens: number
+  }
+}
+
+/**
  * API token as stored in database
  */
 export interface ApiTokenRecord {
@@ -80,6 +98,7 @@ export interface ApiTokenRecord {
   tokenPrefix: string
   scopes: string[]
   createdBy: string
+  categoryId: string | null
   createdAt: Date
   lastUsedAt: Date | null
   expiresAt: Date | null
@@ -95,6 +114,8 @@ export interface ApiTokenInfo {
   tokenPrefix: string
   scopes: ApiScope[]
   createdBy: string
+  categoryId: string | null
+  category?: TokenCategory | null
   createdAt: Date
   lastUsedAt: Date | null
   expiresAt: Date | null
@@ -112,6 +133,7 @@ export interface ApiTokenCreateResponse {
   id: string
   name: string
   scopes: ApiScope[]
+  categoryId: string | null
   expiresAt: Date | null
 }
 
@@ -158,7 +180,7 @@ export type AuditAction = 'create' | 'update' | 'delete'
 /**
  * Auditable resource types
  */
-export type AuditResourceType = 'kit_config' | 'game_server' | 'api_token'
+export type AuditResourceType = 'kit_config' | 'game_server' | 'api_token' | 'server_identifier' | 'token_category'
 
 /**
  * Audit log entry

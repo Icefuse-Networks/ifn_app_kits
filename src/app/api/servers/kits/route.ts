@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   if (!authResult.success) {
     return NextResponse.json(
-      { error: authResult.error },
+      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
       { status: authResult.status }
     )
   }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         // SECURITY: Validate prefixed ID format
         if (!isValidPrefixedId(idParam, 'category')) {
           return NextResponse.json(
-            { error: 'Invalid category ID format' },
+            { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid category ID format' } },
             { status: 400 }
           )
         }
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         // SECURITY: Basic validation for legacy name-based lookup
         if (configParam.length > 100) {
           return NextResponse.json(
-            { error: 'Config name too long' },
+            { success: false, error: { code: 'VALIDATION_ERROR', message: 'Config name too long' } },
             { status: 400 }
           )
         }
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
       if (!kitConfig) {
         return NextResponse.json(
-          { error: 'Kit config not found' },
+          { success: false, error: { code: 'NOT_FOUND', message: 'Kit config not found' } },
           { status: 404 }
         )
       }
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
           name: kitConfig.name,
         })
         return NextResponse.json(
-          { error: 'Invalid kit data' },
+          { success: false, error: { code: 'INTERNAL_ERROR', message: 'Invalid kit data' } },
           { status: 500 }
         )
       }
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         kitCount: kitList.length,
       })
 
-      return NextResponse.json(kitList)
+      return NextResponse.json({ success: true, data: kitList })
     }
 
     // All configs mode: existing behavior (backward compatible)
@@ -137,12 +137,11 @@ export async function GET(request: NextRequest) {
       configCount: Object.keys(kitsMap).length,
     })
 
-    return NextResponse.json(kitsMap)
+    return NextResponse.json({ success: true, data: kitsMap })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
     logger.kits.error('Failed to fetch kit data for plugin', error as Error)
     return NextResponse.json(
-      { error: 'Failed to fetch kit data', detail: message },
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch kit data' } },
       { status: 500 }
     )
   }

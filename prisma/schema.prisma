@@ -12,6 +12,24 @@ datasource db {
 }
 
 // =============================================================================
+// API Token Category - Organize tokens by plugin/purpose
+// =============================================================================
+
+model TokenCategory {
+  id          String     @id @db.VarChar(60)
+  name        String     @db.VarChar(100)
+  description String?    @db.VarChar(255)
+  color       String?    @db.VarChar(20)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  tokens ApiToken[]
+
+  @@index([name])
+  @@map("token_category")
+}
+
+// =============================================================================
 // API Token - Programmatic access for plugins and automation
 // =============================================================================
 
@@ -22,12 +40,16 @@ model ApiToken {
   tokenPrefix String    @map("token_prefix") @db.VarChar(8)
   scopes      String[]  @default(["kits:read"])
   createdBy   String    @map("created_by")
+  categoryId  String?   @map("category_id") @db.VarChar(60)
   createdAt   DateTime  @default(now()) @map("created_at")
   lastUsedAt  DateTime? @map("last_used_at")
   expiresAt   DateTime? @map("expires_at")
   revokedAt   DateTime? @map("revoked_at")
 
+  category TokenCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   @@index([tokenHash])
+  @@index([categoryId])
   @@map("api_token")
 }
 
@@ -109,25 +131,45 @@ model AuditLog {
 }
 
 // =============================================================================
+// Server Identifier - Unique identifiers for plugin analytics
+// =============================================================================
+
+model ServerIdentifier {
+  id          String    @id @db.VarChar(60)
+  name        String    @db.VarChar(100)
+  hashedId    String    @unique @map("hashed_id") @db.VarChar(60)
+  description String?   @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Analytics relation
+  usageEvents KitUsageEvent[]
+
+  @@index([hashedId])
+  @@map("server_identifier")
+}
+
+// =============================================================================
 // Analytics - Kit Usage Tracking
 // =============================================================================
 
 // Server Wipe - Tracks wipe cycles for per-wipe analytics
 model ServerWipe {
-  id           String    @id @db.VarChar(60)
-  gameServerId Int       @map("game_server_id")
-  wipeNumber   Int       @map("wipe_number")
-  wipedAt      DateTime  @map("wiped_at")
-  endedAt      DateTime? @map("ended_at")
-  mapSeed      String?   @map("map_seed") @db.VarChar(20)
-  mapSize      Int?      @map("map_size")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id               String    @id @db.VarChar(60)
+  serverIdentifier String    @map("server_identifier") @db.VarChar(100)
+  gameServerId     Int       @default(1) @map("game_server_id")
+  wipeNumber       Int       @map("wipe_number")
+  wipedAt          DateTime  @map("wiped_at")
+  endedAt          DateTime? @map("ended_at")
+  mapSeed          String?   @map("map_seed") @db.VarChar(20)
+  mapSize          Int?      @map("map_size")
+  createdAt        DateTime  @default(now()) @map("created_at")
 
   gameServer  GameServer      @relation(fields: [gameServerId], references: [id])
   usageEvents KitUsageEvent[]
 
-  @@unique([gameServerId, wipeNumber])
-  @@index([gameServerId, wipedAt])
+  @@unique([serverIdentifier, wipeNumber])
+  @@index([serverIdentifier, wipedAt])
   @@map("server_wipe")
 }
 
@@ -142,9 +184,10 @@ model KitUsageEvent {
   kitConfigId      String?  @map("kit_config_id") @db.VarChar(60)
 
   // Server info
-  gameServerId     Int?     @map("game_server_id")
-  serverIdentifier String   @map("server_identifier") @db.VarChar(100)
-  wipeId           String?  @map("wipe_id") @db.VarChar(60)
+  gameServerId         Int?     @map("game_server_id")
+  serverIdentifier     String   @map("server_identifier") @db.VarChar(100)
+  serverIdentifierId   String?  @map("server_identifier_id") @db.VarChar(60)
+  wipeId               String?  @map("wipe_id") @db.VarChar(60)
 
   // Player info
   steamId          String   @map("steam_id") @db.VarChar(20)
@@ -169,11 +212,13 @@ model KitUsageEvent {
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
-  gameServer GameServer? @relation(fields: [gameServerId], references: [id])
-  kitConfig  KitConfig?  @relation(fields: [kitConfigId], references: [id])
-  wipe       ServerWipe? @relation(fields: [wipeId], references: [id])
+  gameServer       GameServer?       @relation(fields: [gameServerId], references: [id])
+  kitConfig        KitConfig?        @relation(fields: [kitConfigId], references: [id])
+  wipe             ServerWipe?       @relation(fields: [wipeId], references: [id])
+  serverIdent      ServerIdentifier? @relation(fields: [serverIdentifierId], references: [id])
 
   @@index([kitName, redeemedAt])
+  @@index([serverIdentifierId])
   @@index([steamId, redeemedAt])
   @@index([gameServerId, redeemedAt])
   @@index([kitConfigId, redeemedAt])

@@ -22,6 +22,7 @@ const PREFIXES = {
   category: 'category',
   kit: 'kit',
   apiToken: 'apitoken',
+  tokenCategory: 'tokcat',
   auditLog: 'auditlog',
   gameServer: 'gameserver',
   // Analytics
@@ -30,6 +31,8 @@ const PREFIXES = {
   kitUsageHourlyStats: 'kithourly',
   kitGlobalStats: 'kitglobal',
   serverWipe: 'wipe',
+  serverIdentifier: 'serverid',
+  identifierHash: 'id',
   // UI Categories (stored in JSON, not database)
   uiCategory: 'uicat',
   uiSubcategory: 'uisub',
@@ -148,6 +151,7 @@ export const id = {
   category: () => generateId('category'),
   kit: () => generateId('kit'),
   apiToken: () => generateId('apiToken'),
+  tokenCategory: () => generateId('tokenCategory'),
   auditLog: () => generateId('auditLog'),
   gameServer: () => generateId('gameServer'),
   // Analytics
@@ -156,6 +160,8 @@ export const id = {
   kitUsageHourlyStats: () => generateId('kitUsageHourlyStats'),
   kitGlobalStats: () => generateId('kitGlobalStats'),
   serverWipe: () => generateId('serverWipe'),
+  serverIdentifier: () => generateId('serverIdentifier'),
+  identifierHash: () => generateId('identifierHash'),
   // UI Categories (stored in JSON, not database)
   uiCategory: () => generateId('uiCategory'),
   uiSubcategory: () => generateId('uiSubcategory'),

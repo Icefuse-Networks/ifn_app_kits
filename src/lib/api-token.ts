@@ -169,6 +169,9 @@ export function hasScope(scopes: ApiScope[], required: ApiScope): boolean {
   if (required === 'servers:read' && scopes.includes('servers:write')) {
     return true
   }
+  if (required === 'analytics:read' && scopes.includes('analytics:write')) {
+    return true
+  }
 
   return false
 }
@@ -177,7 +180,12 @@ export function hasScope(scopes: ApiScope[], required: ApiScope): boolean {
  * Check if scopes include any write permission
  */
 export function hasWriteScope(scopes: ApiScope[]): boolean {
-  return scopes.includes('kits:write') || scopes.includes('servers:write')
+  return (
+    scopes.includes('kits:write') ||
+    scopes.includes('servers:write') ||
+    scopes.includes('analytics:write') ||
+    scopes.includes('telemetry:write')
+  )
 }
 
 // =============================================================================
@@ -190,6 +198,7 @@ export function hasWriteScope(scopes: ApiScope[]): boolean {
  * @param name - Display name for the token
  * @param scopes - Granted scopes
  * @param createdBy - User ID who created the token
+ * @param categoryId - Optional category ID
  * @param expiresAt - Optional expiration date
  * @returns Object with full token (only shown once!) and record info
  */
@@ -197,6 +206,7 @@ export async function createApiToken(params: {
   name: string
   scopes: ApiScope[]
   createdBy: string
+  categoryId?: string | null
   expiresAt?: Date | null
 }): Promise<{ token: string; record: ApiTokenRecord }> {
   const token = generateToken()
@@ -210,6 +220,7 @@ export async function createApiToken(params: {
       tokenPrefix,
       scopes: params.scopes,
       createdBy: params.createdBy,
+      categoryId: params.categoryId || null,
       expiresAt: params.expiresAt || null,
     },
   })
@@ -217,6 +228,67 @@ export async function createApiToken(params: {
   return {
     token, // Full token - only returned once!
     record: record as ApiTokenRecord,
+  }
+}
+
+/**
+ * Update an API token's name, scopes, or category
+ */
+export async function updateApiToken(
+  id: string,
+  updates: {
+    name?: string
+    scopes?: ApiScope[]
+    categoryId?: string | null
+  }
+): Promise<ApiTokenInfo> {
+  const token = await prisma.apiToken.update({
+    where: { id },
+    data: {
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.scopes !== undefined && { scopes: updates.scopes }),
+      ...(updates.categoryId !== undefined && { categoryId: updates.categoryId }),
+    },
+    select: {
+      id: true,
+      name: true,
+      tokenPrefix: true,
+      scopes: true,
+      createdBy: true,
+      categoryId: true,
+      createdAt: true,
+      lastUsedAt: true,
+      expiresAt: true,
+      revokedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          color: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  })
+
+  const now = new Date()
+
+  return {
+    id: token.id,
+    name: token.name,
+    tokenPrefix: token.tokenPrefix,
+    scopes: token.scopes as ApiScope[],
+    createdBy: token.createdBy,
+    categoryId: token.categoryId,
+    category: token.category,
+    createdAt: token.createdAt,
+    lastUsedAt: token.lastUsedAt,
+    expiresAt: token.expiresAt,
+    revokedAt: token.revokedAt,
+    isExpired: token.expiresAt ? token.expiresAt < now : false,
+    isRevoked: token.revokedAt !== null,
   }
 }
 
@@ -235,10 +307,21 @@ export async function listApiTokens(createdBy?: string): Promise<ApiTokenInfo[]>
       tokenPrefix: true,
       scopes: true,
       createdBy: true,
+      categoryId: true,
       createdAt: true,
       lastUsedAt: true,
       expiresAt: true,
       revokedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          color: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   })
 
@@ -250,6 +333,8 @@ export async function listApiTokens(createdBy?: string): Promise<ApiTokenInfo[]>
     tokenPrefix: t.tokenPrefix,
     scopes: t.scopes as ApiScope[],
     createdBy: t.createdBy,
+    categoryId: t.categoryId,
+    category: t.category,
     createdAt: t.createdAt,
     lastUsedAt: t.lastUsedAt,
     expiresAt: t.expiresAt,
@@ -290,10 +375,21 @@ export async function getApiTokenById(id: string): Promise<ApiTokenInfo | null> 
       tokenPrefix: true,
       scopes: true,
       createdBy: true,
+      categoryId: true,
       createdAt: true,
       lastUsedAt: true,
       expiresAt: true,
       revokedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          color: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   })
 
@@ -307,6 +403,8 @@ export async function getApiTokenById(id: string): Promise<ApiTokenInfo | null> 
     tokenPrefix: token.tokenPrefix,
     scopes: token.scopes as ApiScope[],
     createdBy: token.createdBy,
+    categoryId: token.categoryId,
+    category: token.category,
     createdAt: token.createdAt,
     lastUsedAt: token.lastUsedAt,
     expiresAt: token.expiresAt,
