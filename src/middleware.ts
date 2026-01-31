@@ -16,11 +16,18 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 // Routes that don't require authentication (prefix matching)
+// Note: API routes handle their own auth via authenticateWithScope (Bearer tokens)
+// or requireSession, so they bypass session-only middleware checks
 const PUBLIC_PATH_PREFIXES = [
   '/api/auth',
-  '/api/v1',
   '/api/public',
+  '/api/kits',
+  '/api/analytics',
+  '/api/telemetry',
   '/api/servers',
+  '/api/identifiers',
+  '/api/items',
+  '/api/skins',
   '/_next',
   '/logos',
 ]

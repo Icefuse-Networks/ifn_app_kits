@@ -72,10 +72,10 @@ export default function TokensPage() {
   // Fetch tokens
   const fetchTokens = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/tokens')
+      const res = await fetch('/api/tokens')
       if (!res.ok) throw new Error('Failed to fetch tokens')
-      const data = await res.json()
-      setTokens(data)
+      const json = await res.json()
+      setTokens(json.data || [])
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tokens')
@@ -87,7 +87,7 @@ export default function TokensPage() {
   // Fetch categories
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/token-categories')
+      const res = await fetch('/api/token-categories')
       if (!res.ok) throw new Error('Failed to fetch categories')
       const data = await res.json()
       setCategories(data)
@@ -117,7 +117,7 @@ export default function TokensPage() {
         body.expiresAt = new Date(createExpiry).toISOString()
       }
 
-      const res = await fetch('/api/v1/tokens', {
+      const res = await fetch('/api/tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -125,11 +125,11 @@ export default function TokensPage() {
 
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || 'Failed to create token')
+        throw new Error(err.error?.message || 'Failed to create token')
       }
 
-      const data: ApiTokenCreateResponse = await res.json()
-      setNewToken(data)
+      const json = await res.json()
+      setNewToken(json.data as ApiTokenCreateResponse)
       setShowCreateModal(false)
       setCreateName('')
       setCreateScopes([...DEFAULT_SCOPES])
@@ -149,8 +149,8 @@ export default function TokensPage() {
 
     setUpdating(true)
     try {
-      const res = await fetch(`/api/v1/tokens/${editToken.id}`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/tokens/${editToken.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: editName.trim(),
@@ -180,7 +180,7 @@ export default function TokensPage() {
 
     setCreatingCategory(true)
     try {
-      const res = await fetch('/api/v1/token-categories', {
+      const res = await fetch('/api/token-categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +215,7 @@ export default function TokensPage() {
 
     setRevoking(id)
     try {
-      const res = await fetch(`/api/v1/tokens/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/tokens/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to revoke token')
       fetchTokens()
     } catch (err) {

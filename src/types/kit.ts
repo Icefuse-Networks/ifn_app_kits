@@ -212,12 +212,5 @@ export const WEAR_SLOT_NAMES = [
 // CDN Constants
 // =============================================================================
 
-/** Base URL for Rust item images */
-export const RUST_ITEM_CDN = 'https://cdn.icefuse.com/rust/items'
-
-/**
- * Build item image URL from shortname
- */
-export function getItemImageUrl(shortname: string): string {
-  return `${RUST_ITEM_CDN}/${shortname}.png`
-}
+// NOTE: RUST_ITEM_CDN and getItemImageUrl are defined in @/lib/rust-items.ts
+// Import from there to avoid duplication

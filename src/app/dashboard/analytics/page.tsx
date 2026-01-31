@@ -79,10 +79,10 @@ export default function AnalyticsDashboardPage() {
       // Fetch data in parallel with credentials for session auth
       const fetchOptions = { credentials: 'include' as const }
       const [popularityRes, trendsRes, heatMapRes, activityRes] = await Promise.all([
-        fetch(`/api/v1/analytics/kit-popularity?days=${dateRange}&limit=10`, fetchOptions),
-        fetch(`/api/v1/analytics/usage-trends?days=${dateRange}&granularity=daily`, fetchOptions),
-        fetch(`/api/v1/analytics/heat-map?days=${dateRange}`, fetchOptions),
-        fetch(`/api/v1/analytics/server-activity?days=${dateRange}`, fetchOptions),
+        fetch(`/api/analytics/kit-popularity?days=${dateRange}&limit=10`, fetchOptions),
+        fetch(`/api/analytics/usage-trends?days=${dateRange}&granularity=daily`, fetchOptions),
+        fetch(`/api/analytics/heat-map?days=${dateRange}`, fetchOptions),
+        fetch(`/api/analytics/server-activity?days=${dateRange}`, fetchOptions),
       ])
 
       if (!popularityRes.ok || !trendsRes.ok || !heatMapRes.ok || !activityRes.ok) {
@@ -102,8 +102,12 @@ export default function AnalyticsDashboardPage() {
       // Set trends data
       setTrends(trendsData.data || [])
 
-      // Set heat map data
-      setHeatMap(heatMapData)
+      // Set heat map data (response has data, maxValue, peak at root level)
+      setHeatMap({
+        data: heatMapData.data || [],
+        maxValue: heatMapData.maxValue || 0,
+        peak: heatMapData.peak || { dayName: 'N/A', hourOfDay: 0, count: 0 },
+      })
 
       // Calculate summary
       const totalRedemptions = trendsData.summary?.totalRedemptions || 0

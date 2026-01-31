@@ -2,7 +2,7 @@
  * useSkinImages Hook
  *
  * Client-side hook that batches and caches Steam skin image lookups.
- * Collects skin IDs from a kit's items and resolves them via /api/v1/skins.
+ * Collects skin IDs from a kit's items and resolves them via /api/skins.
  */
 
 'use client'
@@ -35,7 +35,7 @@ async function flushBatch() {
   }
 
   try {
-    const res = await fetch('/api/v1/skins', {
+    const res = await fetch('/api/skins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),

@@ -6,22 +6,8 @@
 
 import type { Kit, KitItem, KitsData } from '@/types/kit'
 
-// =============================================================================
-// CDN Configuration
-// =============================================================================
-
-/** Base URL for Rust item images */
-export const RUST_ITEM_CDN = 'https://cdn.icefuse.com/rust/items'
-
-/**
- * Build item image URL from shortname
- *
- * @param shortname - Rust item shortname (e.g., "rifle.ak")
- * @returns Full URL to item image
- */
-export function getItemImageUrl(shortname: string): string {
-  return `${RUST_ITEM_CDN}/${shortname}.png`
-}
+// NOTE: RUST_ITEM_CDN and getItemImageUrl are defined in @/lib/rust-items.ts
+// Import from there to avoid duplication
 
 // =============================================================================
 // Kit Data Parsing

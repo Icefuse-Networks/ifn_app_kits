@@ -118,13 +118,13 @@ export function getItemJsonUrl(shortname: string): string {
 /**
  * Fetch all Rust items via server-side proxy
  *
- * Uses /api/v1/items which fetches from upstream server-side
+ * Uses /api/items which fetches from upstream server-side
  * (bypasses browser CSP restrictions on raw.githubusercontent.com)
  *
  * @returns Array of RustItem objects
  */
 export async function fetchRustItems(): Promise<RustItem[]> {
-  const response = await fetch('/api/v1/items')
+  const response = await fetch('/api/items')
 
   if (!response.ok) {
     throw new Error('Failed to fetch')

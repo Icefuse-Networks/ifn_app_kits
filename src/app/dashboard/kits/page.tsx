@@ -280,7 +280,7 @@ export default function KitsPage() {
     try {
       setInitialLoading(true)
       setAuthError(null)
-      const res = await fetch('/api/v1/kits?full=true')
+      const res = await fetch('/api/kits?full=true')
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: 'Unknown error' }))
@@ -313,8 +313,8 @@ export default function KitsPage() {
         return
       }
 
-      const data = await res.json()
-      const configs: SavedConfig[] = data.map(
+      const json = await res.json()
+      const configs: SavedConfig[] = (json.data || []).map(
         (config: {
           id: string
           name: string
@@ -356,15 +356,16 @@ export default function KitsPage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/kits/${id}`)
+        const res = await fetch(`/api/kits/${id}`)
         if (!res.ok) throw new Error('Failed to load configuration')
-        const data = await res.json()
-        const parsed = parseKitData(data.kitData)
+        const json = await res.json()
+        const config = json.data
+        const parsed = parseKitData(config.kitData)
         resetHistory(parsed)
         setLoadedConfigId(id)
         setSelectedKitId(null)
         setSelection(null)
-        setSuccess(`Loaded "${data.name}"`)
+        setSuccess(`Loaded "${config.name}"`)
         setActiveModal(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load')
@@ -382,8 +383,8 @@ export default function KitsPage() {
       try {
         const method = loadedConfigId ? 'PUT' : 'POST'
         const url = loadedConfigId
-          ? `/api/v1/kits/${loadedConfigId}`
-          : '/api/v1/kits'
+          ? `/api/kits/${loadedConfigId}`
+          : '/api/kits'
         const res = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
@@ -395,10 +396,10 @@ export default function KitsPage() {
         })
         if (!res.ok) {
           const err = await res.json()
-          throw new Error(err.error || 'Failed to save')
+          throw new Error(err.error?.message || 'Failed to save')
         }
-        const data = await res.json()
-        setLoadedConfigId(data.id)
+        const json = await res.json()
+        setLoadedConfigId(json.data.id)
         setSuccess(`Saved "${name}"`)
         setActiveModal(null)
         fetchConfigs()
@@ -456,14 +457,14 @@ export default function KitsPage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/kits/${loadedConfigId}`, {
+        const res = await fetch(`/api/kits/${loadedConfigId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName, description: newDescription || null }),
         })
         if (!res.ok) {
           const err = await res.json()
-          throw new Error(err.error || 'Failed to update category')
+          throw new Error(err.error?.message || 'Failed to update category')
         }
         setSuccess(`Category updated`)
         setActiveModal(null)
@@ -482,7 +483,7 @@ export default function KitsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/v1/kits/${loadedConfigId}/clone`, {
+      const res = await fetch(`/api/kits/${loadedConfigId}/clone`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -492,9 +493,10 @@ export default function KitsPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || 'Failed to duplicate category')
+        throw new Error(err.error?.message || 'Failed to duplicate category')
       }
-      const data = await res.json()
+      const json = await res.json()
+      const data = json.data
       setSuccess(`Duplicated as "${data.name}"`)
       await fetchConfigs()
       resetHistory(data.kitData)
@@ -513,7 +515,7 @@ export default function KitsPage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch('/api/v1/kits', {
+        const res = await fetch('/api/kits', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -524,15 +526,16 @@ export default function KitsPage() {
         })
         if (!res.ok) {
           const err = await res.json()
-          throw new Error(err.error || 'Failed to create category')
+          throw new Error(err.error?.message || 'Failed to create category')
         }
-        const data = await res.json()
+        const json = await res.json()
+        const data = json.data
         setSuccess(`Created category "${name}"`)
         setActiveModal(null)
         setSaveName('')
         setSaveDescription('')
         await fetchConfigs()
-        resetHistory(data.kitData)
+        resetHistory(parseKitData(data.kitData))
         setLoadedConfigId(data.id)
         setSelectedKitId(null)
         setSelection(null)
@@ -550,7 +553,7 @@ export default function KitsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/v1/kits/${loadedConfigId}`, {
+      const res = await fetch(`/api/kits/${loadedConfigId}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete category')
@@ -743,9 +746,10 @@ export default function KitsPage() {
       setError(null)
       try {
         // Fetch target category data
-        const targetRes = await fetch(`/api/v1/kits/${targetCategoryId}`)
+        const targetRes = await fetch(`/api/kits/${targetCategoryId}`)
         if (!targetRes.ok) throw new Error('Failed to load target category')
-        const targetData = await targetRes.json()
+        const targetJson = await targetRes.json()
+        const targetData = targetJson.data
         const targetKitData = parseKitData(targetData.kitData)
 
         // Generate a new kit ID for the target category
@@ -767,12 +771,12 @@ export default function KitsPage() {
 
         // PERF: Parallel queries — save both categories simultaneously
         const [sourceRes, destRes] = await Promise.all([
-          fetch(`/api/v1/kits/${loadedConfigId}`, {
+          fetch(`/api/kits/${loadedConfigId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ kitData: stringifyKitData(updatedCurrentData) }),
           }),
-          fetch(`/api/v1/kits/${targetCategoryId}`, {
+          fetch(`/api/kits/${targetCategoryId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ kitData: stringifyKitData(targetKitData) }),
