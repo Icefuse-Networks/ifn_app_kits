@@ -1,0 +1,357 @@
+{
+    "apiKey": "5zDqYMgESfrJ7LQitf5BrHkxJLk9tZWrM45ptsQCRvKcTjmMoM2xgxwuzwmX2wjd",
+    "battlemetricsApiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImVlNGIyM2M4ODhlNjM1YjciLCJpYXQiOjE2OTI4NDY2MjQsIm5iZiI6MTY5Mjg0NjYyNCwiaXNzIjoiaHR0cHM6Ly93d3cuYmF0dGxlbWV0cmljcy5jb20iLCJzdWIiOiJ1cm46dXNlcjo0OTAyNTYifQ.lGhEImJVL5OD10mEu70hokDWBipjQk3iktzmm_afQw4",
+    "servers": [
+        {
+            "name": "force-wipe",
+            "serverID": "force-wipe",
+            "schedule": [
+                {
+                    "frequency": "monthly",
+                    "dayOfWeek": "Thursday",
+                    "time": "2:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "vanilla",
+            "serverID": "usvanilla.icefuse.net",
+            "priority": 3,
+            "threshold": 250,
+            "associatedServers": [],
+            "battlemetricsServerID": "3260244",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "4:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "4:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "eu-vanilla",
+            "serverID": "euvanilla.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": [],
+            "battlemetricsServerID": "24761935",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "10:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "10:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "2x-quad",
+            "serverID": "eu2xquad.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": [],
+            "battlemetricsServerID": "23758263",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "9:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "8:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "2x-oblivion",
+            "serverID": "2xoblivion.icefuse.net",
+            "priority": 3,
+            "threshold": 250,
+            "associatedServers": [],
+            "battlemetricsServerID": "8939401",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Friday",
+                    "time": "3:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "3x-amigos",
+            "serverID": "3xamigos.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": [],
+            "battlemetricsServerID": "3665933",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "1:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "3x-quad",
+            "serverID": "us3xquad.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": ["3x-unlimited"],
+            "battlemetricsServerID": "24122717",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "2:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Sunday",
+                    "time": "1:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "3x-unlimited",
+            "serverID": "us3xunlimited.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": ["3x-quad"],
+            "battlemetricsServerID": "28427024",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "2:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "2:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "5x-alpha",
+            "serverID": "5xalpha.icefuse.net",
+            "priority": 3,
+            "threshold": 250,
+            "associatedServers": ["5x-bravo"],
+            "battlemetricsServerID": "2801795",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "1:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "5x-bravo",
+            "serverID": "5xbravo.icefuse.net",
+            "priority": 2,
+            "threshold": 500,
+            "associatedServers": [],
+            "battlemetricsServerID": "2801208",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "3:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "10x-omega",
+            "serverID": "10xomega.icefuse.net",
+            "priority": 3,
+            "threshold": 150,
+            "associatedServers": [],
+            "battlemetricsServerID": "2930255",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "1:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "10x-vanguard",
+            "serverID": "eu10xnobps.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": [],
+            "battlemetricsServerID": "3657891",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "10:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "08:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "20x-us",
+            "serverID": "us20x.icefuse.net",
+            "priority": 3,
+            "threshold": 150,
+            "associatedServers": [],
+            "battlemetricsServerID": "29377002",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "3:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "3:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "100x-kamikaze",
+            "serverID": "us100x.icefuse.net",
+            "priority": 3,
+            "threshold": 200,
+            "associatedServers": [],
+            "battlemetricsServerID": "5192962",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "3:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "100x-eu",
+            "serverID": "eu100x.icefuse.net",
+            "priority": 3,
+            "threshold": 200,
+            "associatedServers": [],
+            "battlemetricsServerID": "29401949",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Thursday",
+                    "time": "10:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "10:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "1000x-murphyslaw",
+            "serverID": "us1000x.icefuse.net",
+            "priority": 3,
+            "threshold": 250,
+            "associatedServers": [],
+            "battlemetricsServerID": "3044995",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "1:00 PM"
+                }
+            ]
+        },
+        {
+            "name": "1000000x-eu",
+            "serverID": "eu1000000x.icefuse.net",
+            "priority": 3,
+            "threshold": 100,
+            "associatedServers": [],
+            "battlemetricsServerID": "4032701",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Wednesday",
+                    "time": "10:00 AM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Saturday",
+                    "time": "8:00 AM"
+                }
+            ]
+        },
+        {
+            "name": "1000000x-us",
+            "serverID": "us1000000x.icefuse.net",
+            "priority": 1,
+            "threshold": 500,
+            "associatedServers": [],
+            "battlemetricsServerID": "28009208",
+            "schedule": [
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Friday",
+                    "time": "3:00 PM"
+                },
+                {
+                    "frequency": "weekly",
+                    "dayOfWeek": "Monday",
+                    "time": "3:00 PM"
+                }
+            ]
+        }
+    ]
+}

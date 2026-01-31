@@ -18,7 +18,7 @@ const skinLookupSchema = z.object({
 /**
  * Steam Workshop CDN URL for skin previews
  */
-const STEAM_CDN_BASE = 'https://steamcommunity-a.akamaihd.net/economy/image/'
+const _STEAM_CDN_BASE = 'https://steamcommunity-a.akamaihd.net/economy/image/'
 
 /**
  * POST /api/skins

@@ -10,7 +10,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { validateToken, hasScope } from '@/lib/api-token'
 import { isRootUser } from '@/services/admin-auth'
-import type { ApiScope, AuthContext, ApiTokenRecord } from '@/types/api'
+import type { ApiScope, AuthContext } from '@/types/api'
 import { API_SCOPES } from '@/types/api'
 
 // =============================================================================
@@ -230,7 +230,7 @@ export async function requireTelemetryWrite(request: NextRequest): Promise<AuthR
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */
-export async function requireSession(request: NextRequest): Promise<AuthResult> {
+export async function requireSession(_request: NextRequest): Promise<AuthResult> {
   const session = await getServerSession(authOptions())
 
   if (!session?.user) {

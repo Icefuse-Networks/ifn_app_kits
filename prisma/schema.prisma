@@ -601,48 +601,211 @@ model ClanEvent {
 }
 
 // =============================================================================
-// FUTURE PLUGIN TEMPLATES
+// SERVER MANAGEMENT
 // =============================================================================
-// Uncomment and customize when adding new plugins
-//
-// -----------------------------------------------------------------------------
-// STATS PLUGIN (example template)
-// -----------------------------------------------------------------------------
-//
-// model KillEvent {
-//   id               String   @id @db.VarChar(60)
-//   eventId          String   @unique @map("event_id") @db.VarChar(64)
-//
-//   killerSteamId    String   @map("killer_steam_id") @db.VarChar(20)
-//   victimSteamId    String   @map("victim_steam_id") @db.VarChar(20)
-//   weapon           String   @db.VarChar(100)
-//   distance         Float
-//   isHeadshot       Boolean  @default(false) @map("is_headshot")
-//
-//   gameServerId     Int?     @map("game_server_id")
-//   serverIdentifier String   @map("server_identifier") @db.VarChar(100)
-//
-//   killedAt         DateTime @map("killed_at")
-//   createdAt        DateTime @default(now()) @map("created_at")
-//
-//   @@index([killerSteamId, killedAt])
-//   @@index([victimSteamId, killedAt])
-//   @@index([gameServerId, killedAt])
-//   @@map("kill_event")
-// }
-//
-// model PlayerGlobalStats {
-//   id              String    @id @db.VarChar(60)
-//   steamId         String    @unique @map("steam_id") @db.VarChar(20)
-//
-//   totalKills      Int       @default(0) @map("total_kills")
-//   totalDeaths     Int       @default(0) @map("total_deaths")
-//   headshots       Int       @default(0)
-//   longestKill     Float     @default(0) @map("longest_kill")
-//
-//   createdAt       DateTime  @default(now()) @map("created_at")
-//   updatedAt       DateTime  @updatedAt @map("updated_at")
-//
-//   @@index([totalKills])
-//   @@map("player_global_stats")
-// }
+
+model Server {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  ip              String   @db.VarChar(45)
+  port            Int
+  game            String   @db.VarChar(50)
+  players         Int      @default(0)
+  maxPlayers      Int      @default(200) @map("max_players")
+  isActive        Boolean  @default(true) @map("is_active")
+  battlemetricsId String?  @map("battlemetrics_id") @db.VarChar(50)
+  imageUrl        String?  @map("image_url") @db.VarChar(500)
+  wipeSchedule    String?  @map("wipe_schedule") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([ip, port])
+  @@map("servers")
+}
+
+model ServerStats {
+  id        Int      @id @default(autoincrement())
+  serverId  Int      @map("server_id")
+  players   Int      @default(0)
+  timestamp DateTime @default(now())
+
+  @@index([serverId, timestamp])
+  @@map("server_stats")
+}
+
+// =============================================================================
+// LOOT MANAGER
+// =============================================================================
+
+model LootConfig {
+  id               Int                 @id @default(autoincrement())
+  name             String              @db.VarChar(100)
+  description      String?
+  lootData         String              @map("loot_data")
+  targetName       String              @default("") @map("target_name") @db.VarChar(50)
+  currentVersion   Int                 @default(1) @map("current_version")
+  publishedVersion Int?                @map("published_version")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  versions         LootConfigVersion[]
+
+  @@index([name])
+  @@index([targetName])
+  @@map("loot_configs")
+}
+
+model LootConfigVersion {
+  id        Int        @id @default(autoincrement())
+  configId  Int        @map("config_id")
+  lootData  String     @map("loot_data")
+  version   Int
+  createdAt DateTime   @default(now()) @map("created_at")
+  config    LootConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, version])
+  @@index([configId])
+  @@map("loot_config_versions")
+}
+
+model LootApiKey {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(64)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("loot_api_keys")
+}
+
+// =============================================================================
+// ANNOUNCEMENTS
+// =============================================================================
+
+model Announcement {
+  id                   Int                  @id @default(autoincrement())
+  text                 String
+  delay                Int                  @default(0)
+  isActive             Boolean              @default(true) @map("is_active")
+  isGlobal             Boolean              @default(false) @map("is_global")
+  showCardNotification Boolean              @default(false) @map("show_card_notification")
+  cardDisplayDuration  Int?                 @map("card_display_duration")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  serverAssignments    AnnouncementServer[]
+
+  @@index([isActive])
+  @@index([isGlobal])
+  @@map("announcements")
+}
+
+model AnnouncementServer {
+  id             Int          @id @default(autoincrement())
+  announcementId Int          @map("announcement_id")
+  serverId       String       @map("server_id") @db.VarChar(191)
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, serverId])
+  @@index([serverId])
+  @@map("announcement_servers")
+}
+
+model RustStats {
+  id              Int      @id @default(autoincrement())
+  serverId        Int      @map("server_id")
+  steamid         String   @db.VarChar(20)
+  name            String   @db.VarChar(255)
+  playtime        Int      @default(0)
+  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
+  c4Thrown        Int      @default(0) @map("c4_thrown")
+  rocketsLaunched Int      @default(0) @map("rockets_launched")
+  c4Crafted       Int      @default(0) @map("c4_crafted")
+  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
+  bulletsFired    Int      @default(0) @map("bullets_fired")
+  containerPoints Int      @default(0) @map("container_points")
+  kills           Int      @default(0)
+  deaths          Int      @default(0)
+  kdr             Float    @default(0)
+  points          Int      @default(0)
+  avatar          String?  @db.VarChar(500)
+
+  @@unique([serverId, steamid])
+  @@index([steamid])
+  @@index([serverId])
+  @@map("ruststats")
+}
+
+model RustStatsMonthly {
+  id              Int      @id @default(autoincrement())
+  serverId        Int      @map("server_id")
+  steamid         String   @db.VarChar(20)
+  name            String   @db.VarChar(255)
+  playtime        Int      @default(0)
+  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
+  c4Thrown        Int      @default(0) @map("c4_thrown")
+  rocketsLaunched Int      @default(0) @map("rockets_launched")
+  c4Crafted       Int      @default(0) @map("c4_crafted")
+  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
+  bulletsFired    Int      @default(0) @map("bullets_fired")
+  containerPoints Int      @default(0) @map("container_points")
+  kills           Int      @default(0)
+  deaths          Int      @default(0)
+  kdr             Float    @default(0)
+  points          Int      @default(0)
+  avatar          String?  @db.VarChar(500)
+
+  @@unique([serverId, steamid])
+  @@index([steamid])
+  @@index([serverId])
+  @@map("ruststats_monthly")
+}
+
+model RustStatsOverall {
+  id              Int      @id @default(autoincrement())
+  serverId        Int      @map("server_id")
+  steamid         String   @db.VarChar(20)
+  name            String   @db.VarChar(255)
+  playtime        Int      @default(0)
+  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
+  c4Thrown        Int      @default(0) @map("c4_thrown")
+  rocketsLaunched Int      @default(0) @map("rockets_launched")
+  c4Crafted       Int      @default(0) @map("c4_crafted")
+  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
+  bulletsFired    Int      @default(0) @map("bullets_fired")
+  containerPoints Int      @default(0) @map("container_points")
+  kills           Int      @default(0)
+  deaths          Int      @default(0)
+  kdr             Float    @default(0)
+  points          Int      @default(0)
+  avatar          String?  @db.VarChar(500)
+
+  @@unique([serverId, steamid])
+  @@index([steamid])
+  @@index([serverId])
+  @@map("ruststats_overall")
+}
+
+model Mute {
+  id          BigInt   @id @default(autoincrement())
+  start       DateTime @default(now())
+  end         DateTime
+  playerSid64 BigInt   @map("player_sid64")
+  adminSid64  BigInt   @map("admin_sid64")
+  reason      String   @db.VarChar(32)
+
+  @@index([playerSid64, end, reason])
+  @@index([end, reason])
+  @@index([start, end, reason])
+  @@map("mutes")
+}
+
+model Staff {
+  id          BigInt   @id @default(autoincrement())
+  when        DateTime @default(now())
+  playerSid64 BigInt   @map("player_sid64")
+  adminSid64  BigInt   @map("admin_sid64")
+  group       String   @db.VarChar(50)
+
+  @@index([playerSid64])
+  @@index([group])
+  @@map("staff")
+}
+

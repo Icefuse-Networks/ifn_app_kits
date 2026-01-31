@@ -143,7 +143,7 @@ export function getAllowedHosts(): string[] {
     return ['localhost', '127.0.0.1']
   }
 
-  const { baseDomain, websiteDomain } = domainConfig
+  const { baseDomain } = domainConfig
   return [
     baseDomain,
     `www.${baseDomain}`,

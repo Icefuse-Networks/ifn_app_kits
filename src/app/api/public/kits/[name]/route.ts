@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { name: kitName } = await context.params
     const { searchParams } = new URL(request.url)
-    const identifierId = searchParams.get('identifierId')
+    const _identifierId = searchParams.get('identifierId')
 
     if (!kitName || kitName.length > 100) {
       return NextResponse.json(

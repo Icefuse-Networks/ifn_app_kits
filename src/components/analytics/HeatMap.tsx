@@ -43,7 +43,7 @@ export function HeatMap({ data, maxValue, showLabels = true }: HeatMapProps) {
       {/* Hour labels */}
       {showLabels && (
         <div className="flex pl-10">
-          {HOUR_LABELS.map((label, i) => (
+          {HOUR_LABELS.map((label) => (
             <div
               key={label}
               className="text-xs text-[var(--text-muted)]"

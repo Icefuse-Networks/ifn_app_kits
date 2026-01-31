@@ -36,7 +36,7 @@ export function LineChart({
   }
 
   const padding = { top: 20, right: 20, bottom: 30, left: 10 }
-  const width = 100 // percentage-based
+  const _width = 100 // percentage-based
   const chartHeight = height - padding.top - padding.bottom
 
   const maxValue = Math.max(...data.map((d) => d.value), 1)

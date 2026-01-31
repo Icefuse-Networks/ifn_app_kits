@@ -85,7 +85,6 @@ export async function GET(request: NextRequest) {
     // Calculate totals
     const totalServers = serverStats.length
     const totalRedemptions = data.reduce((sum, s) => sum + s.totalRedemptions, 0)
-    const totalUniquePlayers = new Set(uniquePlayers.flatMap(() => [])).size
 
     // Get actual total unique players across all servers
     const allUniquePlayers = await prisma.kitUsageEvent.findMany({

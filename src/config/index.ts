@@ -240,19 +240,26 @@ export const apiConfig = {
 // =============================================================================
 
 export const analyticsConfig = {
-  // Data retention period in days (individual events deleted after this)
-  retentionDays: parseInt(process.env.ANALYTICS_RETENTION_DAYS || '90', 10),
-
-  // Batch limits
+  retentionDays: 90,
   batch: {
     maxEventsPerRequest: 100,
   },
-
-  // Dashboard defaults
   dashboard: {
     defaultDays: 30,
     maxDays: 365,
   },
+} as const
+
+// =============================================================================
+// IFN ADMIN CONFIGURATION (migrated from ifn_admin)
+// =============================================================================
+
+export const adminConfig = {
+  rustStatsSecret: 'cn2m4d63ugeat3ohxsybfbzepjfu5h',
+  steamApiKey: '069EB5169F9068C548B8368B38D1CC1B',
+  mutesApiKey: 'hMuUffRKfQEkHZaSxj6MkUh7ybpzqY2r3nGbuGfCz85V74N7EKa97YcZ3gKJYvVi',
+  staffApiKey: 'WBiwFVcDf2thkZh5X3peyWgfBo8VJmjnZmYEcyPemKodmpik9EnEK8tEfcb4LzyH',
+  removeBannedHmacSecret: 'b05763431d002f9e2ed63659a179e586ae8529ad5bc9080fcd53b049e69ac1ab',
 } as const
 
 // =============================================================================
@@ -310,4 +317,5 @@ export const config = {
   redisConfig,
   apiConfig,
   analytics: analyticsConfig,
+  admin: adminConfig,
 }

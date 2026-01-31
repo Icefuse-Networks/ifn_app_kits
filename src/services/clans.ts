@@ -8,6 +8,7 @@
 import { prisma } from '@/lib/db'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
+import { isTagBanned } from '@/services/moderation'
 import type { Prisma } from '@prisma/client'
 import type {
   CreateClanInput,
@@ -533,11 +534,7 @@ export async function deleteRole(clanId: string, rank: number) {
 // BANNED NAMES
 // =============================================================================
 
-/**
- * Check if a clan tag is banned
- * Uses the global moderation service with clan_tags context
- */
-export { isTagBanned } from '@/services/moderation'
+export { isTagBanned }
 
 /**
  * List all banned names

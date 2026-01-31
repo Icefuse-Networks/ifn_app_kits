@@ -13,6 +13,7 @@ import { authOptions } from '@/lib/auth'
 import { requireAdmin } from '@/services/admin-auth'
 import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
+import Sidebar from './Sidebar'
 
 export default async function DashboardLayout({
   children,
@@ -39,7 +40,8 @@ export default async function DashboardLayout({
   return (
     <div className="portal-root">
       <Header />
-      <main className="pt-20 min-h-screen">
+      <Sidebar />
+      <main className="pt-20 pl-56 min-h-screen">
         {children}
       </main>
       <Footer />

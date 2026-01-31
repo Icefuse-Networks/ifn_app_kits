@@ -5,12 +5,12 @@
  * Copied 1:1 from PayNow store for consistency.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { requireAdmin } from '@/services/admin-auth'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   // SECURITY: Auth check at route start
   const session = await getServerSession(authOptions())
 

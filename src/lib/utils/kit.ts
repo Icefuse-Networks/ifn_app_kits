@@ -201,7 +201,7 @@ export function addKit(kitsData: KitsData, name: string, kit: Kit): KitsData {
  * Remove a kit from kits data
  */
 export function removeKit(kitsData: KitsData, name: string): KitsData {
-  const { [name]: removed, ...remainingKits } = kitsData._kits
+  const { [name]: _removed, ...remainingKits } = kitsData._kits
   return {
     ...kitsData,
     _kits: remainingKits,
@@ -219,7 +219,7 @@ export function renameKit(
   const kit = kitsData._kits[oldName]
   if (!kit) return kitsData
 
-  const { [oldName]: removed, ...remainingKits } = kitsData._kits
+  const { [oldName]: _removed, ...remainingKits } = kitsData._kits
   return {
     ...kitsData,
     _kits: {

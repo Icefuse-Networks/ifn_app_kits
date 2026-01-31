@@ -82,6 +82,9 @@ registerScope('analytics:write', 'Submit analytics events from game servers', 'c
 // Telemetry (shared across plugins)
 registerScope('telemetry:write', 'Submit telemetry and health data from game servers', 'core')
 
+// Identifiers (server registration)
+registerScope('identifiers:register', 'Register new server identifiers dynamically', 'core')
+
 // Clans plugin scopes
 registerScope('clans:read', 'Read clan information', 'clans')
 registerScope('clans:write', 'Create, update, and delete clans', 'clans')

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Edit3, X, FolderOpen, ArrowRight, Loader2 } from 'lucide-react'
 import { SelectDropdown } from '../SelectDropdown'
 

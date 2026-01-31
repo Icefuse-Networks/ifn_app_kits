@@ -7,7 +7,6 @@
 
 import { createHash, randomBytes } from 'crypto'
 import { prisma } from '@/lib/db'
-import { timingSafeCompare } from '@/lib/security/timing-safe'
 import type { ApiScope, ApiTokenInfo, ApiTokenRecord } from '@/types/api'
 
 // =============================================================================

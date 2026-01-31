@@ -73,6 +73,19 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+
+  async rewrites() {
+    return [
+      { source: '/clear_server_data.php/:path*', destination: '/legacy/clear_server_data.php/:path*' },
+      { source: '/core.php/:path*', destination: '/legacy/core.php/:path*' },
+      { source: '/maps/:path*', destination: '/legacy/maps/:path*' },
+      { source: '/mutes/:path*', destination: '/legacy/mutes/:path*' },
+      { source: '/proxy.php/:path*', destination: '/legacy/proxy.php/:path*' },
+      { source: '/redirection/:path*', destination: '/legacy/redirection/:path*' },
+      { source: '/removeBannedUser.php/:path*', destination: '/legacy/removeBannedUser.php/:path*' },
+      { source: '/staff/:path*', destination: '/legacy/staff/:path*' },
+    ]
+  },
 };
 
 export default nextConfig;
