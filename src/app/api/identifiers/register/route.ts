@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope } from '@/services/api-auth'
-import { auditCreate } from '@/services/audit'
+import { auditCreate, auditUpdate } from '@/services/audit'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
 
+const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}$|^(?:[0-9a-fA-F]{1,4}:){1,7}:$|^(?:[0-9a-fA-F]{1,4}:){0,6}::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$/
+
 const registerServerSchema = z.object({
-  serverName: z.string().min(1).max(100).trim(),
-  ip: z.string().min(7).max(45),
+  serverName: z.string().min(1).max(255).trim(),
+  ip: z.string().min(1).max(45).refine(
+    (val) => ipv4Regex.test(val) || ipv6Regex.test(val),
+    { message: 'Invalid IPv4 or IPv6 address' }
+  ),
   port: z.number().int().min(1).max(65535),
   categoryId: z.string().max(60).nullable().optional(),
 })
@@ -35,26 +41,50 @@ export async function POST(request: NextRequest) {
     }
 
     const { serverName, ip, port, categoryId } = parsed.data
-    const uniqueKey = `${ip}:${port}`
 
     const existing = await prisma.serverIdentifier.findFirst({
-      where: {
-        OR: [
-          { name: serverName },
-          { description: { contains: uniqueKey } },
-        ],
-      },
-      select: { id: true, hashedId: true, name: true },
+      where: { ip, port },
+      select: { id: true, hashedId: true, name: true, ip: true, port: true, description: true },
     })
 
     if (existing) {
+      const needsUpdate = existing.name !== serverName || existing.ip !== ip
+
+      if (needsUpdate) {
+        const oldValues = { name: existing.name, ip: existing.ip }
+
+        await prisma.serverIdentifier.update({
+          where: { id: existing.id },
+          data: { name: serverName, ip },
+        })
+
+        await auditUpdate(
+          'server_identifier',
+          existing.id,
+          authResult.context,
+          oldValues,
+          { name: serverName, ip },
+          request
+        )
+
+        logger.admin.info('Server identifier updated', {
+          identifierId: existing.id,
+          oldName: existing.name,
+          newName: serverName,
+          ip,
+          port,
+          actor: authResult.context.actorId,
+        })
+      }
+
       return NextResponse.json({
         success: true,
         data: {
           serverId: existing.hashedId,
           serverIdentifierId: existing.id,
-          name: existing.name,
+          name: serverName,
           isNew: false,
+          updated: needsUpdate,
         },
       })
     }
@@ -64,7 +94,9 @@ export async function POST(request: NextRequest) {
         id: id.serverIdentifier(),
         name: serverName,
         hashedId: id.identifierHash(),
-        description: `${uniqueKey} - Auto-registered`,
+        description: `${ip}:${port} - Auto-registered`,
+        ip,
+        port,
         categoryId: categoryId || null,
       },
     })

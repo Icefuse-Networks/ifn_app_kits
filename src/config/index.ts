@@ -255,11 +255,9 @@ export const analyticsConfig = {
 // =============================================================================
 
 export const adminConfig = {
-  rustStatsSecret: 'cn2m4d63ugeat3ohxsybfbzepjfu5h',
   steamApiKey: '069EB5169F9068C548B8368B38D1CC1B',
   mutesApiKey: 'hMuUffRKfQEkHZaSxj6MkUh7ybpzqY2r3nGbuGfCz85V74N7EKa97YcZ3gKJYvVi',
   staffApiKey: 'WBiwFVcDf2thkZh5X3peyWgfBo8VJmjnZmYEcyPemKodmpik9EnEK8tEfcb4LzyH',
-  removeBannedHmacSecret: 'b05763431d002f9e2ed63659a179e586ae8529ad5bc9080fcd53b049e69ac1ab',
 } as const
 
 // =============================================================================

@@ -184,6 +184,8 @@ model ServerIdentifier {
   name        String    @db.VarChar(100)
   hashedId    String    @unique @map("hashed_id") @db.VarChar(60)
   description String?   @db.VarChar(255)
+  ip          String?   @db.VarChar(45)
+  port        Int?
   categoryId  String?   @map("category_id") @db.VarChar(60)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -192,6 +194,7 @@ model ServerIdentifier {
   category    ServerIdentifierCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   usageEvents KitUsageEvent[]
 
+  @@unique([ip, port])
   @@index([hashedId])
   @@index([categoryId])
   @@map("server_identifier")
@@ -683,6 +686,16 @@ model LootApiKey {
 model Announcement {
   id                   Int                  @id @default(autoincrement())
   text                 String
+  textEs               String?              @map("text_es")
+  textFr               String?              @map("text_fr")
+  textDe               String?              @map("text_de")
+  textRu               String?              @map("text_ru")
+  textZh               String?              @map("text_zh")
+  textJa               String?              @map("text_ja")
+  textPt               String?              @map("text_pt")
+  textAr               String?              @map("text_ar")
+  textKo               String?              @map("text_ko")
+  textIt               String?              @map("text_it")
   delay                Int                  @default(0)
   isActive             Boolean              @default(true) @map("is_active")
   isGlobal             Boolean              @default(false) @map("is_global")
@@ -706,81 +719,6 @@ model AnnouncementServer {
   @@unique([announcementId, serverId])
   @@index([serverId])
   @@map("announcement_servers")
-}
-
-model RustStats {
-  id              Int      @id @default(autoincrement())
-  serverId        Int      @map("server_id")
-  steamid         String   @db.VarChar(20)
-  name            String   @db.VarChar(255)
-  playtime        Int      @default(0)
-  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
-  c4Thrown        Int      @default(0) @map("c4_thrown")
-  rocketsLaunched Int      @default(0) @map("rockets_launched")
-  c4Crafted       Int      @default(0) @map("c4_crafted")
-  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
-  bulletsFired    Int      @default(0) @map("bullets_fired")
-  containerPoints Int      @default(0) @map("container_points")
-  kills           Int      @default(0)
-  deaths          Int      @default(0)
-  kdr             Float    @default(0)
-  points          Int      @default(0)
-  avatar          String?  @db.VarChar(500)
-
-  @@unique([serverId, steamid])
-  @@index([steamid])
-  @@index([serverId])
-  @@map("ruststats")
-}
-
-model RustStatsMonthly {
-  id              Int      @id @default(autoincrement())
-  serverId        Int      @map("server_id")
-  steamid         String   @db.VarChar(20)
-  name            String   @db.VarChar(255)
-  playtime        Int      @default(0)
-  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
-  c4Thrown        Int      @default(0) @map("c4_thrown")
-  rocketsLaunched Int      @default(0) @map("rockets_launched")
-  c4Crafted       Int      @default(0) @map("c4_crafted")
-  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
-  bulletsFired    Int      @default(0) @map("bullets_fired")
-  containerPoints Int      @default(0) @map("container_points")
-  kills           Int      @default(0)
-  deaths          Int      @default(0)
-  kdr             Float    @default(0)
-  points          Int      @default(0)
-  avatar          String?  @db.VarChar(500)
-
-  @@unique([serverId, steamid])
-  @@index([steamid])
-  @@index([serverId])
-  @@map("ruststats_monthly")
-}
-
-model RustStatsOverall {
-  id              Int      @id @default(autoincrement())
-  serverId        Int      @map("server_id")
-  steamid         String   @db.VarChar(20)
-  name            String   @db.VarChar(255)
-  playtime        Int      @default(0)
-  tcsDestroyed    Int      @default(0) @map("tcs_destroyed")
-  c4Thrown        Int      @default(0) @map("c4_thrown")
-  rocketsLaunched Int      @default(0) @map("rockets_launched")
-  c4Crafted       Int      @default(0) @map("c4_crafted")
-  rocketsCrafted  Int      @default(0) @map("rockets_crafted")
-  bulletsFired    Int      @default(0) @map("bullets_fired")
-  containerPoints Int      @default(0) @map("container_points")
-  kills           Int      @default(0)
-  deaths          Int      @default(0)
-  kdr             Float    @default(0)
-  points          Int      @default(0)
-  avatar          String?  @db.VarChar(500)
-
-  @@unique([serverId, steamid])
-  @@index([steamid])
-  @@index([serverId])
-  @@map("ruststats_overall")
 }
 
 model Mute {

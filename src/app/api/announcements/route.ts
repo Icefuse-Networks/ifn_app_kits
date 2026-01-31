@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { translateText } from "@/lib/translator";
 
 interface ServerAssignment {
   id: number
@@ -77,9 +78,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "At least one server must be selected for non-global announcements" }, { status: 400 });
     }
 
+    const translations = await translateText(text.trim());
+
     const announcement = await prisma.announcement.create({
       data: {
         text: text.trim(),
+        textEs: translations.es,
+        textFr: translations.fr,
+        textDe: translations.de,
+        textRu: translations.ru,
+        textZh: translations.zh,
+        textJa: translations.ja,
+        textPt: translations.pt,
+        textAr: translations.ar,
+        textKo: translations.ko,
+        textIt: translations.it,
         delay: showCardNotification ? delay : 0,
         isGlobal: !!isGlobal,
         isActive: true,
@@ -106,15 +119,21 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Valid announcement ID is required" }, { status: 400 });
     }
 
-    const updateData: Partial<{
-      text: string
-      isActive: boolean
-      isGlobal: boolean
-      showCardNotification: boolean
-      delay: number
-      cardDisplayDuration: number | null
-    }> = {};
-    if (text !== undefined) updateData.text = text.trim();
+    const updateData: Record<string, any> = {};
+    if (text !== undefined) {
+      updateData.text = text.trim();
+      const translations = await translateText(text.trim());
+      updateData.textEs = translations.es;
+      updateData.textFr = translations.fr;
+      updateData.textDe = translations.de;
+      updateData.textRu = translations.ru;
+      updateData.textZh = translations.zh;
+      updateData.textJa = translations.ja;
+      updateData.textPt = translations.pt;
+      updateData.textAr = translations.ar;
+      updateData.textKo = translations.ko;
+      updateData.textIt = translations.it;
+    }
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isGlobal !== undefined) updateData.isGlobal = isGlobal;
     if (showCardNotification !== undefined) updateData.showCardNotification = showCardNotification;
