@@ -34,6 +34,9 @@ interface ServerIdentifier {
   name: string
   hashedId: string
   description: string | null
+  ip: string | null
+  port: number | null
+  connectEndpoint: string | null
   categoryId: string | null
   createdAt: string
   updatedAt: string
@@ -410,13 +413,22 @@ export default function IdentifiersPage() {
               </span>
             </div>
 
-            {identifier.description && (
-              <p className="text-sm text-[var(--text-secondary)] mb-4">
-                {identifier.description}
-              </p>
+            {(identifier.ip || identifier.connectEndpoint) && (
+              <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                {identifier.ip && identifier.port && (
+                  <span className="px-2 py-1 rounded bg-[var(--bg-input)] text-[var(--text-secondary)]">
+                    {identifier.ip}:{identifier.port}
+                  </span>
+                )}
+                {identifier.connectEndpoint && (
+                  <span className="px-2 py-1 rounded bg-[var(--bg-input)] text-[var(--text-secondary)]">
+                    connect {identifier.connectEndpoint}
+                  </span>
+                )}
+              </div>
             )}
 
-            <div className="flex items-center gap-3 mt-4">
+            <div className="flex items-center gap-3">
               <code className="px-4 py-2 rounded-lg text-sm font-mono bg-[var(--bg-input)] text-[var(--accent-primary)]">
                 {identifier.hashedId}
               </code>

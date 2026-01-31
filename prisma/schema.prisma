@@ -180,15 +180,16 @@ model ServerIdentifierCategory {
 // =============================================================================
 
 model ServerIdentifier {
-  id          String    @id @db.VarChar(60)
-  name        String    @db.VarChar(100)
-  hashedId    String    @unique @map("hashed_id") @db.VarChar(60)
-  description String?   @db.VarChar(255)
-  ip          String?   @db.VarChar(45)
-  port        Int?
-  categoryId  String?   @map("category_id") @db.VarChar(60)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id              String    @id @db.VarChar(60)
+  name            String    @db.VarChar(100)
+  hashedId        String    @unique @map("hashed_id") @db.VarChar(60)
+  description     String?   @db.VarChar(255)
+  ip              String?   @db.VarChar(45)
+  port            Int?
+  connectEndpoint String?   @map("connect_endpoint") @db.VarChar(100)
+  categoryId      String?   @map("category_id") @db.VarChar(60)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // Relations
   category    ServerIdentifierCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)

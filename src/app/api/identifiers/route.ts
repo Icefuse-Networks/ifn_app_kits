@@ -28,13 +28,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // PERF: Select only needed fields with usage count and category
     const identifiers = await prisma.serverIdentifier.findMany({
       select: {
         id: true,
         name: true,
         hashedId: true,
         description: true,
+        ip: true,
+        port: true,
+        connectEndpoint: true,
         categoryId: true,
         createdAt: true,
         updatedAt: true,

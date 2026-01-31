@@ -16,6 +16,7 @@ const registerServerSchema = z.object({
     { message: 'Invalid IPv4 or IPv6 address' }
   ),
   port: z.number().int().min(1).max(65535),
+  connectEndpoint: z.string().max(100).nullable().optional(),
   categoryId: z.string().max(60).nullable().optional(),
 })
 
@@ -40,22 +41,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { serverName, ip, port, categoryId } = parsed.data
+    const { serverName, ip, port, connectEndpoint, categoryId } = parsed.data
 
     const existing = await prisma.serverIdentifier.findFirst({
       where: { ip, port },
-      select: { id: true, hashedId: true, name: true, ip: true, port: true, description: true },
+      select: { id: true, hashedId: true, name: true, ip: true, port: true, connectEndpoint: true },
     })
 
     if (existing) {
-      const needsUpdate = existing.name !== serverName || existing.ip !== ip
+      const needsUpdate = existing.name !== serverName || existing.connectEndpoint !== connectEndpoint
 
       if (needsUpdate) {
-        const oldValues = { name: existing.name, ip: existing.ip }
+        const oldValues = { name: existing.name, connectEndpoint: existing.connectEndpoint }
 
         await prisma.serverIdentifier.update({
           where: { id: existing.id },
-          data: { name: serverName, ip },
+          data: { name: serverName, connectEndpoint: connectEndpoint || null },
         })
 
         await auditUpdate(
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
           existing.id,
           authResult.context,
           oldValues,
-          { name: serverName, ip },
+          { name: serverName, connectEndpoint },
           request
         )
 
@@ -94,9 +95,9 @@ export async function POST(request: NextRequest) {
         id: id.serverIdentifier(),
         name: serverName,
         hashedId: id.identifierHash(),
-        description: `${ip}:${port} - Auto-registered`,
         ip,
         port,
+        connectEndpoint: connectEndpoint || null,
         categoryId: categoryId || null,
       },
     })
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
       'server_identifier',
       identifier.id,
       authResult.context,
-      { name: identifier.name, hashedId: identifier.hashedId, ip, port },
+      { name: identifier.name, hashedId: identifier.hashedId, ip, port, connectEndpoint },
       request
     )
 
