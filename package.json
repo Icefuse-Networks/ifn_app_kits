@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-banned": "tsx scripts/seed-banned-words.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

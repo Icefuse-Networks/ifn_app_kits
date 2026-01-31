@@ -535,35 +535,9 @@ export async function deleteRole(clanId: string, rank: number) {
 
 /**
  * Check if a clan tag is banned
+ * Uses the global moderation service with clan_tags context
  */
-export async function isTagBanned(tag: string): Promise<boolean> {
-  const bannedNames = await prisma.bannedClanName.findMany({
-    select: { pattern: true, isRegex: true },
-  })
-
-  const normalizedTag = tag.toLowerCase()
-
-  for (const banned of bannedNames) {
-    if (banned.isRegex) {
-      try {
-        const regex = new RegExp(banned.pattern, 'i')
-        if (regex.test(tag)) {
-          return true
-        }
-      } catch {
-        // Invalid regex, skip
-        continue
-      }
-    } else {
-      // Exact match (case-insensitive)
-      if (banned.pattern.toLowerCase() === normalizedTag) {
-        return true
-      }
-    }
-  }
-
-  return false
-}
+export { isTagBanned } from '@/services/moderation'
 
 /**
  * List all banned names

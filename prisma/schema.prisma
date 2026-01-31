@@ -548,7 +548,30 @@ model ClanPerk {
   @@map("clan_perk")
 }
 
-// Admin-managed banned clan name patterns
+// =============================================================================
+// GLOBAL CONTENT MODERATION
+// =============================================================================
+
+// Global banned word patterns - used by Clans, Chat Manager, and other plugins
+model BannedWord {
+  id        String   @id @db.VarChar(60) // bannedword_<uuid>
+  pattern   String   @db.VarChar(200) // Exact match or regex pattern (longer for complex regex)
+  isRegex   Boolean  @default(false) @map("is_regex") // If true, pattern is regex
+  context   String   @default("all") @db.VarChar(50) // all, clan_tags, chat, player_names, etc.
+  severity  Int      @default(3) // 1=mild, 2=moderate, 3=strong, 4=extreme
+  category  String   @db.VarChar(50) // racial, lgbtq, sexual, profanity, hate_symbol, violence, etc.
+  reason    String?  @db.VarChar(200)
+  createdBy String   @map("created_by") @db.VarChar(20) // Admin Steam ID or "SYSTEM"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([pattern, context])
+  @@index([context])
+  @@index([category])
+  @@index([severity])
+  @@map("banned_word")
+}
+
+// Legacy: Kept for migration, will be deprecated
 model BannedClanName {
   id        String   @id @db.VarChar(60) // bannedname_<uuid>
   pattern   String   @unique @db.VarChar(50) // Exact match or regex pattern

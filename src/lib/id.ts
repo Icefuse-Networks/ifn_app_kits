@@ -121,8 +121,11 @@ registerPrefix('clanWipeStats', 'clanstats', 'Clan Wipe Stats', 'clans')
 registerPrefix('clanPrestige', 'clanpres', 'Clan Prestige', 'clans')
 registerPrefix('clanPerkDefinition', 'perkdef', 'Perk Definition', 'clans')
 registerPrefix('clanPerk', 'clanperk', 'Clan Perk', 'clans')
-registerPrefix('bannedClanName', 'bannedname', 'Banned Clan Name', 'clans')
+registerPrefix('bannedClanName', 'bannedname', 'Banned Clan Name', 'clans') // Legacy
 registerPrefix('clanEvent', 'clanevent', 'Clan Event', 'clans')
+
+// Moderation plugin entities (global content moderation)
+registerPrefix('bannedWord', 'bannedword', 'Banned Word', 'moderation')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Prefixes (uncomment when adding plugins)
@@ -170,8 +173,10 @@ export type IdType =
   | 'clanPrestige'
   | 'clanPerkDefinition'
   | 'clanPerk'
-  | 'bannedClanName'
+  | 'bannedClanName' // Legacy
   | 'clanEvent'
+  // Moderation plugin
+  | 'bannedWord'
 
 // =============================================================================
 // Core Functions
@@ -327,12 +332,15 @@ export const id = {
   clanPrestige: () => generateId('clanPrestige'),
   clanPerkDefinition: () => generateId('clanPerkDefinition'),
   clanPerk: () => generateId('clanPerk'),
-  bannedClanName: () => generateId('bannedClanName'),
+  bannedClanName: () => generateId('bannedClanName'), // Legacy
   clanEvent: () => generateId('clanEvent'),
 
   // UI Categories
   uiCategory: () => generateId('uiCategory'),
   uiSubcategory: () => generateId('uiSubcategory'),
+
+  // Moderation plugin
+  bannedWord: () => generateId('bannedWord'),
 } as const
 
 /**
