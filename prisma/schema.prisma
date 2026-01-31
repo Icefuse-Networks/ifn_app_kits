@@ -131,6 +131,23 @@ model AuditLog {
 }
 
 // =============================================================================
+// Server Identifier Category - Organize identifiers by purpose
+// =============================================================================
+
+model ServerIdentifierCategory {
+  id          String   @id @db.VarChar(60)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  identifiers ServerIdentifier[]
+
+  @@index([name])
+  @@map("server_identifier_category")
+}
+
+// =============================================================================
 // Server Identifier - Unique identifiers for plugin analytics
 // =============================================================================
 
@@ -139,13 +156,16 @@ model ServerIdentifier {
   name        String    @db.VarChar(100)
   hashedId    String    @unique @map("hashed_id") @db.VarChar(60)
   description String?   @db.VarChar(255)
+  categoryId  String?   @map("category_id") @db.VarChar(60)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  // Analytics relation
+  // Relations
+  category    ServerIdentifierCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   usageEvents KitUsageEvent[]
 
   @@index([hashedId])
+  @@index([categoryId])
   @@map("server_identifier")
 }
 

@@ -32,6 +32,7 @@ const PREFIXES = {
   kitGlobalStats: 'kitglobal',
   serverWipe: 'wipe',
   serverIdentifier: 'serverid',
+  serverIdentifierCategory: 'serveridcat',
   identifierHash: 'id',
   // UI Categories (stored in JSON, not database)
   uiCategory: 'uicat',
@@ -161,6 +162,7 @@ export const id = {
   kitGlobalStats: () => generateId('kitGlobalStats'),
   serverWipe: () => generateId('serverWipe'),
   serverIdentifier: () => generateId('serverIdentifier'),
+  serverIdentifierCategory: () => generateId('serverIdentifierCategory'),
   identifierHash: () => generateId('identifierHash'),
   // UI Categories (stored in JSON, not database)
   uiCategory: () => generateId('uiCategory'),

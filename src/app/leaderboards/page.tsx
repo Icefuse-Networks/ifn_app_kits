@@ -2,14 +2,16 @@
  * Public Leaderboards Page
  *
  * Public-facing page showing kit statistics.
+ * Supports global view and per-server filtering.
  * No authentication required.
  */
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Trophy, TrendingUp, Server, Clock, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe } from 'lucide-react'
 import Link from 'next/link'
+import { Footer } from '@/components/global/Footer'
 
 // Types
 interface KitStats {
@@ -19,9 +21,9 @@ interface KitStats {
   lastRedeemed: string | null
 }
 
-interface ServerStats {
-  serverId: number
-  serverName: string
+interface IdentifierStats {
+  identifierId: string
+  identifierName: string
   totalRedemptions: number
   uniquePlayers: number
 }
@@ -35,24 +37,47 @@ interface HeatMapData {
   }
 }
 
+interface ServerIdentifier {
+  id: string
+  name: string
+  categoryId: string | null
+}
+
+interface IdentifierCategory {
+  id: string
+  name: string
+}
+
 export default function LeaderboardsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [topKits, setTopKits] = useState<KitStats[]>([])
-  const [serverLeaderboard, setServerLeaderboard] = useState<ServerStats[]>([])
+  const [identifierLeaderboard, setIdentifierLeaderboard] = useState<IdentifierStats[]>([])
   const [heatMap, setHeatMap] = useState<HeatMapData | null>(null)
 
+  // Server selection state
+  const [identifiers, setIdentifiers] = useState<ServerIdentifier[]>([])
+  const [categories, setCategories] = useState<IdentifierCategory[]>([])
+  const [selectedIdentifierId, setSelectedIdentifierId] = useState<string | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  // Get selected identifier name for display
+  const selectedIdentifier = identifiers.find((i) => i.id === selectedIdentifierId)
+
   useEffect(() => {
-    fetchLeaderboardData()
+    fetchIdentifiers()
   }, [])
 
-  async function fetchLeaderboardData() {
+  const fetchLeaderboardData = useCallback(async (identifierId: string | null) => {
     setLoading(true)
     setError(null)
 
     try {
-      // Use public leaderboards endpoint (no auth required)
-      const response = await fetch('/api/public/leaderboards')
+      const url = identifierId
+        ? `/api/public/leaderboards?identifierId=${encodeURIComponent(identifierId)}`
+        : '/api/public/leaderboards'
+
+      const response = await fetch(url)
 
       if (!response.ok) {
         throw new Error('Failed to fetch leaderboard data')
@@ -61,7 +86,7 @@ export default function LeaderboardsPage() {
       const data = await response.json()
 
       setTopKits(data.topKits || [])
-      setServerLeaderboard(data.serverActivity || [])
+      setIdentifierLeaderboard(data.identifierActivity || [])
       setHeatMap(data.heatMap)
     } catch (err) {
       console.error('Failed to fetch leaderboards:', err)
@@ -69,6 +94,33 @@ export default function LeaderboardsPage() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  async function fetchIdentifiers() {
+    try {
+      const response = await fetch('/api/public/identifiers')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch identifiers')
+      }
+
+      const data = await response.json()
+      setIdentifiers(data.identifiers || [])
+      setCategories(data.categories || [])
+
+      // Fetch initial leaderboard data (global)
+      fetchLeaderboardData(null)
+    } catch (err) {
+      console.error('Failed to fetch identifiers:', err)
+      // Still try to fetch leaderboard data
+      fetchLeaderboardData(null)
+    }
+  }
+
+  function handleIdentifierSelect(identifierId: string | null) {
+    setSelectedIdentifierId(identifierId)
+    setDropdownOpen(false)
+    fetchLeaderboardData(identifierId)
   }
 
   const formatNumber = (num: number) => {
@@ -77,8 +129,27 @@ export default function LeaderboardsPage() {
     return num.toString()
   }
 
+  // Group identifiers by category for dropdown
+  const groupedIdentifiers = (() => {
+    const groups: Record<string, ServerIdentifier[]> = { uncategorized: [] }
+
+    categories.forEach((cat) => {
+      groups[cat.id] = []
+    })
+
+    identifiers.forEach((identifier) => {
+      if (identifier.categoryId && groups[identifier.categoryId]) {
+        groups[identifier.categoryId].push(identifier)
+      } else {
+        groups.uncategorized.push(identifier)
+      }
+    })
+
+    return groups
+  })()
+
   return (
-    <div className="min-h-screen bg-[var(--bg-root)]">
+    <div className="min-h-screen bg-[var(--bg-root)] flex flex-col">
       {/* Header */}
       <header
         className="border-b"
@@ -101,24 +172,149 @@ export default function LeaderboardsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
         {/* Page Title */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--accent-primary)]" />
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
             Kit Leaderboards
           </h1>
           <p className="text-[var(--text-secondary)]">
-            See which kits are most popular across all servers
+            {selectedIdentifierId
+              ? `Statistics for ${selectedIdentifier?.name || 'selected server'}`
+              : 'Global statistics across all servers'}
           </p>
         </div>
+
+        {/* Server Selector */}
+        {identifiers.length > 0 && (
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-lg)] min-w-[240px] transition-colors"
+                style={{
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                }}
+              >
+                {selectedIdentifierId ? (
+                  <>
+                    <Server className="w-5 h-5 text-[var(--accent-primary)]" />
+                    <span className="flex-1 text-left text-[var(--text-primary)]">
+                      {selectedIdentifier?.name || 'Unknown'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-5 h-5 text-[var(--accent-primary)]" />
+                    <span className="flex-1 text-left text-[var(--text-primary)]">
+                      All Servers (Global)
+                    </span>
+                  </>
+                )}
+                <ChevronDown
+                  className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${
+                    dropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {dropdownOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setDropdownOpen(false)}
+                  />
+
+                  {/* Dropdown */}
+                  <div
+                    className="absolute top-full left-0 right-0 mt-2 py-2 rounded-[var(--radius-lg)] z-50 max-h-80 overflow-y-auto"
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--glass-border)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    }}
+                  >
+                    {/* Global option */}
+                    <button
+                      onClick={() => handleIdentifierSelect(null)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
+                        !selectedIdentifierId ? 'bg-[var(--accent-primary)]/10' : ''
+                      }`}
+                    >
+                      <Globe className="w-4 h-4 text-[var(--accent-primary)]" />
+                      <span className="text-[var(--text-primary)]">All Servers (Global)</span>
+                    </button>
+
+                    <div className="my-2 border-t border-[var(--glass-border)]" />
+
+                    {/* Categorized identifiers */}
+                    {categories.map((category) => {
+                      const categoryIdentifiers = groupedIdentifiers[category.id] || []
+                      if (categoryIdentifiers.length === 0) return null
+
+                      return (
+                        <div key={category.id}>
+                          <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">
+                            {category.name}
+                          </div>
+                          {categoryIdentifiers.map((identifier) => (
+                            <button
+                              key={identifier.id}
+                              onClick={() => handleIdentifierSelect(identifier.id)}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
+                                selectedIdentifierId === identifier.id
+                                  ? 'bg-[var(--accent-primary)]/10'
+                                  : ''
+                              }`}
+                            >
+                              <Server className="w-4 h-4 text-[var(--text-muted)]" />
+                              <span className="text-[var(--text-primary)]">{identifier.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    })}
+
+                    {/* Uncategorized identifiers */}
+                    {groupedIdentifiers.uncategorized.length > 0 && (
+                      <div>
+                        {categories.length > 0 && (
+                          <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">
+                            Other
+                          </div>
+                        )}
+                        {groupedIdentifiers.uncategorized.map((identifier) => (
+                          <button
+                            key={identifier.id}
+                            onClick={() => handleIdentifierSelect(identifier.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
+                              selectedIdentifierId === identifier.id
+                                ? 'bg-[var(--accent-primary)]/10'
+                                : ''
+                            }`}
+                          >
+                            <Server className="w-4 h-4 text-[var(--text-muted)]" />
+                            <span className="text-[var(--text-primary)]">{identifier.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Error State */}
         {error && (
           <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 text-[var(--status-error)] text-center">
             {error}
             <button
-              onClick={fetchLeaderboardData}
+              onClick={() => fetchLeaderboardData(selectedIdentifierId)}
               className="ml-4 underline hover:no-underline"
             >
               Retry
@@ -147,7 +343,7 @@ export default function LeaderboardsPage() {
                   Most Popular Kits
                 </h2>
                 <span className="text-xs text-[var(--text-muted)] ml-auto">
-                  All-time
+                  {selectedIdentifierId ? 'This server' : 'All-time'}
                 </span>
               </div>
 
@@ -216,10 +412,11 @@ export default function LeaderboardsPage() {
               </div>
 
               <div className="space-y-3">
-                {serverLeaderboard.map((server, index) => (
-                  <div
-                    key={server.serverId}
-                    className="flex items-center gap-4 p-3 rounded-[var(--radius-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors"
+                {identifierLeaderboard.map((server, index) => (
+                  <button
+                    key={server.identifierId}
+                    onClick={() => handleIdentifierSelect(server.identifierId)}
+                    className="w-full flex items-center gap-4 p-3 rounded-[var(--radius-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors text-left"
                   >
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -236,7 +433,7 @@ export default function LeaderboardsPage() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-[var(--text-primary)]">
-                        {server.serverName}
+                        {server.identifierName}
                       </div>
                       <div className="text-xs text-[var(--text-muted)]">
                         {server.uniquePlayers.toLocaleString()} active players
@@ -250,10 +447,10 @@ export default function LeaderboardsPage() {
                         redemptions
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
 
-                {serverLeaderboard.length === 0 && (
+                {identifierLeaderboard.length === 0 && (
                   <div className="text-center py-8 text-[var(--text-muted)]">
                     No server data available yet
                   </div>
@@ -366,18 +563,7 @@ export default function LeaderboardsPage() {
       </main>
 
       {/* Footer */}
-      <footer
-        className="border-t mt-12"
-        style={{
-          background: 'var(--glass-bg)',
-          borderColor: 'var(--glass-border)',
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm text-[var(--text-muted)]">
-          <p>Icefuse Networks - Kit Statistics</p>
-          <p className="mt-1">Data updates in real-time</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

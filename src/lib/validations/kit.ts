@@ -293,6 +293,46 @@ export const serverIdentifierIdSchema = z.object({
   }),
 })
 
+/**
+ * Update server identifier validation
+ */
+export const updateServerIdentifierSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less')
+    .trim()
+    .optional(),
+  description: z.string().max(255).nullable().optional(),
+  categoryId: z.string().max(60).nullable().optional(),
+})
+
+/**
+ * Create server identifier category validation
+ */
+export const createServerIdentifierCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be 100 characters or less')
+    .trim(),
+  description: z.string().max(255).nullable().optional(),
+})
+
+/**
+ * Update server identifier category validation
+ */
+export const updateServerIdentifierCategorySchema = createServerIdentifierCategorySchema.partial()
+
+/**
+ * Server identifier category ID parameter validation
+ */
+export const serverIdentifierCategoryIdSchema = z.object({
+  id: z.string().refine(validatePrefixedId('serverIdentifierCategory'), {
+    message: 'Invalid server identifier category ID format',
+  }),
+})
+
 // =============================================================================
 // Query Parameter Schemas
 // =============================================================================
@@ -365,3 +405,6 @@ export type UpdateApiTokenInput = z.infer<typeof updateApiTokenSchema>
 export type CreateTokenCategoryInput = z.infer<typeof createTokenCategorySchema>
 export type UpdateTokenCategoryInput = z.infer<typeof updateTokenCategorySchema>
 export type CreateServerIdentifierInput = z.infer<typeof createServerIdentifierSchema>
+export type UpdateServerIdentifierInput = z.infer<typeof updateServerIdentifierSchema>
+export type CreateServerIdentifierCategoryInput = z.infer<typeof createServerIdentifierCategorySchema>
+export type UpdateServerIdentifierCategoryInput = z.infer<typeof updateServerIdentifierCategorySchema>

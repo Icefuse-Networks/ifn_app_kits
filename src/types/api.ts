@@ -180,7 +180,7 @@ export type AuditAction = 'create' | 'update' | 'delete'
 /**
  * Auditable resource types
  */
-export type AuditResourceType = 'kit_config' | 'game_server' | 'api_token' | 'server_identifier' | 'token_category'
+export type AuditResourceType = 'kit_config' | 'game_server' | 'api_token' | 'server_identifier' | 'server_identifier_category' | 'token_category'
 
 /**
  * Audit log entry

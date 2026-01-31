@@ -1,21 +1,21 @@
 /**
- * Server Identifiers API - List and Create
+ * Server Identifier Categories API - List and Create
  *
- * GET  /api/identifiers - List all server identifiers
- * POST /api/identifiers - Create new server identifier
+ * GET  /api/identifier-categories - List all identifier categories
+ * POST /api/identifier-categories - Create new identifier category
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireSession } from '@/services/api-auth'
 import { auditCreate } from '@/services/audit'
-import { createServerIdentifierSchema } from '@/lib/validations/kit'
+import { createServerIdentifierCategorySchema } from '@/lib/validations/kit'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
 
 /**
- * GET /api/identifiers
- * List all server identifiers with usage counts
+ * GET /api/identifier-categories
+ * List all identifier categories with identifier counts
  */
 export async function GET(request: NextRequest) {
   const authResult = await requireSession(request)
@@ -28,42 +28,34 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // PERF: Select only needed fields with usage count and category
-    const identifiers = await prisma.serverIdentifier.findMany({
+    // PERF: Select only needed fields with count
+    const categories = await prisma.serverIdentifierCategory.findMany({
       select: {
         id: true,
         name: true,
-        hashedId: true,
         description: true,
-        categoryId: true,
         createdAt: true,
         updatedAt: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
-          select: { usageEvents: true },
+          select: { identifiers: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { name: 'asc' },
     })
 
-    return NextResponse.json(identifiers)
+    return NextResponse.json(categories)
   } catch (error) {
-    logger.admin.error('Failed to list server identifiers', error as Error)
+    logger.admin.error('Failed to list identifier categories', error as Error)
     return NextResponse.json(
-      { error: 'Failed to list server identifiers' },
+      { error: 'Failed to list identifier categories' },
       { status: 500 }
     )
   }
 }
 
 /**
- * POST /api/identifiers
- * Create a new server identifier
+ * POST /api/identifier-categories
+ * Create a new identifier category
  */
 export async function POST(request: NextRequest) {
   const authResult = await requireSession(request)
@@ -79,7 +71,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // SECURITY: Zod validated
-    const parsed = createServerIdentifierSchema.safeParse(body)
+    const parsed = createServerIdentifierCategorySchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Validation failed', details: parsed.error.flatten() },
@@ -88,47 +80,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate name
-    const existing = await prisma.serverIdentifier.findFirst({
-      where: { name: parsed.data.name },
+    const existing = await prisma.serverIdentifierCategory.findFirst({
+      where: { name: { equals: parsed.data.name, mode: 'insensitive' } },
       select: { id: true },
     })
 
     if (existing) {
       return NextResponse.json(
-        { error: 'A server identifier with this name already exists' },
+        { error: 'A category with this name already exists' },
         { status: 409 }
       )
     }
 
-    const identifier = await prisma.serverIdentifier.create({
+    const category = await prisma.serverIdentifierCategory.create({
       data: {
-        id: id.serverIdentifier(),
+        id: id.serverIdentifierCategory(),
         name: parsed.data.name,
-        hashedId: id.identifierHash(),
         description: parsed.data.description || null,
       },
     })
 
     // SECURITY: Audit logged
     await auditCreate(
-      'server_identifier',
-      identifier.id,
+      'server_identifier_category',
+      category.id,
       authResult.context,
-      { name: identifier.name, hashedId: identifier.hashedId },
+      { name: category.name, description: category.description },
       request
     )
 
-    logger.admin.info('Server identifier created', {
-      identifierId: identifier.id,
-      name: identifier.name,
+    logger.admin.info('Identifier category created', {
+      categoryId: category.id,
+      name: category.name,
       actor: authResult.context.actorId,
     })
 
-    return NextResponse.json(identifier, { status: 201 })
+    return NextResponse.json(category, { status: 201 })
   } catch (error) {
-    logger.admin.error('Failed to create server identifier', error as Error)
+    logger.admin.error('Failed to create identifier category', error as Error)
     return NextResponse.json(
-      { error: 'Failed to create server identifier' },
+      { error: 'Failed to create identifier category' },
       { status: 500 }
     )
   }

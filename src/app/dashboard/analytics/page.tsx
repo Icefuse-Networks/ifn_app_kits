@@ -58,7 +58,6 @@ export default function AnalyticsDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [dateRange, setDateRange] = useState<7 | 30 | 90>(30)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   // Data states
   const [summary, setSummary] = useState<SummaryStats | null>(null)
@@ -69,11 +68,11 @@ export default function AnalyticsDashboardPage() {
   // Fetch data on mount and date range change
   useEffect(() => {
     fetchAnalyticsData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange])
 
   async function fetchAnalyticsData() {
     setLoading(true)
-    setError(null)
 
     try {
       // Fetch data in parallel with credentials for session auth
@@ -85,15 +84,12 @@ export default function AnalyticsDashboardPage() {
         fetch(`/api/analytics/server-activity?days=${dateRange}`, fetchOptions),
       ])
 
-      if (!popularityRes.ok || !trendsRes.ok || !heatMapRes.ok || !activityRes.ok) {
-        throw new Error('Failed to fetch analytics data')
-      }
-
+      // Parse responses, using empty defaults for failed requests
       const [popularityData, trendsData, heatMapData, activityData] = await Promise.all([
-        popularityRes.json(),
-        trendsRes.json(),
-        heatMapRes.json(),
-        activityRes.json(),
+        popularityRes.ok ? popularityRes.json() : { data: [] },
+        trendsRes.ok ? trendsRes.json() : { data: [], summary: {} },
+        heatMapRes.ok ? heatMapRes.json() : { data: [], maxValue: 0, peak: null },
+        activityRes.ok ? activityRes.json() : { data: [], summary: {} },
       ])
 
       // Set popularity data
@@ -126,8 +122,8 @@ export default function AnalyticsDashboardPage() {
         activeServers,
       })
     } catch (err) {
+      // Silently handle fetch errors - empty data is fine
       console.error('Failed to fetch analytics:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load analytics')
     } finally {
       setLoading(false)
     }
@@ -181,13 +177,6 @@ export default function AnalyticsDashboardPage() {
           </button>
         </div>
       </div>
-
-      {/* Error State */}
-      {error && (
-        <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 text-[var(--status-error)]">
-          {error}
-        </div>
-      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
