@@ -9,7 +9,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe } from 'lucide-react'
+import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/global/Footer'
 
@@ -26,6 +26,14 @@ interface IdentifierStats {
   identifierName: string
   totalRedemptions: number
   uniquePlayers: number
+}
+
+interface PlayerStats {
+  steamId: string
+  playerName: string | null
+  totalRedemptions: number
+  uniqueKits: number
+  lastRedeemed: string | null
 }
 
 interface HeatMapData {
@@ -54,11 +62,13 @@ export default function LeaderboardsPage() {
   const [topKits, setTopKits] = useState<KitStats[]>([])
   const [identifierLeaderboard, setIdentifierLeaderboard] = useState<IdentifierStats[]>([])
   const [heatMap, setHeatMap] = useState<HeatMapData | null>(null)
+  const [topPlayers, setTopPlayers] = useState<PlayerStats[]>([])
 
   // Server selection state
   const [identifiers, setIdentifiers] = useState<ServerIdentifier[]>([])
   const [categories, setCategories] = useState<IdentifierCategory[]>([])
   const [selectedIdentifierId, setSelectedIdentifierId] = useState<string | null>(null)
+  const [selectedKitName, setSelectedKitName] = useState<string | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   // Get selected identifier name for display
@@ -68,33 +78,41 @@ export default function LeaderboardsPage() {
     fetchIdentifiers()
   }, [])
 
-  const fetchLeaderboardData = useCallback(async (identifierId: string | null) => {
-    setLoading(true)
-    setError(null)
+  const fetchLeaderboardData = useCallback(
+    async (identifierId: string | null, kitName: string | null = null) => {
+      setLoading(true)
+      setError(null)
 
-    try {
-      const url = identifierId
-        ? `/api/public/leaderboards?identifierId=${encodeURIComponent(identifierId)}`
-        : '/api/public/leaderboards'
+      try {
+        const params = new URLSearchParams()
+        if (identifierId) params.set('identifierId', identifierId)
+        if (kitName) params.set('kitName', kitName)
 
-      const response = await fetch(url)
+        const url = params.toString()
+          ? `/api/public/leaderboards?${params.toString()}`
+          : '/api/public/leaderboards'
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard data')
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch leaderboard data')
+        }
+
+        const data = await response.json()
+
+        setTopKits(data.topKits || [])
+        setIdentifierLeaderboard(data.identifierActivity || [])
+        setHeatMap(data.heatMap)
+        setTopPlayers(data.topPlayers || [])
+      } catch (err) {
+        console.error('Failed to fetch leaderboards:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load leaderboards')
+      } finally {
+        setLoading(false)
       }
-
-      const data = await response.json()
-
-      setTopKits(data.topKits || [])
-      setIdentifierLeaderboard(data.identifierActivity || [])
-      setHeatMap(data.heatMap)
-    } catch (err) {
-      console.error('Failed to fetch leaderboards:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load leaderboards')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+    []
+  )
 
   async function fetchIdentifiers() {
     try {
@@ -119,8 +137,14 @@ export default function LeaderboardsPage() {
 
   function handleIdentifierSelect(identifierId: string | null) {
     setSelectedIdentifierId(identifierId)
+    setSelectedKitName(null) // Clear kit filter when changing server
     setDropdownOpen(false)
-    fetchLeaderboardData(identifierId)
+    fetchLeaderboardData(identifierId, null)
+  }
+
+  function handleKitSelect(kitName: string | null) {
+    setSelectedKitName(kitName)
+    fetchLeaderboardData(selectedIdentifierId, kitName)
   }
 
   const formatNumber = (num: number) => {
@@ -347,11 +371,34 @@ export default function LeaderboardsPage() {
                 </span>
               </div>
 
+              {/* Kit filter indicator */}
+              {selectedKitName && (
+                <div className="flex items-center gap-2 mb-4 p-2 rounded-[var(--radius-md)] bg-[var(--accent-primary)]/10">
+                  <span className="text-xs text-[var(--text-secondary)]">
+                    Filtering players by:
+                  </span>
+                  <span className="text-xs font-medium text-[var(--accent-primary)]">
+                    {selectedKitName}
+                  </span>
+                  <button
+                    onClick={() => handleKitSelect(null)}
+                    className="ml-auto text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {topKits.map((kit, index) => (
-                  <div
+                  <button
                     key={kit.kitName}
-                    className="flex items-center gap-4 p-3 rounded-[var(--radius-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors"
+                    onClick={() => handleKitSelect(kit.kitName)}
+                    className={`w-full flex items-center gap-4 p-3 rounded-[var(--radius-md)] transition-colors text-left ${
+                      selectedKitName === kit.kitName
+                        ? 'bg-[var(--accent-primary)]/10 ring-1 ring-[var(--accent-primary)]'
+                        : 'bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)]'
+                    }`}
                   >
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -382,7 +429,7 @@ export default function LeaderboardsPage() {
                         redemptions
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
 
                 {topKits.length === 0 && (
@@ -453,6 +500,68 @@ export default function LeaderboardsPage() {
                 {identifierLeaderboard.length === 0 && (
                   <div className="text-center py-8 text-[var(--text-muted)]">
                     No server data available yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Top Players */}
+            <div
+              className="p-6 rounded-[var(--radius-lg)] lg:col-span-2"
+              style={{
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <Users className="w-5 h-5 text-[var(--accent-primary)]" />
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Top Players
+                </h2>
+                <span className="text-xs text-[var(--text-muted)] ml-auto">
+                  {selectedKitName ? `For ${selectedKitName}` : 'All kits'} • Last 30 days
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {topPlayers.map((player, index) => (
+                  <div
+                    key={player.steamId}
+                    className="flex items-center gap-3 p-3 rounded-[var(--radius-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
+                        index === 0
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : index === 1
+                          ? 'bg-gray-400/20 text-gray-300'
+                          : index === 2
+                          ? 'bg-orange-500/20 text-orange-400'
+                          : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[var(--text-primary)] truncate">
+                        {player.playerName || 'Unknown Player'}
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">
+                        {player.uniqueKits} kit{player.uniqueKits !== 1 ? 's' : ''} used
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="font-bold text-[var(--status-info)]">
+                        {formatNumber(player.totalRedemptions)}
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">claims</div>
+                    </div>
+                  </div>
+                ))}
+
+                {topPlayers.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-[var(--text-muted)]">
+                    No player data available yet
                   </div>
                 )}
               </div>

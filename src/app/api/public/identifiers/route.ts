@@ -18,24 +18,42 @@ import { logger } from '@/lib/logger'
  */
 export async function GET() {
   try {
-    // PERF: Select only fields needed for dropdown
-    const [identifiers, categories] = await Promise.all([
-      prisma.serverIdentifier.findMany({
+    // Try to fetch with categoryId (new schema)
+    let identifiers: { id: string; name: string; categoryId: string | null }[]
+    let categories: { id: string; name: string }[] = []
+
+    try {
+      // PERF: Parallel fetch if category schema exists
+      const [ids, cats] = await Promise.all([
+        prisma.serverIdentifier.findMany({
+          select: {
+            id: true,
+            name: true,
+            categoryId: true,
+          },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.serverIdentifierCategory.findMany({
+          select: {
+            id: true,
+            name: true,
+          },
+          orderBy: { name: 'asc' },
+        }),
+      ])
+      identifiers = ids
+      categories = cats
+    } catch {
+      // Category schema may not exist yet - fetch identifiers without categoryId
+      const ids = await prisma.serverIdentifier.findMany({
         select: {
           id: true,
           name: true,
-          categoryId: true,
         },
         orderBy: { name: 'asc' },
-      }),
-      prisma.serverIdentifierCategory.findMany({
-        select: {
-          id: true,
-          name: true,
-        },
-        orderBy: { name: 'asc' },
-      }),
-    ])
+      })
+      identifiers = ids.map((i) => ({ ...i, categoryId: null }))
+    }
 
     return NextResponse.json({
       identifiers,

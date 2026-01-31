@@ -5,6 +5,7 @@
  *
  * Query params:
  * - identifierId: Optional server identifier ID to filter by
+ * - kitName: Optional kit name to filter player stats by
  *
  * No authentication required - this is a public endpoint.
  */
@@ -20,11 +21,13 @@ import { logger } from '@/lib/logger'
  * - Top kits (all-time or per-identifier)
  * - Server/Identifier activity (last 30 days)
  * - Heat map (last 30 days)
+ * - Top players (global or per-kit, with identifier filtering)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const identifierId = searchParams.get('identifierId')
+    const kitNameFilter = searchParams.get('kitName')
 
     // Calculate date range for recent stats
     const startDate = new Date()
@@ -35,8 +38,11 @@ export async function GET(request: NextRequest) {
       ? { serverIdentifierId: identifierId }
       : {}
 
+    // Build kit filter if provided
+    const kitFilter = kitNameFilter ? { kitName: kitNameFilter } : {}
+
     // PERF: Parallel queries
-    const [topKits, identifierActivity, heatMapData] = await Promise.all([
+    const [topKits, identifierActivity, heatMapData, topPlayers] = await Promise.all([
       // Top kits - either global or per-identifier
       identifierId
         ? // Per-identifier: aggregate from usage events
@@ -205,15 +211,98 @@ export async function GET(request: NextRequest) {
             },
           }
         }),
+
+      // Top players - aggregated from usage events
+      prisma.kitUsageEvent
+        .groupBy({
+          by: ['steamId'],
+          where: {
+            redeemedAt: { gte: startDate },
+            ...identifierFilter,
+            ...kitFilter,
+          },
+          _count: { id: true },
+        })
+        .then(async (playerCounts) => {
+          // Get player names from most recent event per player
+          const steamIds = playerCounts.map((p) => p.steamId)
+
+          if (steamIds.length === 0) return []
+
+          // Fetch unique kits per player
+          const uniqueKitsData = await prisma.kitUsageEvent.groupBy({
+            by: ['steamId', 'kitName'],
+            where: {
+              redeemedAt: { gte: startDate },
+              steamId: { in: steamIds },
+              ...identifierFilter,
+              ...kitFilter,
+            },
+          })
+
+          const uniqueKitsMap = new Map<string, Set<string>>()
+          for (const row of uniqueKitsData) {
+            const existing = uniqueKitsMap.get(row.steamId) || new Set()
+            existing.add(row.kitName)
+            uniqueKitsMap.set(row.steamId, existing)
+          }
+
+          // Get most recent player names
+          const recentEvents = await prisma.kitUsageEvent.findMany({
+            where: {
+              steamId: { in: steamIds },
+              playerName: { not: null },
+            },
+            select: {
+              steamId: true,
+              playerName: true,
+              redeemedAt: true,
+            },
+            orderBy: { redeemedAt: 'desc' },
+            distinct: ['steamId'],
+          })
+
+          const playerNameMap = new Map(
+            recentEvents.map((e) => [e.steamId, e.playerName])
+          )
+
+          // Get last redeemed time per player
+          const lastRedeemedData = await prisma.kitUsageEvent.groupBy({
+            by: ['steamId'],
+            where: {
+              redeemedAt: { gte: startDate },
+              steamId: { in: steamIds },
+              ...identifierFilter,
+              ...kitFilter,
+            },
+            _max: { redeemedAt: true },
+          })
+          const lastRedeemedMap = new Map(
+            lastRedeemedData.map((r) => [r.steamId, r._max.redeemedAt])
+          )
+
+          return playerCounts
+            .map((player) => ({
+              steamId: player.steamId,
+              playerName: playerNameMap.get(player.steamId) || null,
+              totalRedemptions: player._count.id,
+              uniqueKits: uniqueKitsMap.get(player.steamId)?.size || 0,
+              lastRedeemed: lastRedeemedMap.get(player.steamId) || null,
+            }))
+            .sort((a, b) => b.totalRedemptions - a.totalRedemptions)
+            .slice(0, 15)
+        }),
     ])
 
     return NextResponse.json({
       topKits,
       identifierActivity,
       heatMap: heatMapData,
+      topPlayers,
       // Include filter info in response
       filter: {
         identifierId: identifierId || null,
+        kitName: kitNameFilter || null,
         isGlobal: !identifierId,
       },
     })

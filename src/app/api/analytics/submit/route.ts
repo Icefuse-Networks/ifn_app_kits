@@ -66,7 +66,7 @@ const kitUsageEventSchema = z.object({
   dayOfWeek: z.number().int().min(0).max(6).optional(),
   serverIp: z.string().optional(),
   serverName: z.string().optional(),
-  wipeId: z.string().optional(),
+  wipeId: z.string().nullable().optional(),
 })
 
 const batchSubmitSchema = z.object({
