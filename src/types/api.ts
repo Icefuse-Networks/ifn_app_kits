@@ -2,49 +2,107 @@
  * API Type Definitions
  *
  * Types for API authentication, scopes, and responses.
+ * Designed for multi-plugin extensibility (Kits, Clans, Stats, etc.)
  */
 
 // =============================================================================
-// API Token Scopes
+// API Token Scopes - Extensible Registry
 // =============================================================================
 
 /**
- * Available API token scopes
+ * Scope format: `namespace:action`
+ * - namespace: plugin identifier (kits, clans, stats, servers, analytics, telemetry)
+ * - action: read | write
+ *
+ * Examples: 'kits:read', 'clans:write', 'stats:read'
  */
-export type ApiScope =
-  | 'kits:read'        // Read kit configs
-  | 'kits:write'       // Create/update/delete kits
-  | 'servers:read'     // Read game servers
-  | 'servers:write'    // Create/update/delete servers
-  | 'analytics:read'   // Read analytics data
-  | 'analytics:write'  // Write analytics events
-  | 'telemetry:write'  // Submit telemetry data
+export type ApiScope = string
 
 /**
- * All available scopes
+ * Scope definition with metadata
  */
-export const API_SCOPES: ApiScope[] = [
-  'kits:read',
-  'kits:write',
-  'servers:read',
-  'servers:write',
-  'analytics:read',
-  'analytics:write',
-  'telemetry:write',
-]
-
-/**
- * Scope descriptions for UI
- */
-export const SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
-  'kits:read': 'Read kit configurations',
-  'kits:write': 'Create, update, and delete kit configurations',
-  'servers:read': 'Read game server information',
-  'servers:write': 'Create, update, and delete game servers',
-  'analytics:read': 'Read kit usage analytics and statistics',
-  'analytics:write': 'Submit kit usage events from game servers',
-  'telemetry:write': 'Submit telemetry and health data from game servers',
+export interface ScopeDefinition {
+  scope: ApiScope
+  description: string
+  plugin: string
 }
+
+/**
+ * Scope registry - extensible for plugins
+ * Plugins register their scopes here
+ */
+export const SCOPE_REGISTRY: Map<ApiScope, ScopeDefinition> = new Map()
+
+/**
+ * Register a scope with the registry
+ */
+export function registerScope(scope: ApiScope, description: string, plugin: string): void {
+  SCOPE_REGISTRY.set(scope, { scope, description, plugin })
+}
+
+/**
+ * Check if a scope is registered
+ */
+export function isValidScope(scope: ApiScope): boolean {
+  return SCOPE_REGISTRY.has(scope)
+}
+
+/**
+ * Get all registered scopes
+ */
+export function getRegisteredScopes(): ApiScope[] {
+  return Array.from(SCOPE_REGISTRY.keys())
+}
+
+/**
+ * Get scopes for a specific plugin
+ */
+export function getScopesForPlugin(plugin: string): ApiScope[] {
+  return Array.from(SCOPE_REGISTRY.entries())
+    .filter(([, def]) => def.plugin === plugin)
+    .map(([scope]) => scope)
+}
+
+// -----------------------------------------------------------------------------
+// Core Plugin Scopes (registered at startup)
+// -----------------------------------------------------------------------------
+
+// Kits plugin scopes
+registerScope('kits:read', 'Read kit configurations', 'kits')
+registerScope('kits:write', 'Create, update, and delete kit configurations', 'kits')
+
+// Servers (shared across plugins)
+registerScope('servers:read', 'Read game server information', 'core')
+registerScope('servers:write', 'Create, update, and delete game servers', 'core')
+
+// Analytics (shared across plugins)
+registerScope('analytics:read', 'Read analytics and statistics', 'core')
+registerScope('analytics:write', 'Submit analytics events from game servers', 'core')
+
+// Telemetry (shared across plugins)
+registerScope('telemetry:write', 'Submit telemetry and health data from game servers', 'core')
+
+// Clans plugin scopes
+registerScope('clans:read', 'Read clan information', 'clans')
+registerScope('clans:write', 'Create, update, and delete clans', 'clans')
+
+// -----------------------------------------------------------------------------
+// Future Plugin Scopes (uncomment when adding plugins)
+// -----------------------------------------------------------------------------
+// registerScope('stats:read', 'Read player statistics', 'stats')
+// registerScope('stats:write', 'Submit player statistics', 'stats')
+
+/**
+ * All available scopes (for backwards compatibility)
+ */
+export const API_SCOPES: ApiScope[] = getRegisteredScopes()
+
+/**
+ * Scope descriptions for UI (for backwards compatibility)
+ */
+export const SCOPE_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+  Array.from(SCOPE_REGISTRY.entries()).map(([scope, def]) => [scope, def.description])
+)
 
 /**
  * Default scopes for new tokens
@@ -169,7 +227,7 @@ export interface PaginatedResponse<T> {
 }
 
 // =============================================================================
-// Audit Log Types
+// Audit Log Types - Extensible Registry
 // =============================================================================
 
 /**
@@ -178,9 +236,80 @@ export interface PaginatedResponse<T> {
 export type AuditAction = 'create' | 'update' | 'delete'
 
 /**
- * Auditable resource types
+ * Auditable resource types - string-based for plugin extensibility
+ * Format: `plugin_resource` (e.g., 'kit_config', 'clan_member', 'player_stat')
  */
-export type AuditResourceType = 'kit_config' | 'game_server' | 'api_token' | 'server_identifier' | 'server_identifier_category' | 'token_category'
+export type AuditResourceType = string
+
+/**
+ * Resource type definition with metadata
+ */
+export interface ResourceTypeDefinition {
+  type: AuditResourceType
+  displayName: string
+  plugin: string
+}
+
+/**
+ * Resource type registry - extensible for plugins
+ */
+export const RESOURCE_TYPE_REGISTRY: Map<AuditResourceType, ResourceTypeDefinition> = new Map()
+
+/**
+ * Register an auditable resource type
+ */
+export function registerResourceType(type: AuditResourceType, displayName: string, plugin: string): void {
+  RESOURCE_TYPE_REGISTRY.set(type, { type, displayName, plugin })
+}
+
+/**
+ * Check if a resource type is registered
+ */
+export function isValidResourceType(type: AuditResourceType): boolean {
+  return RESOURCE_TYPE_REGISTRY.has(type)
+}
+
+/**
+ * Get all registered resource types
+ */
+export function getRegisteredResourceTypes(): AuditResourceType[] {
+  return Array.from(RESOURCE_TYPE_REGISTRY.keys())
+}
+
+// -----------------------------------------------------------------------------
+// Core Resource Types (registered at startup)
+// -----------------------------------------------------------------------------
+
+// Core/shared resources
+registerResourceType('game_server', 'Game Server', 'core')
+registerResourceType('api_token', 'API Token', 'core')
+registerResourceType('token_category', 'Token Category', 'core')
+registerResourceType('server_identifier', 'Server Identifier', 'core')
+registerResourceType('server_identifier_category', 'Server Identifier Category', 'core')
+
+// Kits plugin resources
+registerResourceType('kit_config', 'Kit Configuration', 'kits')
+
+// Clans plugin resources
+registerResourceType('clan', 'Clan', 'clans')
+registerResourceType('clan_member', 'Clan Member', 'clans')
+registerResourceType('clan_role', 'Clan Role', 'clans')
+registerResourceType('clan_alliance', 'Clan Alliance', 'clans')
+registerResourceType('clan_enemy', 'Clan Enemy', 'clans')
+registerResourceType('clan_perk', 'Clan Perk', 'clans')
+registerResourceType('clan_perk_definition', 'Perk Definition', 'clans')
+registerResourceType('banned_clan_name', 'Banned Clan Name', 'clans')
+
+// -----------------------------------------------------------------------------
+// Future Plugin Resources (uncomment when adding plugins)
+// -----------------------------------------------------------------------------
+// registerResourceType('player_stat', 'Player Statistic', 'stats')
+// registerResourceType('kill_event', 'Kill Event', 'stats')
+
+/**
+ * Known resource types (for backwards compatibility and type hints)
+ */
+export const AUDIT_RESOURCE_TYPES = getRegisteredResourceTypes()
 
 /**
  * Audit log entry

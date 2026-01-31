@@ -92,6 +92,8 @@ export interface Kit {
   HideWithoutPermission: boolean
   /** Whether this kit is given automatically on spawn */
   IsAutoKit: boolean
+  /** Whether this kit is a store kit (purchased from store) */
+  IsStoreKit: boolean
   /** Copy/paste file reference */
   CopyPasteFile: string
   /** Kit image URL */

@@ -1,0 +1,244 @@
+/**
+ * Public Kits API - Bulk Endpoint
+ *
+ * GET /api/public/kits - Get all store kits for display
+ *
+ * Query params:
+ * - storeOnly: If "true" (default), only return kits with IsStoreKit=true
+ *
+ * No authentication required - this is a public endpoint.
+ * Used by the PayNow store to display kit contents.
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { safeParseKitData } from '@/lib/utils/kit'
+import { logger } from '@/lib/logger'
+import type { Kit, KitItem } from '@/types/kit'
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/**
+ * Transformed item format for store API
+ * Matches PayNow's expected KitItem structure
+ */
+interface StoreKitItem {
+  /** Rust item short name */
+  ShortName: string
+  /** Amount of the item */
+  Amount: number
+  /** Item skin ID */
+  SkinID: number
+  /** Container type (main, wear, belt) */
+  Container: string
+  /** Display name override */
+  DisplayName?: string
+  /** Blueprint flag */
+  Blueprint?: boolean
+  /** Condition (0-1) */
+  Condition?: number
+  /** Contents/attachments */
+  Contents?: StoreKitItem[]
+}
+
+/**
+ * Kit data format for store API
+ */
+interface StoreKitData {
+  /** Kit name */
+  Name: string
+  /** Kit description */
+  Description: string
+  /** Cooldown in seconds */
+  Cooldown: number
+  /** Permission required */
+  Permission: string
+  /** All items with container type */
+  Items: StoreKitItem[]
+  /** Max uses (0 = unlimited) */
+  MaxUses: number
+  /** Hidden from menu */
+  Hidden: boolean
+  /** Image URL */
+  Image?: string
+  /** Auth level required */
+  AuthLevel?: number
+}
+
+/**
+ * Store kit entry with optional custom description
+ */
+interface StoreKitEntry {
+  /** Custom store description (can be HTML) */
+  storeDescription: string
+  /** Full kit data */
+  kit: StoreKitData
+}
+
+/**
+ * Full API response - flat structure keyed by kit name
+ */
+type StoreKitsResponse = Record<string, StoreKitEntry>
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Transform a KitItem to store format
+ */
+function transformItem(item: KitItem, container: string): StoreKitItem {
+  const storeItem: StoreKitItem = {
+    ShortName: item.Shortname,
+    Amount: item.Amount,
+    SkinID: typeof item.Skin === 'number' ? item.Skin : parseInt(item.Skin as string) || 0,
+    Container: container,
+    Condition: item.Condition,
+  }
+
+  // Add display name if skin is applied (workshop item)
+  if (storeItem.SkinID > 0) {
+    storeItem.DisplayName = item.Shortname // Could be enhanced with skin name lookup
+  }
+
+  // Add blueprint flag if it's a blueprint
+  if (item.BlueprintShortname) {
+    storeItem.Blueprint = true
+    storeItem.DisplayName = `${item.BlueprintShortname} Blueprint`
+  }
+
+  // Transform nested contents
+  if (item.Contents && item.Contents.length > 0) {
+    storeItem.Contents = item.Contents.map((c) => transformItem(c, container))
+  }
+
+  return storeItem
+}
+
+/**
+ * Transform a Kit to store format
+ */
+function transformKit(kit: Kit): StoreKitData {
+  // Combine all items with container type
+  const items: StoreKitItem[] = [
+    ...(kit.MainItems || []).map((item) => transformItem(item, 'main')),
+    ...(kit.WearItems || []).map((item) => transformItem(item, 'wear')),
+    ...(kit.BeltItems || []).map((item) => transformItem(item, 'belt')),
+  ]
+
+  return {
+    Name: kit.Name,
+    Description: kit.Description,
+    Cooldown: kit.Cooldown,
+    Permission: kit.RequiredPermission,
+    Items: items,
+    MaxUses: kit.MaximumUses,
+    Hidden: kit.IsHidden,
+    Image: kit.KitImage || undefined,
+    AuthLevel: kit.RequiredAuth,
+  }
+}
+
+// =============================================================================
+// CORS HEADERS
+// =============================================================================
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+// =============================================================================
+// ROUTE HANDLERS
+// =============================================================================
+
+/**
+ * OPTIONS /api/public/kits - Handle preflight requests
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  })
+}
+
+/**
+ * GET /api/public/kits
+ *
+ * Returns all store kits in a flat structure for the PayNow store.
+ * By default, only returns kits with IsStoreKit=true.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const storeOnly = searchParams.get('storeOnly') !== 'false' // Default true
+
+    // PERF: Fetch all configs with kit data
+    const configs = await prisma.kitConfig.findMany({
+      select: {
+        id: true,
+        name: true,
+        kitData: true,
+        storeData: true,
+      },
+    })
+
+    const response: StoreKitsResponse = {}
+
+    // Process each config
+    for (const config of configs) {
+      const parsed = safeParseKitData(config.kitData)
+      if (!parsed) continue
+
+      // Get store descriptions if available
+      let storeDescriptions: Record<string, string> = {}
+      if (config.storeData) {
+        try {
+          const storeData = typeof config.storeData === 'string'
+            ? JSON.parse(config.storeData)
+            : config.storeData
+          storeDescriptions = storeData.descriptions || {}
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      // Process each kit
+      for (const [kitKey, kit] of Object.entries(parsed._kits)) {
+        // Skip non-store kits if storeOnly is true
+        if (storeOnly && !kit.IsStoreKit) continue
+
+        // Skip if kit already exists (first config wins)
+        if (response[kit.Name]) continue
+
+        response[kit.Name] = {
+          storeDescription: storeDescriptions[kitKey] || kit.Description || '',
+          kit: transformKit(kit),
+        }
+      }
+    }
+
+    // Log for analytics
+    logger.analytics.info('Public kits fetched for store', {
+      kitCount: Object.keys(response).length,
+      storeOnly,
+    })
+
+    return NextResponse.json(response, {
+      headers: {
+        ...CORS_HEADERS,
+        // PERF: Cache for 5 minutes, stale-while-revalidate for 1 hour
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+      },
+    })
+  } catch (error) {
+    logger.analytics.error('Failed to fetch public kits', error as Error)
+    return NextResponse.json(
+      { error: 'Failed to fetch kit data' },
+      { status: 500, headers: CORS_HEADERS }
+    )
+  }
+}

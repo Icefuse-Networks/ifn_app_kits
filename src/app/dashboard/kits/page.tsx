@@ -24,6 +24,7 @@ import {
   Paintbrush,
   Zap,
   Tags,
+  ShoppingCart,
 } from 'lucide-react'
 
 import { useUndoRedo, useSkinImages } from '@/hooks'
@@ -2138,6 +2139,35 @@ export default function KitsPage() {
           >
             <Zap className="w-3 h-3" />
             <span>Auto Kit</span>
+          </button>
+
+          {/* Store Kit toggle */}
+          <button
+            onClick={() => {
+              const newIsStoreKit = !(selectedKit.IsStoreKit ?? false)
+              updateKit(selectedKitId!, { IsStoreKit: newIsStoreKit })
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+              selectedKit.IsStoreKit
+                ? 'text-[var(--status-success)]'
+                : 'text-[var(--text-muted)]'
+            }`}
+            style={{
+              background: selectedKit.IsStoreKit
+                ? 'rgba(var(--status-success-rgb), 0.15)'
+                : 'var(--glass-bg)',
+              border: selectedKit.IsStoreKit
+                ? '1px solid var(--status-success)'
+                : '1px solid var(--glass-border)',
+            }}
+            title={
+              selectedKit.IsStoreKit
+                ? 'Store kit (available for purchase)'
+                : 'Not a store kit'
+            }
+          >
+            <ShoppingCart className="w-3 h-3" />
+            <span>Store Kit</span>
           </button>
 
           {/* Kit ID with copy */}

@@ -9,7 +9,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe, Users } from 'lucide-react'
+import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe, Users, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/global/Footer'
 
@@ -391,45 +391,56 @@ export default function LeaderboardsPage() {
 
               <div className="space-y-3">
                 {topKits.map((kit, index) => (
-                  <button
+                  <div
                     key={kit.kitName}
-                    onClick={() => handleKitSelect(kit.kitName)}
-                    className={`w-full flex items-center gap-4 p-3 rounded-[var(--radius-md)] transition-colors text-left ${
+                    className={`flex items-center gap-4 p-3 rounded-[var(--radius-md)] transition-colors ${
                       selectedKitName === kit.kitName
                         ? 'bg-[var(--accent-primary)]/10 ring-1 ring-[var(--accent-primary)]'
                         : 'bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)]'
                     }`}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                        index === 0
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : index === 1
-                          ? 'bg-gray-400/20 text-gray-300'
-                          : index === 2
-                          ? 'bg-orange-500/20 text-orange-400'
-                          : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
-                      }`}
+                    <button
+                      onClick={() => handleKitSelect(kit.kitName)}
+                      className="flex items-center gap-4 flex-1 text-left"
                     >
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-[var(--text-primary)]">
-                        {kit.kitName}
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          index === 0
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : index === 1
+                            ? 'bg-gray-400/20 text-gray-300'
+                            : index === 2
+                            ? 'bg-orange-500/20 text-orange-400'
+                            : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
+                        }`}
+                      >
+                        {index + 1}
                       </div>
-                      <div className="text-xs text-[var(--text-muted)]">
-                        {kit.uniquePlayers.toLocaleString()} players
+                      <div className="flex-1">
+                        <div className="font-medium text-[var(--text-primary)]">
+                          {kit.kitName}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          {kit.uniquePlayers.toLocaleString()} players
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-[var(--accent-primary)]">
-                        {formatNumber(kit.totalRedemptions)}
+                      <div className="text-right">
+                        <div className="font-bold text-[var(--accent-primary)]">
+                          {formatNumber(kit.totalRedemptions)}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">
+                          redemptions
+                        </div>
                       </div>
-                      <div className="text-xs text-[var(--text-muted)]">
-                        redemptions
-                      </div>
-                    </div>
-                  </button>
+                    </button>
+                    <Link
+                      href={`/kits/${encodeURIComponent(kit.kitName)}`}
+                      className="p-2 rounded-[var(--radius-md)] text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--bg-input)] transition-colors"
+                      title="View kit contents"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </div>
                 ))}
 
                 {topKits.length === 0 && (

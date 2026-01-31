@@ -1,5 +1,33 @@
 // =============================================================================
-// Icefuse Kit Manager - Database Schema
+// Icefuse Rust Dashboard - Database Schema
+// =============================================================================
+//
+// MULTI-PLUGIN ARCHITECTURE
+// -------------------------
+// This schema supports multiple plugins (Kits, Clans, Stats, etc.)
+// Each plugin has its own analytics/event tables following this pattern:
+//
+// 1. Core tables (shared across plugins):
+//    - TokenCategory, ApiToken (API access)
+//    - GameServer (server registry)
+//    - AuditLog (mutation tracking)
+//    - ServerIdentifierCategory, ServerIdentifier (plugin tracking)
+//    - ServerWipe (wipe cycles)
+//
+// 2. Plugin-specific tables (follow this naming convention):
+//    - {Plugin}Event (e.g., KitUsageEvent, ClanWarEvent, KillEvent)
+//    - {Plugin}DailyStats (e.g., KitUsageDailyStats, ClanDailyStats)
+//    - {Plugin}HourlyStats (e.g., KitUsageHourlyStats)
+//    - {Plugin}GlobalStats (e.g., KitGlobalStats, PlayerGlobalStats)
+//
+// ADDING A NEW PLUGIN:
+// 1. Create plugin-specific event table (see KitUsageEvent as template)
+// 2. Create aggregation tables as needed (daily, hourly, global)
+// 3. Register ID prefixes in src/lib/id.ts
+// 4. Register scopes in src/types/api.ts
+// 5. Register resource types in src/types/api.ts
+// 6. Run prisma migrate to create tables
+//
 // =============================================================================
 
 generator client {
@@ -316,3 +344,282 @@ model KitGlobalStats {
   @@index([totalRedemptions])
   @@map("kit_global_stats")
 }
+
+// =============================================================================
+// CLANS PLUGIN MODELS
+// =============================================================================
+
+// Core Clan entity
+model Clan {
+  id          String   @id @db.VarChar(60) // Prefixed UUID: clan_<uuid>
+  tag         String   @unique @db.VarChar(10) // Player-facing display tag (e.g., "IFN")
+  description String?  @db.VarChar(200)
+  tagColor    String   @default("5AF3F3") @map("tag_color") @db.VarChar(6)
+  ownerId     String   @map("owner_id") @db.VarChar(20) // Steam ID
+  flags       Int      @default(0) // ClanFlags bitfield
+  version     Int      @default(0) // For optimistic locking / race condition prevention
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  members       ClanMember[]
+  roles         ClanRole[]
+  invites       ClanInvite[]
+  applications  ClanApplication[]
+  alliancesFrom ClanAlliance[]    @relation("AllianceFrom")
+  alliancesTo   ClanAlliance[]    @relation("AllianceTo")
+  enemiesFrom   ClanEnemy[]       @relation("EnemyFrom")
+  enemiesTo     ClanEnemy[]       @relation("EnemyTo")
+  stats         ClanWipeStats?
+  prestige      ClanPrestige?
+  perks         ClanPerk[]
+
+  @@index([tag])
+  @@index([ownerId])
+  @@map("clan")
+}
+
+// Clan member
+model ClanMember {
+  id       String    @id @db.VarChar(60) // clanmem_<uuid>
+  clanId   String    @map("clan_id") @db.VarChar(60)
+  steamId  String    @map("steam_id") @db.VarChar(20)
+  roleRank Int       @default(2) @map("role_rank")
+  joinedAt DateTime  @default(now()) @map("joined_at")
+  lastOnline DateTime? @map("last_online")
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, steamId])
+  @@index([steamId])
+  @@map("clan_member")
+}
+
+// Clan custom role
+model ClanRole {
+  id          String @id @db.VarChar(60) // clanrole_<uuid>
+  clanId      String @map("clan_id") @db.VarChar(60)
+  rank        Int
+  name        String @db.VarChar(20)
+  color       String @default("888888") @db.VarChar(6)
+  permissions Int    @default(0) // RolePermissions bitfield
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, rank])
+  @@map("clan_role")
+}
+
+// Pending clan invite
+model ClanInvite {
+  id            String   @id @db.VarChar(60) // claninv_<uuid>
+  clanId        String   @map("clan_id") @db.VarChar(60)
+  targetSteamId String   @map("target_steam_id") @db.VarChar(20)
+  invitedBy     String   @map("invited_by") @db.VarChar(20)
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, targetSteamId])
+  @@index([targetSteamId])
+  @@map("clan_invite")
+}
+
+// Clan join application
+model ClanApplication {
+  id               String   @id @db.VarChar(60) // clanapp_<uuid>
+  clanId           String   @map("clan_id") @db.VarChar(60)
+  applicantSteamId String   @map("applicant_steam_id") @db.VarChar(20)
+  message          String?  @db.VarChar(200)
+  appliedAt        DateTime @default(now()) @map("applied_at")
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, applicantSteamId])
+  @@index([applicantSteamId])
+  @@map("clan_application")
+}
+
+// Clan alliance (ally relationship)
+model ClanAlliance {
+  id         String    @id @db.VarChar(60) // clanally_<uuid>
+  fromClanId String    @map("from_clan_id") @db.VarChar(60)
+  toClanId   String    @map("to_clan_id") @db.VarChar(60)
+  status     String    @default("pending") @db.VarChar(20) // pending, accepted
+  createdAt  DateTime  @default(now()) @map("created_at")
+  acceptedAt DateTime? @map("accepted_at")
+
+  fromClan Clan @relation("AllianceFrom", fields: [fromClanId], references: [id], onDelete: Cascade)
+  toClan   Clan @relation("AllianceTo", fields: [toClanId], references: [id], onDelete: Cascade)
+
+  @@unique([fromClanId, toClanId])
+  @@map("clan_alliance")
+}
+
+// Clan enemy relationship
+model ClanEnemy {
+  id         String   @id @db.VarChar(60) // clanenemy_<uuid>
+  fromClanId String   @map("from_clan_id") @db.VarChar(60)
+  toClanId   String   @map("to_clan_id") @db.VarChar(60)
+  reason     String?  @db.VarChar(200) // Optional reason for enemy declaration
+  declaredAt DateTime @default(now()) @map("declared_at")
+
+  fromClan Clan @relation("EnemyFrom", fields: [fromClanId], references: [id], onDelete: Cascade)
+  toClan   Clan @relation("EnemyTo", fields: [toClanId], references: [id], onDelete: Cascade)
+
+  @@unique([fromClanId, toClanId])
+  @@map("clan_enemy")
+}
+
+// Clan wipe stats (reset each wipe)
+model ClanWipeStats {
+  id                String   @id @db.VarChar(60) // clanstats_<uuid>
+  clanId            String   @unique @map("clan_id") @db.VarChar(60)
+  totalXP           Int      @default(0) @map("total_xp")
+  pvpKills          Int      @default(0) @map("pvp_kills")
+  pvpDeaths         Int      @default(0) @map("pvp_deaths")
+  headshotKills     Int      @default(0) @map("headshot_kills")
+  raidsCompleted    Int      @default(0) @map("raids_completed")
+  npcKills          Int      @default(0) @map("npc_kills")
+  heliKills         Int      @default(0) @map("heli_kills")
+  bradleyKills      Int      @default(0) @map("bradley_kills")
+  resourcesGathered BigInt   @default(0) @map("resources_gathered")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@map("clan_wipe_stats")
+}
+
+// Clan prestige (persists across wipes)
+model ClanPrestige {
+  id             String   @id @db.VarChar(60) // clanpres_<uuid>
+  clanId         String   @unique @map("clan_id") @db.VarChar(60)
+  prestigePoints Int      @default(0) @map("prestige_points")
+  globalScore    Int      @default(0) @map("global_score")
+  wipesSurvived  Int      @default(0) @map("wipes_survived")
+  bestWipeLevel  Int      @default(0) @map("best_wipe_level")
+  bestWipeRank   Int      @default(0) @map("best_wipe_rank")
+  wipeWins       Int      @default(0) @map("wipe_wins")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  clan Clan @relation(fields: [clanId], references: [id], onDelete: Cascade)
+
+  @@map("clan_prestige")
+}
+
+// Admin-defined perk definitions
+model ClanPerkDefinition {
+  id               String   @id @db.VarChar(60) // perkdef_<uuid>
+  key              String   @unique @db.VarChar(50)
+  name             String   @db.VarChar(100)
+  description      String?  @db.VarChar(500)
+  category         String   @db.VarChar(50) // capacity, resources, crafting, combat, economy, social
+  levelRequired    Int      @default(1) @map("level_required")
+  prestigeRequired Int      @default(0) @map("prestige_required") // 0 = Unranked
+  effectType       String   @map("effect_type") @db.VarChar(50) // bonus_percent, flat_bonus, unlock
+  effectValue      Float    @map("effect_value")
+  sortOrder        Int      @default(0) @map("sort_order")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  clans ClanPerk[]
+
+  @@index([category])
+  @@map("clan_perk_definition")
+}
+
+// Clan's unlocked perks
+model ClanPerk {
+  id         String   @id @db.VarChar(60) // clanperk_<uuid>
+  clanId     String   @map("clan_id") @db.VarChar(60)
+  perkId     String   @map("perk_id") @db.VarChar(60)
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  clan Clan               @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  perk ClanPerkDefinition @relation(fields: [perkId], references: [id], onDelete: Cascade)
+
+  @@unique([clanId, perkId])
+  @@map("clan_perk")
+}
+
+// Admin-managed banned clan name patterns
+model BannedClanName {
+  id        String   @id @db.VarChar(60) // bannedname_<uuid>
+  pattern   String   @unique @db.VarChar(50) // Exact match or regex pattern
+  isRegex   Boolean  @default(false) @map("is_regex") // If true, pattern is regex
+  reason    String?  @db.VarChar(200)
+  createdBy String   @map("created_by") @db.VarChar(20) // Admin Steam ID
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("banned_clan_name")
+}
+
+// Clan event log for sync idempotency and audit trail
+model ClanEvent {
+  id               String   @id @db.VarChar(60) // clanevent_<uuid>
+  eventId          String   @unique @map("event_id") @db.VarChar(64) // Idempotency key from plugin
+  eventType        String   @map("event_type") @db.VarChar(50) // create, join, leave, kick, etc.
+  clanId           String?  @map("clan_id") @db.VarChar(60)
+  actorSteamId     String   @map("actor_steam_id") @db.VarChar(20)
+  targetSteamId    String?  @map("target_steam_id") @db.VarChar(20)
+  serverIdentifier String   @map("server_identifier") @db.VarChar(100)
+  metadata         Json? // Additional event-specific data
+  processedAt      DateTime @default(now()) @map("processed_at")
+
+  @@index([clanId, processedAt])
+  @@index([eventType, processedAt])
+  @@map("clan_event")
+}
+
+// =============================================================================
+// FUTURE PLUGIN TEMPLATES
+// =============================================================================
+// Uncomment and customize when adding new plugins
+//
+// -----------------------------------------------------------------------------
+// STATS PLUGIN (example template)
+// -----------------------------------------------------------------------------
+//
+// model KillEvent {
+//   id               String   @id @db.VarChar(60)
+//   eventId          String   @unique @map("event_id") @db.VarChar(64)
+//
+//   killerSteamId    String   @map("killer_steam_id") @db.VarChar(20)
+//   victimSteamId    String   @map("victim_steam_id") @db.VarChar(20)
+//   weapon           String   @db.VarChar(100)
+//   distance         Float
+//   isHeadshot       Boolean  @default(false) @map("is_headshot")
+//
+//   gameServerId     Int?     @map("game_server_id")
+//   serverIdentifier String   @map("server_identifier") @db.VarChar(100)
+//
+//   killedAt         DateTime @map("killed_at")
+//   createdAt        DateTime @default(now()) @map("created_at")
+//
+//   @@index([killerSteamId, killedAt])
+//   @@index([victimSteamId, killedAt])
+//   @@index([gameServerId, killedAt])
+//   @@map("kill_event")
+// }
+//
+// model PlayerGlobalStats {
+//   id              String    @id @db.VarChar(60)
+//   steamId         String    @unique @map("steam_id") @db.VarChar(20)
+//
+//   totalKills      Int       @default(0) @map("total_kills")
+//   totalDeaths     Int       @default(0) @map("total_deaths")
+//   headshots       Int       @default(0)
+//   longestKill     Float     @default(0) @map("longest_kill")
+//
+//   createdAt       DateTime  @default(now()) @map("created_at")
+//   updatedAt       DateTime  @updatedAt @map("updated_at")
+//
+//   @@index([totalKills])
+//   @@map("player_global_stats")
+// }

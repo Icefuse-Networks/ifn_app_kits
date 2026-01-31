@@ -162,6 +162,7 @@ export function createEmptyKit(name: string, description: string = '', order: nu
     IsHidden: false,
     HideWithoutPermission: false,
     IsAutoKit: false,
+    IsStoreKit: false,
     CopyPasteFile: '',
     KitImage: '',
     Order: order,

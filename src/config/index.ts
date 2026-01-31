@@ -75,14 +75,52 @@ export function getClientAuthUrl(): string {
 }
 
 // =============================================================================
-// SITE CONFIGURATION
+// SITE CONFIGURATION - Multi-Plugin Dashboard
 // =============================================================================
 
+/**
+ * Plugin identity configuration
+ * Each plugin can override these values for plugin-specific branding
+ */
+export interface PluginIdentity {
+  id: string
+  name: string
+  shortName: string
+  description: string
+}
+
+/**
+ * Registered plugins for the dashboard
+ */
+export const REGISTERED_PLUGINS: PluginIdentity[] = [
+  { id: 'kits', name: 'Kit Manager', shortName: 'Kits', description: 'Kit management for game servers' },
+  // Future plugins (uncomment when adding):
+  // { id: 'clans', name: 'Clan Manager', shortName: 'Clans', description: 'Clan management and wars' },
+  // { id: 'stats', name: 'Player Stats', shortName: 'Stats', description: 'Player statistics and kills' },
+]
+
+/**
+ * Get plugin identity by ID
+ */
+export function getPluginIdentity(pluginId: string): PluginIdentity | undefined {
+  return REGISTERED_PLUGINS.find(p => p.id === pluginId)
+}
+
+/**
+ * Current active plugin (can be set based on route or context)
+ * Default to 'kits' for backwards compatibility
+ */
+export const DEFAULT_PLUGIN = 'kits'
+
 export const siteConfig = {
-  name: 'Icefuse Kit Manager',
-  description: 'Kit management system for Icefuse Networks game servers',
-  url: 'https://kits.icefuse.com',
+  // Dashboard identity (unified branding)
+  name: 'Icefuse Rust Dashboard',
+  description: 'Unified management dashboard for Icefuse Networks Rust servers',
+  url: 'https://kits.icefuse.com', // TODO: Update to dashboard.icefuse.com when ready
   devUrl: 'http://localhost:3020',
+
+  // Default plugin context (for backwards compatibility)
+  defaultPlugin: DEFAULT_PLUGIN,
 
   // Branding
   brand: {
@@ -98,6 +136,10 @@ export const siteConfig = {
     steam: 'https://steamcommunity.com/groups/icefuse',
     twitter: 'https://twitter.com/icefusenet',
   },
+
+  // Plugin-specific names (helper for UI)
+  getPluginName: (pluginId: string) => getPluginIdentity(pluginId)?.name ?? 'Unknown Plugin',
+  getPluginDescription: (pluginId: string) => getPluginIdentity(pluginId)?.description ?? '',
 } as const
 
 // =============================================================================
@@ -159,12 +201,23 @@ export const redisConfig = {
 } as const
 
 // =============================================================================
-// API CONFIGURATION
+// API CONFIGURATION - Multi-Plugin Support
 // =============================================================================
 
+/**
+ * Token prefix format: ifn_{plugin}_
+ * This allows different plugins to have identifiable tokens
+ */
+export function getTokenPrefix(pluginId: string = DEFAULT_PLUGIN): string {
+  return `ifn_${pluginId}_`
+}
+
 export const apiConfig = {
-  // Token prefix for API tokens
-  tokenPrefix: 'ifn_kit_',
+  // Base token prefix (for backwards compatibility)
+  tokenPrefix: getTokenPrefix(DEFAULT_PLUGIN),
+
+  // Get token prefix for a specific plugin
+  getTokenPrefix,
 
   // CDN URL for Rust item images
   itemCdn: 'https://cdn.icefuse.com/rust/items',
