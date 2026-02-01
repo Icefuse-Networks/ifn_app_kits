@@ -282,7 +282,10 @@ export default function AnnouncementsPage() {
       }
       if (serversRes.ok) {
         const serversData = await serversRes.json();
-        setServers(serversData.map((s: ServerInfo) => ({ ...s, serverId: `${s.ip}:${s.port}` })));
+        const serversList = serversData.data || serversData;
+        if (Array.isArray(serversList)) {
+          setServers(serversList.map((s: ServerInfo) => ({ ...s, serverId: `${s.ip}:${s.port}` })));
+        }
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);

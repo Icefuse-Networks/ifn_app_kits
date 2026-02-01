@@ -48,6 +48,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ servers });
     }
 
+    if (type === "current") {
+      const result = await clickhouse.query({
+        query: `
+          SELECT
+            server_ip,
+            server_name,
+            players,
+            max_players,
+            timestamp
+          FROM server_population_stats
+          WHERE timestamp >= now() - INTERVAL 5 MINUTE
+          ORDER BY server_ip, timestamp DESC
+          LIMIT 1 BY server_ip
+        `,
+        format: "JSONEachRow",
+      });
+      const data = await result.json<{ server_ip: string; server_name: string; players: number; max_players: number; timestamp: string }>();
+      const totalPlayers = data.reduce((sum, s) => sum + Number(s.players), 0);
+      const totalCapacity = data.reduce((sum, s) => sum + Number(s.max_players), 0);
+      return NextResponse.json({ data, totalPlayers, totalCapacity, serverCount: data.length });
+    }
+
     if (type === "timeseries") {
       const groupByExpr = getGroupByFormat(groupBy);
       const result = await clickhouse.query({
@@ -56,10 +78,10 @@ export async function GET(request: NextRequest) {
             ${groupByExpr} as time_bucket,
             server_ip,
             server_name,
-            AVG(players) as avg_players,
+            ROUND(AVG(players)) as avg_players,
             MAX(players) as peak_players,
             MIN(players) as min_players,
-            AVG(max_players) as capacity
+            ROUND(AVG(max_players)) as capacity
           FROM server_population_stats
           ${whereClause}
           GROUP BY time_bucket, server_ip, server_name
@@ -86,12 +108,12 @@ export async function GET(request: NextRequest) {
             server_ip,
             server_name,
             category,
-            AVG(players) as avg_players,
+            ROUND(AVG(players)) as avg_players,
             MAX(players) as peak_players,
             MIN(players) as min_players,
-            AVG(max_players) as avg_capacity,
+            ROUND(AVG(max_players)) as avg_capacity,
             COUNT(*) as data_points,
-            AVG(players / max_players * 100) as avg_utilization
+            ROUND(AVG(players / max_players * 100)) as avg_utilization
           FROM server_population_stats
           ${whereClause}
           GROUP BY server_ip, server_name, category
@@ -108,12 +130,20 @@ export async function GET(request: NextRequest) {
       const result = await clickhouse.query({
         query: `
           SELECT
-            ${groupByExpr} as time_bucket,
-            SUM(players) as total_players,
-            SUM(max_players) as total_capacity,
-            COUNT(DISTINCT server_ip) as server_count
-          FROM server_population_stats
-          ${whereClause}
+            time_bucket,
+            ROUND(SUM(avg_players)) as total_players,
+            ROUND(SUM(avg_capacity)) as total_capacity,
+            COUNT(*) as server_count
+          FROM (
+            SELECT
+              ${groupByExpr} as time_bucket,
+              server_ip,
+              AVG(players) as avg_players,
+              AVG(max_players) as avg_capacity
+            FROM server_population_stats
+            ${whereClause}
+            GROUP BY time_bucket, server_ip
+          )
           GROUP BY time_bucket
           ORDER BY time_bucket ASC
         `,
@@ -132,11 +162,19 @@ export async function GET(request: NextRequest) {
       const result = await clickhouse.query({
         query: `
           SELECT
-            toDayOfWeek(timestamp) as day_of_week,
-            toHour(timestamp) as hour,
-            AVG(players) as avg_players
-          FROM server_population_stats
-          ${whereClause}
+            day_of_week,
+            hour,
+            ROUND(SUM(avg_players)) as avg_players
+          FROM (
+            SELECT
+              toDayOfWeek(timestamp) as day_of_week,
+              toHour(timestamp) as hour,
+              server_ip,
+              AVG(players) as avg_players
+            FROM server_population_stats
+            ${whereClause}
+            GROUP BY day_of_week, hour, server_ip
+          )
           GROUP BY day_of_week, hour
           ORDER BY day_of_week, hour
         `,

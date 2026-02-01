@@ -89,6 +89,10 @@ registerScope('identifiers:register', 'Register new server identifiers dynamical
 registerScope('clans:read', 'Read clan information', 'clans')
 registerScope('clans:write', 'Create, update, and delete clans', 'clans')
 
+// Redirect plugin scopes
+registerScope('redirect:read', 'Read redirect configuration and logs', 'redirect')
+registerScope('redirect:write', 'Manage redirect configuration and submit logs', 'redirect')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Scopes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -302,6 +306,10 @@ registerResourceType('clan_enemy', 'Clan Enemy', 'clans')
 registerResourceType('clan_perk', 'Clan Perk', 'clans')
 registerResourceType('clan_perk_definition', 'Perk Definition', 'clans')
 registerResourceType('banned_clan_name', 'Banned Clan Name', 'clans')
+
+// Redirect plugin resources
+registerResourceType('redirect_config', 'Redirect Configuration', 'redirect')
+registerResourceType('redirect_log', 'Redirect Log', 'redirect')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Resources (uncomment when adding plugins)

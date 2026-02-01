@@ -127,6 +127,10 @@ registerPrefix('clanEvent', 'clanevent', 'Clan Event', 'clans')
 // Moderation plugin entities (global content moderation)
 registerPrefix('bannedWord', 'bannedword', 'Banned Word', 'moderation')
 
+// Redirect plugin entities
+registerPrefix('redirectConfig', 'redircfg', 'Redirect Config', 'redirect')
+registerPrefix('redirectLog', 'redirlog', 'Redirect Log', 'redirect')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Prefixes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -177,6 +181,9 @@ export type IdType =
   | 'clanEvent'
   // Moderation plugin
   | 'bannedWord'
+  // Redirect plugin
+  | 'redirectConfig'
+  | 'redirectLog'
 
 // =============================================================================
 // Core Functions
@@ -341,6 +348,10 @@ export const id = {
 
   // Moderation plugin
   bannedWord: () => generateId('bannedWord'),
+
+  // Redirect plugin
+  redirectConfig: () => generateId('redirectConfig'),
+  redirectLog: () => generateId('redirectLog'),
 } as const
 
 /**

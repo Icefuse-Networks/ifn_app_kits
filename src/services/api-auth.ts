@@ -227,6 +227,20 @@ export async function requireTelemetryWrite(request: NextRequest): Promise<AuthR
 }
 
 /**
+ * Require authentication for redirect:read
+ */
+export async function requireRedirectRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'redirect:read')
+}
+
+/**
+ * Require authentication for redirect:write
+ */
+export async function requireRedirectWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'redirect:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

@@ -1,71 +1,48 @@
-/**
- * StatCard Component
- *
- * Summary metric card with glass morphism styling.
- */
+"use client";
 
-import { LucideIcon } from 'lucide-react'
+import { motion } from "framer-motion";
+import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
-  label: string
-  value: string | number
-  icon?: LucideIcon
-  trend?: {
-    value: number
-    isPositive: boolean
-  }
-  description?: string
+  label: string;
+  value: string | number;
+  icon?: LucideIcon;
+  iconColor?: string;
+  iconBgColor?: string;
+  subtitle?: string;
+  delay?: number;
 }
 
 export function StatCard({
   label,
   value,
   icon: Icon,
-  trend,
-  description,
+  iconColor = "text-purple-400",
+  iconBgColor = "bg-purple-500/20",
+  subtitle,
+  delay = 0,
 }: StatCardProps) {
   return (
-    <div
-      className="p-6 rounded-[var(--radius-lg)] transition-all duration-200"
-      style={{
-        background: 'var(--glass-bg)',
-        border: '1px solid var(--glass-border)',
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] bg-white/[0.02] border border-white/5"
     >
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-sm text-[var(--text-secondary)]">{label}</span>
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-zinc-500 text-sm font-medium mb-1">{label}</p>
+          <p className="text-2xl font-bold text-white mb-1">
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </p>
+          {subtitle && <p className="text-xs text-purple-400">{subtitle}</p>}
+        </div>
         {Icon && (
-          <div
-            className="w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center"
-            style={{ background: 'var(--accent-primary)/10' }}
-          >
-            <Icon className="w-4 h-4 text-[var(--accent-primary)]" />
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBgColor}`}>
+            <Icon className={`h-6 w-6 ${iconColor}`} />
           </div>
         )}
       </div>
-
-      <div className="flex items-end gap-2">
-        <span className="text-2xl font-bold text-[var(--text-primary)]">
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </span>
-
-        {trend && (
-          <span
-            className={`text-sm font-medium ${
-              trend.isPositive
-                ? 'text-[var(--status-success)]'
-                : 'text-[var(--status-error)]'
-            }`}
-          >
-            {trend.isPositive ? '+' : ''}
-            {trend.value}%
-          </span>
-        )}
-      </div>
-
-      {description && (
-        <p className="mt-1 text-xs text-[var(--text-muted)]">{description}</p>
-      )}
-    </div>
-  )
+    </motion.div>
+  );
 }

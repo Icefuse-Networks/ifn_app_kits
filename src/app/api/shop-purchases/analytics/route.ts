@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@clickhouse/client";
+import { authenticateWithScope } from "@/services/api-auth";
+import { auditDelete } from "@/services/audit";
+import { z } from "zod";
 
 const client = createClient({
   url: "http://168.100.163.49:8124",
@@ -14,27 +17,75 @@ interface CacheEntry<T> {
 }
 
 const analyticsCache = new Map<string, CacheEntry<unknown>>();
-const CACHE_TTL_MS = 60000;
+const CACHE_TTL_MS = 30000;
 
-function sanitizeIdentifier(input: string | undefined | null): string {
-  if (!input) return "";
-  return String(input).replace(/[^A-Za-z0-9\-_: ]/g, "");
-}
+const optionalNumber = (min: number, max: number) =>
+  z.preprocess((v) => (v === null || v === "" ? undefined : v), z.coerce.number().int().min(min).max(max).optional());
+
+const querySchema = z.object({
+  server: z.string().max(100).default(""),
+  hours: optionalNumber(1, 8760),
+  days: optionalNumber(1, 365),
+});
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const serverFilter = sanitizeIdentifier(searchParams.get("server") ?? "");
-  const days = Math.min(Math.max(parseInt(searchParams.get("days") ?? "30", 10) || 30, 1), 365);
+  const authResult = await authenticateWithScope(request, "analytics:read");
+  if (!authResult.success) {
+    return NextResponse.json(
+      { success: false, error: { code: "AUTH_ERROR", message: authResult.error } },
+      { status: authResult.status }
+    );
+  }
 
-  const cacheKey = `analytics:${serverFilter}:${days}`;
+  const searchParams = request.nextUrl.searchParams;
+  const parsed = querySchema.safeParse({
+    server: searchParams.get("server") ?? "",
+    hours: searchParams.get("hours"),
+    days: searchParams.get("days"),
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: { code: "VALIDATION_ERROR", message: "Invalid parameters" } },
+      { status: 400 }
+    );
+  }
+
+  const { server, hours, days } = parsed.data;
+  const intervalHours = hours ?? (days ? days * 24 : 720);
+
+  const cacheKey = `analytics:${server}:${intervalHours}`;
   const cached = analyticsCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return NextResponse.json(cached.data);
   }
 
   try {
-    const serverWhere = serverFilter ? `AND server_name = '${serverFilter}'` : "";
-    const dateWhere = `timestamp >= now() - INTERVAL ${days} DAY`;
+    const dateWhere = `timestamp >= now() - INTERVAL ${intervalHours} HOUR`;
+    let groupByExpr: string;
+    let dateFormat: string;
+    if (intervalHours <= 1) {
+      groupByExpr = "toStartOfMinute(timestamp)";
+      dateFormat = "formatDateTime(toStartOfMinute(timestamp), '%H:%i')";
+    } else if (intervalHours <= 6) {
+      groupByExpr = "toStartOfFiveMinutes(timestamp)";
+      dateFormat = "formatDateTime(toStartOfFiveMinutes(timestamp), '%H:%i')";
+    } else if (intervalHours <= 24) {
+      groupByExpr = "toStartOfFifteenMinutes(timestamp)";
+      dateFormat = "formatDateTime(toStartOfFifteenMinutes(timestamp), '%m-%d %H:%i')";
+    } else if (intervalHours <= 72) {
+      groupByExpr = "toStartOfHour(timestamp)";
+      dateFormat = "formatDateTime(toStartOfHour(timestamp), '%m-%d %H:00')";
+    } else if (intervalHours <= 168) {
+      groupByExpr = "toStartOfInterval(timestamp, INTERVAL 4 HOUR)";
+      dateFormat = "formatDateTime(toStartOfInterval(timestamp, INTERVAL 4 HOUR), '%m-%d %H:00')";
+    } else if (intervalHours <= 720) {
+      groupByExpr = "toStartOfDay(timestamp)";
+      dateFormat = "formatDateTime(toStartOfDay(timestamp), '%Y-%m-%d')";
+    } else {
+      groupByExpr = "toStartOfDay(timestamp)";
+      dateFormat = "formatDateTime(toStartOfDay(timestamp), '%Y-%m-%d')";
+    }
 
     const [
       overviewResult,
@@ -47,119 +98,43 @@ export async function GET(request: NextRequest) {
       recentTrendsResult,
     ] = await Promise.all([
       client.query({
-        query: `
-          SELECT
-            COUNT(*) as total_purchases,
-            SUM(cost) as total_revenue,
-            COUNT(DISTINCT steamid64) as unique_players,
-            COUNT(DISTINCT server_name) as active_servers,
-            COUNT(DISTINCT item_name) as unique_items,
-            AVG(cost) as avg_purchase_value,
-            MAX(cost) as max_purchase_value
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-        `,
+        query: `SELECT COUNT(*) as total_purchases, SUM(cost) as total_revenue, COUNT(DISTINCT steamid64) as unique_players, COUNT(DISTINCT server_name) as active_servers, COUNT(DISTINCT item_name) as unique_items, ROUND(AVG(cost)) as avg_purchase_value, MAX(cost) as max_purchase_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String})`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            toDate(timestamp) as date,
-            COUNT(*) as purchases,
-            SUM(cost) as revenue,
-            COUNT(DISTINCT steamid64) as players
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY date
-          ORDER BY date ASC
-        `,
+        query: `SELECT ${dateFormat} as date, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr} ORDER BY ${groupByExpr} ASC`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            server_name,
-            COUNT(*) as purchases,
-            SUM(cost) as revenue,
-            COUNT(DISTINCT steamid64) as players,
-            COUNT(DISTINCT item_name) as items_sold,
-            AVG(cost) as avg_value
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY server_name
-          ORDER BY purchases DESC
-        `,
+        query: `SELECT server_name, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players, COUNT(DISTINCT item_name) as items_sold, ROUND(AVG(cost)) as avg_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY server_name ORDER BY purchases DESC`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            item_name,
-            COUNT(*) as count,
-            SUM(cost) as revenue,
-            SUM(amount) as total_amount,
-            COUNT(DISTINCT steamid64) as buyers
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY item_name
-          ORDER BY count DESC
-          LIMIT 20
-        `,
+        query: `SELECT item_name, COUNT(*) as count, SUM(cost) as revenue, SUM(amount) as total_amount, COUNT(DISTINCT steamid64) as buyers FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY item_name ORDER BY count DESC LIMIT 20`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            toHour(timestamp) as hour,
-            toDayOfWeek(timestamp) as day_of_week,
-            COUNT(*) as count
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY hour, day_of_week
-          ORDER BY day_of_week, hour
-        `,
+        query: `SELECT toHour(timestamp) as hour, toDayOfWeek(timestamp) as day_of_week, COUNT(*) as count FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY hour, day_of_week ORDER BY day_of_week, hour`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            currency,
-            COUNT(*) as count,
-            SUM(cost) as total
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY currency
-          ORDER BY count DESC
-        `,
+        query: `SELECT currency, COUNT(*) as count, SUM(cost) as total FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY currency ORDER BY count DESC`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            steamid64,
-            any(player_name) as player_name,
-            COUNT(*) as purchases,
-            SUM(cost) as total_spent,
-            COUNT(DISTINCT item_name) as unique_items
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY steamid64
-          ORDER BY total_spent DESC
-          LIMIT 15
-        `,
+        query: `SELECT steamid64, any(player_name) as player_name, COUNT(*) as purchases, SUM(cost) as total_spent, COUNT(DISTINCT item_name) as unique_items FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY steamid64 ORDER BY total_spent DESC LIMIT 15`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
       client.query({
-        query: `
-          SELECT
-            toDate(timestamp) as date,
-            server_name,
-            COUNT(*) as purchases
-          FROM shop_purchases
-          WHERE ${dateWhere} ${serverWhere}
-          GROUP BY date, server_name
-          ORDER BY date ASC
-        `,
+        query: `SELECT ${dateFormat} as date, server_name, COUNT(*) as purchases FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr}, server_name ORDER BY ${groupByExpr} ASC`,
+        query_params: { server },
         format: "JSONEachRow",
       }),
     ]);
@@ -174,6 +149,7 @@ export async function GET(request: NextRequest) {
     const serverTrends = await recentTrendsResult.json<{ date: string; server_name: string; purchases: string }>();
 
     const response = {
+      success: true,
       overview: {
         totalPurchases: Number(overview.total_purchases) || 0,
         totalRevenue: Number(overview.total_revenue) || 0,
@@ -232,7 +208,56 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Analytics API Error:", error);
-    const message = error instanceof Error ? error.message : "Failed to fetch analytics";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to fetch analytics" } },
+      { status: 500 }
+    );
+  }
+}
+
+const deleteSchema = z.object({
+  server_name: z.string().min(1).max(100).optional(),
+});
+
+export async function DELETE(request: NextRequest) {
+  const authResult = await authenticateWithScope(request, "analytics:write");
+  if (!authResult.success) {
+    return NextResponse.json(
+      { success: false, error: { code: "AUTH_ERROR", message: authResult.error } },
+      { status: authResult.status }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const parsed = deleteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: { code: "VALIDATION_ERROR", message: "Validation failed", details: parsed.error.flatten() } },
+        { status: 400 }
+      );
+    }
+
+    const { server_name } = parsed.data;
+
+    if (server_name) {
+      await client.command({
+        query: "ALTER TABLE shop_purchases DELETE WHERE server_name = {server_name:String}",
+        query_params: { server_name },
+      });
+      await auditDelete("shop_purchases", `server_${server_name}`, authResult.context, { server_name }, request);
+    } else {
+      await client.command({ query: "TRUNCATE TABLE shop_purchases" });
+      await auditDelete("shop_purchases", "all", authResult.context, { action: "truncate" }, request);
+    }
+
+    analyticsCache.clear();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error clearing shop purchases:", error);
+    return NextResponse.json(
+      { success: false, error: { code: "INTERNAL_ERROR", message: "Failed to clear purchases" } },
+      { status: 500 }
+    );
   }
 }

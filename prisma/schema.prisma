@@ -748,3 +748,50 @@ model Staff {
   @@map("staff")
 }
 
+// =============================================================================
+// REDIRECT PLUGIN MODELS
+// =============================================================================
+
+model RedirectConfig {
+  id                       String   @id @db.VarChar(60)
+  staffGroups              String   @map("staff_groups")
+  afkTimeSeconds           Int      @default(3600) @map("afk_time_seconds")
+  checkInterval            Float    @default(30) @map("check_interval")
+  configUpdateInterval     Float    @default(120) @map("config_update_interval")
+  maxRedirectAttempts      Int      @default(3) @map("max_redirect_attempts")
+  enableAFKRedirect        Boolean  @default(true) @map("enable_afk_redirect")
+  minPlayersForEmptyServer Int      @default(0) @map("min_players_for_empty_server")
+  maxPlayersForEmptyServer Int      @default(2) @map("max_players_for_empty_server")
+  preferredEmptyServers    String   @map("preferred_empty_servers")
+  excludedServers          String   @map("excluded_servers")
+  isActive                 Boolean  @default(true) @map("is_active")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("redirect_config")
+}
+
+model RedirectLog {
+  id               String   @id @db.VarChar(60)
+  logType          String   @default("player") @map("log_type") @db.VarChar(20)
+  playerName       String?  @map("player_name") @db.VarChar(255)
+  steamId          String?  @map("steam_id") @db.VarChar(20)
+  rank             String?  @db.VarChar(50)
+  afkTimeSeconds   Float?   @map("afk_time_seconds")
+  redirectReason   String   @map("redirect_reason") @db.VarChar(50)
+  sourceIdentifier String   @map("source_identifier") @db.VarChar(100)
+  targetIdentifier String?  @map("target_identifier") @db.VarChar(100)
+  players          Int?
+  timestamp        DateTime @default(now())
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([logType])
+  @@index([rank])
+  @@index([redirectReason])
+  @@index([steamId])
+  @@index([timestamp])
+  @@index([sourceIdentifier])
+  @@map("redirect_log")
+}
+
