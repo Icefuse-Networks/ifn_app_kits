@@ -188,6 +188,9 @@ model ServerIdentifier {
   port            Int?
   connectEndpoint String?   @map("connect_endpoint") @db.VarChar(100)
   categoryId      String?   @map("category_id") @db.VarChar(60)
+  playerData      Json?     @map("player_data")
+  playerCount     Int       @default(0) @map("player_count")
+  lastPlayerUpdate DateTime? @map("last_player_update")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 

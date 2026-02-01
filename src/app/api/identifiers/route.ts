@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
         port: true,
         connectEndpoint: true,
         categoryId: true,
+        playerData: true,
+        playerCount: true,
+        lastPlayerUpdate: true,
         createdAt: true,
         updatedAt: true,
         category: {
