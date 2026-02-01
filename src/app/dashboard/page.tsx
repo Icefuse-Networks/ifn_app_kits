@@ -1,46 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Package, Settings, BarChart2, Shield, Key, Tag, Zap, ChevronRight, Activity, TrendingUp, Layers, HardDrive, MessageSquare, Box, ShoppingCart } from 'lucide-react'
+import { Package, Zap, ChevronRight, Activity, TrendingUp, Layers } from 'lucide-react'
 import Link from 'next/link'
+import { dashboardSections } from '@/config/navigation'
 
 const quickStats = [
   { label: 'Active Kits', value: '24', change: '+3', trend: 'up', icon: Package },
   { label: 'Total Claims', value: '12.4K', change: '+18%', trend: 'up', icon: Activity },
   { label: 'Active Servers', value: '8', change: '0', trend: 'neutral', icon: Layers },
   { label: 'API Calls Today', value: '2.1K', change: '+5%', trend: 'up', icon: TrendingUp },
-]
-
-const sections = [
-  {
-    title: 'Plugin Management',
-    description: 'Configure kits, clans, and analyze usage',
-    items: [
-      { href: '/dashboard/kits', icon: Package, label: 'Kits', desc: 'Create and manage kit configurations', gradient: 'from-blue-500 to-indigo-600' },
-      { href: '/dashboard/clans', icon: Shield, label: 'Clans', desc: 'Clan perks, settings and banned names', gradient: 'from-amber-500 to-orange-500' },
-      { href: '/dashboard/lootmanager', icon: Box, label: 'Loot Manager', desc: 'Configure loot tables and drop rates', gradient: 'from-yellow-500 to-orange-500' },
-    ]
-  },
-  {
-    title: 'Server Management',
-    description: 'Monitor servers and manage announcements',
-    items: [
-      { href: '/dashboard/servers', icon: HardDrive, label: 'Servers', desc: 'Monitor and manage game servers', gradient: 'from-violet-500 to-purple-600' },
-      { href: '/dashboard/analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
-      { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
-      { href: '/dashboard/announcements', icon: MessageSquare, label: 'Announcements', desc: 'Manage server announcements', gradient: 'from-pink-500 to-rose-500' },
-      { href: '/dashboard/server-stats', icon: TrendingUp, label: 'Global Stats', desc: 'Global Rust server analytics from BattleMetrics', gradient: 'from-purple-500 to-pink-500' },
-    ]
-  },
-  {
-    title: 'Developer Tools',
-    description: 'API access and configuration',
-    items: [
-      { href: '/dashboard/tokens', icon: Key, label: 'API Tokens', desc: 'Generate and manage API access keys', gradient: 'from-rose-500 to-pink-600' },
-      { href: '/dashboard/identifiers', icon: Tag, label: 'Identifiers', desc: 'Server analytics identifiers', gradient: 'from-cyan-500 to-blue-500' },
-      { href: '/dashboard/settings', icon: Settings, label: 'Settings', desc: 'General app configuration', gradient: 'from-slate-500 to-slate-600' },
-    ]
-  },
 ]
 
 export default function DashboardPage() {
@@ -92,7 +61,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-10">
-          {sections.map((section, sectionIndex) => (
+          {dashboardSections.map((section, sectionIndex) => (
             <motion.div
               key={section.title}
               initial={{ opacity: 0, y: 20 }}
