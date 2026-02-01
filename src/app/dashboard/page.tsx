@@ -26,9 +26,10 @@ const sections = [
     description: 'Monitor servers and manage announcements',
     items: [
       { href: '/dashboard/servers', icon: HardDrive, label: 'Servers', desc: 'Monitor and manage game servers', gradient: 'from-violet-500 to-purple-600' },
-      { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
+      { href: '/dashboard/analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
       { href: '/dashboard/announcements', icon: MessageSquare, label: 'Announcements', desc: 'Manage server announcements', gradient: 'from-pink-500 to-rose-500' },
+      { href: '/dashboard/server-stats', icon: TrendingUp, label: 'Global Stats', desc: 'Global Rust server analytics from BattleMetrics', gradient: 'from-purple-500 to-pink-500' },
     ]
   },
   {

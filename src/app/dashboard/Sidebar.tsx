@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Settings, BarChart2, Shield, Key, Tag, HardDrive, MessageSquare, Box, ShoppingCart, Home, ArrowRightLeft, LucideIcon } from 'lucide-react';
+import { Package, Settings, BarChart2, Shield, Key, Tag, HardDrive, MessageSquare, Box, ShoppingCart, Home, ArrowRightLeft, TrendingUp, LucideIcon } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -34,9 +34,10 @@ const sections: Section[] = [
     items: [
       { href: '/dashboard/servers', icon: HardDrive, label: 'Servers', desc: 'Monitor and manage game servers', gradient: 'from-violet-500 to-purple-600' },
       { href: '/dashboard/redirection', icon: ArrowRightLeft, label: 'Redirection', desc: 'AFK redirect settings and logs', gradient: 'from-orange-500 to-red-500' },
-      { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
+      { href: '/dashboard/analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
       { href: '/dashboard/announcements', icon: MessageSquare, label: 'Announcements', desc: 'Manage server announcements', gradient: 'from-pink-500 to-rose-500' },
+      { href: '/dashboard/server-stats', icon: TrendingUp, label: 'Global Stats', desc: 'Global Rust server analytics', gradient: 'from-purple-500 to-pink-500' },
     ]
   },
   {
