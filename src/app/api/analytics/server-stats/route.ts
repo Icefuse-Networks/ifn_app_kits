@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@clickhouse/client";
-
-const clickhouse = createClient({
-  url: "http://168.100.163.49:8124",
-  username: "default",
-  password: "DvqUTqWMe7cQ9NJme83coT48RA0ex3D7lgnWO1fhhkFQp4oVneM93WwrMpwGDl90",
-  database: "default",
-});
+import { clickhouse } from "@/lib/clickhouse";
 
 type GroupBy = "hour" | "day" | "week";
 

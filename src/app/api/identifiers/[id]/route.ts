@@ -1,10 +1,3 @@
-/**
- * Server Identifier API - Single Resource Operations
- *
- * PATCH  /api/identifiers/[id] - Update a server identifier
- * DELETE /api/identifiers/[id] - Delete a server identifier
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireSession } from '@/services/api-auth'
@@ -19,10 +12,50 @@ interface RouteContext {
   params: Promise<{ id: string }>
 }
 
-/**
- * PATCH /api/identifiers/[id]
- * Update a server identifier (name, description, category)
- */
+export async function GET(request: NextRequest, context: RouteContext) {
+  const authResult = await requireSession(request)
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
+  try {
+    const { id } = await context.params
+    const parsed = serverIdentifierIdSchema.safeParse({ id })
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid identifier ID format' }, { status: 400 })
+    }
+
+    const identifier = await prisma.serverIdentifier.findUnique({
+      where: { id: parsed.data.id },
+      select: {
+        id: true,
+        name: true,
+        hashedId: true,
+        description: true,
+        ip: true,
+        port: true,
+        connectEndpoint: true,
+        playerData: true,
+        playerCount: true,
+        lastPlayerUpdate: true,
+        categoryId: true,
+        createdAt: true,
+        updatedAt: true,
+        category: { select: { id: true, name: true } },
+      },
+    })
+
+    if (!identifier) {
+      return NextResponse.json({ error: 'Server identifier not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(identifier)
+  } catch (error) {
+    logger.admin.error('Failed to fetch server identifier', error as Error)
+    return NextResponse.json({ error: 'Failed to fetch server identifier' }, { status: 500 })
+  }
+}
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const authResult = await requireSession(request)
 

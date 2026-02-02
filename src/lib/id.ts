@@ -130,6 +130,7 @@ registerPrefix('bannedWord', 'bannedword', 'Banned Word', 'moderation')
 // Redirect plugin entities
 registerPrefix('redirectConfig', 'redircfg', 'Redirect Config', 'redirect')
 registerPrefix('redirectLog', 'redirlog', 'Redirect Log', 'redirect')
+registerPrefix('redirectQueue', 'redirq', 'Redirect Queue', 'redirect')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Prefixes (uncomment when adding plugins)
@@ -184,6 +185,7 @@ export type IdType =
   // Redirect plugin
   | 'redirectConfig'
   | 'redirectLog'
+  | 'redirectQueue'
 
 // =============================================================================
 // Core Functions
@@ -352,6 +354,7 @@ export const id = {
   // Redirect plugin
   redirectConfig: () => generateId('redirectConfig'),
   redirectLog: () => generateId('redirectLog'),
+  redirectQueue: () => generateId('redirectQueue'),
 } as const
 
 /**

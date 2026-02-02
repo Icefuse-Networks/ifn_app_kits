@@ -1,0 +1,525 @@
+'use client'
+
+import { useState, useEffect, use, useCallback } from 'react'
+import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square } from 'lucide-react'
+import Link from 'next/link'
+
+interface PlayerData {
+  steamId: string
+  playerName: string
+  connectionTime: number
+  idleTime: number
+}
+
+interface ServerIdentifier {
+  id: string
+  name: string
+  hashedId: string
+  ip: string | null
+  port: number | null
+  connectEndpoint: string | null
+  playerData: PlayerData[] | null
+  playerCount: number
+  lastPlayerUpdate: string | null
+  categoryId: string | null
+  category: { id: string; name: string } | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface ServerOption {
+  id: string
+  name: string
+  hashedId: string
+  ip: string | null
+  port: number | null
+  playerCount: number
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
+  const hours = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+}
+
+function formatLastUpdate(dateStr: string | null): string {
+  if (!dateStr) return 'Never'
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return 'Just now'
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+  return date.toLocaleDateString()
+}
+
+export default function ServerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: serverId } = use(params)
+  const [server, setServer] = useState<ServerIdentifier | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState<string | null>(null)
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
+  const [redirectModalOpen, setRedirectModalOpen] = useState(false)
+  const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
+  const [availableServers, setAvailableServers] = useState<ServerOption[]>([])
+  const [redirecting, setRedirecting] = useState(false)
+  const [redirectMode, setRedirectMode] = useState<'single' | 'multi' | 'all'>('single')
+  const [singlePlayerTarget, setSinglePlayerTarget] = useState<PlayerData | null>(null)
+
+  const fetchServer = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/identifiers/${serverId}`, { credentials: 'include' })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setServer(data)
+    } catch (err) {
+      console.error('Failed to fetch server:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [serverId])
+
+  useEffect(() => {
+    fetchServer()
+    const interval = setInterval(fetchServer, 30000)
+    return () => clearInterval(interval)
+  }, [fetchServer])
+
+  useEffect(() => {
+    if (redirectModalOpen) {
+      fetch('/api/identifiers', { credentials: 'include' })
+        .then(res => res.json())
+        .then((data: ServerOption[]) => {
+          setAvailableServers(data.filter(s => s.hashedId !== server?.hashedId))
+        })
+        .catch(() => setAvailableServers([]))
+    }
+  }, [redirectModalOpen, server?.hashedId])
+
+  function copyToClipboard(text: string, key: string) {
+    navigator.clipboard.writeText(text)
+    setCopied(key)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  function togglePlayerSelection(steamId: string) {
+    setSelectedPlayers(prev => {
+      const next = new Set(prev)
+      if (next.has(steamId)) next.delete(steamId)
+      else next.add(steamId)
+      return next
+    })
+  }
+
+  function selectAllPlayers() {
+    if (!server?.playerData) return
+    setSelectedPlayers(new Set(server.playerData.map(p => p.steamId)))
+  }
+
+  function deselectAllPlayers() {
+    setSelectedPlayers(new Set())
+  }
+
+  function openRedirectModal(mode: 'single' | 'multi' | 'all', player?: PlayerData) {
+    setRedirectMode(mode)
+    setSinglePlayerTarget(player || null)
+    setRedirectTarget(null)
+    setRedirectModalOpen(true)
+  }
+
+  async function executeRedirect() {
+    if (!server || !redirectTarget) return
+
+    let players: { steamId: string; playerName?: string }[] = []
+    if (redirectMode === 'single' && singlePlayerTarget) {
+      players = [{ steamId: singlePlayerTarget.steamId, playerName: singlePlayerTarget.playerName }]
+    } else if (redirectMode === 'multi') {
+      players = Array.from(selectedPlayers).map(steamId => {
+        const p = server.playerData?.find(pl => pl.steamId === steamId)
+        return { steamId, playerName: p?.playerName }
+      })
+    } else if (redirectMode === 'all' && server.playerData) {
+      players = server.playerData.map(p => ({ steamId: p.steamId, playerName: p.playerName }))
+    }
+
+    if (players.length === 0) return
+
+    setRedirecting(true)
+    try {
+      const res = await fetch('/api/identifiers/redirect-queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          sourceServerId: server.hashedId,
+          targetServerId: redirectTarget,
+          players,
+        }),
+      })
+
+      if (res.ok) {
+        setRedirectModalOpen(false)
+        setSelectedPlayers(new Set())
+      }
+    } catch (err) {
+      console.error('Redirect failed:', err)
+    } finally {
+      setRedirecting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!server) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="flex items-center gap-4 mb-8">
+          <Link
+            href="/dashboard/servers"
+            className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          >
+            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          </Link>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Server Not Found</h1>
+        </div>
+      </div>
+    )
+  }
+
+  const isOnline = server.lastPlayerUpdate && (Date.now() - new Date(server.lastPlayerUpdate).getTime()) < 300000
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="flex items-center gap-4 mb-8">
+        <Link
+          href="/dashboard/servers"
+          className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+        </Link>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">{server.name}</h1>
+            <span
+              className="px-2 py-1 rounded-full text-xs font-medium"
+              style={{
+                background: isOnline ? 'rgba(34, 197, 94, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                color: isOnline ? 'rgb(34, 197, 94)' : 'var(--text-muted)',
+              }}
+            >
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+          </div>
+          <p className="text-[var(--text-secondary)]">
+            {server.category?.name || 'Uncategorized'} • Last update: {formatLastUpdate(server.lastPlayerUpdate)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+          <Activity className="w-4 h-4" />
+          <span>Auto-refresh: 30s</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20">
+              <Users className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm text-[var(--text-muted)]">Players Online</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{server.playerCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-500/20">
+              <Globe className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm text-[var(--text-muted)]">Server Address</p>
+              <p className="text-lg font-semibold text-[var(--text-primary)]">
+                {server.ip}:{server.port}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => copyToClipboard(`${server.ip}:${server.port}`, 'ip')}
+            className="flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:underline"
+          >
+            {copied === 'ip' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied === 'ip' ? 'Copied!' : 'Copy IP'}
+          </button>
+        </div>
+
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/20">
+              <Terminal className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm text-[var(--text-muted)]">Connect Command</p>
+              <p className="text-sm font-mono text-[var(--text-primary)] truncate">
+                client.connect {server.connectEndpoint || `${server.ip}:${server.port}`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => copyToClipboard(`client.connect ${server.connectEndpoint || `${server.ip}:${server.port}`}`, 'connect')}
+            className="flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:underline"
+          >
+            {copied === 'connect' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied === 'connect' ? 'Copied!' : 'Copy Command'}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <Settings className="w-5 h-5 text-[var(--text-muted)]" />
+            <p className="text-sm font-medium text-[var(--text-primary)]">Server ID</p>
+          </div>
+          <p className="text-xs font-mono text-[var(--text-secondary)] break-all">{server.hashedId}</p>
+        </div>
+
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <Clock className="w-5 h-5 text-[var(--text-muted)]" />
+            <p className="text-sm font-medium text-[var(--text-primary)]">Created</p>
+          </div>
+          <p className="text-sm text-[var(--text-secondary)]">{new Date(server.createdAt).toLocaleString()}</p>
+        </div>
+
+        <div
+          className="rounded-xl p-6"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <BarChart2 className="w-5 h-5 text-[var(--text-muted)]" />
+            <p className="text-sm font-medium text-[var(--text-primary)]">Category</p>
+          </div>
+          <p className="text-sm text-[var(--text-secondary)]">{server.category?.name || 'Uncategorized'}</p>
+        </div>
+      </div>
+
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+      >
+        <div className="px-6 py-4 border-b border-[var(--glass-border)] flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Online Players</h2>
+            <p className="text-sm text-[var(--text-muted)]">{server.playerCount} players currently connected</p>
+          </div>
+          {server.playerData && server.playerData.length > 0 && (
+            <div className="flex items-center gap-2">
+              {selectedPlayers.size > 0 && (
+                <button
+                  onClick={() => openRedirectModal('multi')}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'rgb(96, 165, 250)' }}
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                  Redirect Selected ({selectedPlayers.size})
+                </button>
+              )}
+              <button
+                onClick={() => openRedirectModal('all')}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{ background: 'rgba(239, 68, 68, 0.2)', color: 'rgb(248, 113, 113)' }}
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+                Redirect All
+              </button>
+            </div>
+          )}
+        </div>
+
+        {!server.playerData || server.playerData.length === 0 ? (
+          <div className="text-center py-12 text-[var(--text-muted)]">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No players online</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--glass-border)]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase w-10">
+                    <button
+                      onClick={selectedPlayers.size === server.playerData.length ? deselectAllPlayers : selectAllPlayers}
+                      className="p-1 hover:bg-[var(--bg-card-hover)] rounded"
+                    >
+                      {selectedPlayers.size === server.playerData.length ? (
+                        <CheckSquare className="w-4 h-4 text-[var(--accent-primary)]" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Player</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Steam ID</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">Connected</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">Idle</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase w-20">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {server.playerData.map((player, idx) => (
+                  <tr
+                    key={player.steamId}
+                    className="border-b border-[var(--glass-border)] last:border-0"
+                    style={{ background: idx % 2 === 0 ? 'var(--bg-input)' : 'transparent' }}
+                  >
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => togglePlayerSelection(player.steamId)}
+                        className="p-1 hover:bg-[var(--bg-card-hover)] rounded"
+                      >
+                        {selectedPlayers.has(player.steamId) ? (
+                          <CheckSquare className="w-4 h-4 text-[var(--accent-primary)]" />
+                        ) : (
+                          <Square className="w-4 h-4 text-[var(--text-muted)]" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 font-medium text-[var(--text-primary)]">{player.playerName}</td>
+                    <td className="px-4 py-4 text-sm text-[var(--text-secondary)] font-mono">{player.steamId}</td>
+                    <td className="px-4 py-4 text-right text-sm text-[var(--text-secondary)]">
+                      <div className="flex items-center justify-end gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDuration(player.connectionTime)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          background: player.idleTime > 300 ? 'rgba(239, 68, 68, 0.2)' : player.idleTime > 60 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                          color: player.idleTime > 300 ? 'rgb(239, 68, 68)' : player.idleTime > 60 ? 'rgb(234, 179, 8)' : 'rgb(34, 197, 94)',
+                        }}
+                      >
+                        {formatDuration(player.idleTime)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button
+                        onClick={() => openRedirectModal('single', player)}
+                        className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+                        title="Redirect player"
+                      >
+                        <ArrowRightLeft className="w-4 h-4 text-[var(--text-muted)]" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {redirectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div
+            className="w-full max-w-md rounded-xl p-6"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--glass-border)' }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                {redirectMode === 'single' && singlePlayerTarget
+                  ? `Redirect ${singlePlayerTarget.playerName}`
+                  : redirectMode === 'multi'
+                    ? `Redirect ${selectedPlayers.size} Players`
+                    : `Redirect All ${server?.playerCount || 0} Players`}
+              </h3>
+              <button
+                onClick={() => setRedirectModalOpen(false)}
+                className="p-1 rounded hover:bg-[var(--bg-card-hover)]"
+              >
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                Select Target Server
+              </label>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {availableServers.length === 0 ? (
+                  <p className="text-sm text-[var(--text-muted)] py-4 text-center">No other servers available</p>
+                ) : (
+                  availableServers.map(s => (
+                    <button
+                      key={s.hashedId}
+                      onClick={() => setRedirectTarget(s.hashedId)}
+                      className="w-full p-3 rounded-lg text-left transition-colors"
+                      style={{
+                        background: redirectTarget === s.hashedId ? 'rgba(59, 130, 246, 0.2)' : 'var(--bg-input)',
+                        border: redirectTarget === s.hashedId ? '1px solid rgb(59, 130, 246)' : '1px solid transparent',
+                      }}
+                    >
+                      <div className="font-medium text-[var(--text-primary)]">{s.name}</div>
+                      <div className="text-xs text-[var(--text-muted)]">
+                        {s.ip}:{s.port} • {s.playerCount} players
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRedirectModalOpen(false)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeRedirect}
+                disabled={!redirectTarget || redirecting}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                style={{ background: 'var(--accent-primary)', color: 'white' }}
+              >
+                {redirecting ? 'Redirecting...' : 'Confirm Redirect'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

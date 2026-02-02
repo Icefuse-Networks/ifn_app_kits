@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@clickhouse/client";
+import { clickhouse } from "@/lib/clickhouse";
 import { authenticateWithScope } from "@/services/api-auth";
 import { auditDelete } from "@/services/audit";
 import { z } from "zod";
-
-const client = createClient({
-  url: "http://168.100.163.49:8124",
-  username: "default",
-  password: "DvqUTqWMe7cQ9NJme83coT48RA0ex3D7lgnWO1fhhkFQp4oVneM93WwrMpwGDl90",
-  database: "default",
-});
 
 interface CacheEntry<T> {
   data: T;
@@ -97,42 +90,42 @@ export async function GET(request: NextRequest) {
       topPlayersResult,
       recentTrendsResult,
     ] = await Promise.all([
-      client.query({
+      clickhouse.query({
         query: `SELECT COUNT(*) as total_purchases, SUM(cost) as total_revenue, COUNT(DISTINCT steamid64) as unique_players, COUNT(DISTINCT server_name) as active_servers, COUNT(DISTINCT item_name) as unique_items, ROUND(AVG(cost)) as avg_purchase_value, MAX(cost) as max_purchase_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String})`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT ${dateFormat} as date, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr} ORDER BY ${groupByExpr} ASC`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT server_name, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players, COUNT(DISTINCT item_name) as items_sold, ROUND(AVG(cost)) as avg_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY server_name ORDER BY purchases DESC`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT item_name, COUNT(*) as count, SUM(cost) as revenue, SUM(amount) as total_amount, COUNT(DISTINCT steamid64) as buyers FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY item_name ORDER BY count DESC LIMIT 20`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT toHour(timestamp) as hour, toDayOfWeek(timestamp) as day_of_week, COUNT(*) as count FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY hour, day_of_week ORDER BY day_of_week, hour`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT currency, COUNT(*) as count, SUM(cost) as total FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY currency ORDER BY count DESC`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT steamid64, any(player_name) as player_name, COUNT(*) as purchases, SUM(cost) as total_spent, COUNT(DISTINCT item_name) as unique_items FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY steamid64 ORDER BY total_spent DESC LIMIT 15`,
         query_params: { server },
         format: "JSONEachRow",
       }),
-      client.query({
+      clickhouse.query({
         query: `SELECT ${dateFormat} as date, server_name, COUNT(*) as purchases FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr}, server_name ORDER BY ${groupByExpr} ASC`,
         query_params: { server },
         format: "JSONEachRow",
@@ -241,13 +234,13 @@ export async function DELETE(request: NextRequest) {
     const { server_name } = parsed.data;
 
     if (server_name) {
-      await client.command({
+      await clickhouse.command({
         query: "ALTER TABLE shop_purchases DELETE WHERE server_name = {server_name:String}",
         query_params: { server_name },
       });
       await auditDelete("shop_purchases", `server_${server_name}`, authResult.context, { server_name }, request);
     } else {
-      await client.command({ query: "TRUNCATE TABLE shop_purchases" });
+      await clickhouse.command({ query: "TRUNCATE TABLE shop_purchases" });
       await auditDelete("shop_purchases", "all", authResult.context, { action: "truncate" }, request);
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
+import { clickhouse } from '@/lib/clickhouse'
 import { authenticateWithScope } from '@/services/api-auth'
 import { logger } from '@/lib/logger'
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const identifier = await prisma.serverIdentifier.findFirst({
       where: { hashedId: serverId },
-      select: { id: true },
+      select: { id: true, name: true, ip: true, port: true, categoryId: true, category: { select: { name: true } } },
     })
 
     if (!identifier) {
@@ -60,6 +61,25 @@ export async function POST(request: NextRequest) {
         lastPlayerUpdate: new Date(),
       },
     })
+
+    if (identifier.ip && identifier.port) {
+      clickhouse.insert({
+        table: 'server_population_stats',
+        values: [{
+          server_name: identifier.name,
+          server_ip: identifier.ip,
+          server_port: identifier.port,
+          category_id: identifier.categoryId ? parseInt(identifier.categoryId, 10) || 0 : 0,
+          category: identifier.category?.name || '',
+          players: playerCount,
+          max_players: 0,
+          last_wipe: null,
+          next_wipe: null,
+          days_since_wipe: null,
+        }],
+        format: 'JSONEachRow',
+      }).catch(err => logger.admin.error('Failed to insert population stats', err))
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

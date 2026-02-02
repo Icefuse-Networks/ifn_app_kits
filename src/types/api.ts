@@ -310,6 +310,7 @@ registerResourceType('banned_clan_name', 'Banned Clan Name', 'clans')
 // Redirect plugin resources
 registerResourceType('redirect_config', 'Redirect Configuration', 'redirect')
 registerResourceType('redirect_log', 'Redirect Log', 'redirect')
+registerResourceType('redirect_queue', 'Redirect Queue', 'redirect')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Resources (uncomment when adding plugins)

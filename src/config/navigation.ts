@@ -1,5 +1,5 @@
 import {
-  Package, Settings, BarChart2, Shield, Key, Tag, HardDrive,
+  Package, Settings, BarChart2, Shield, Key, HardDrive,
   MessageSquare, Box, ShoppingCart, ArrowRightLeft, TrendingUp,
   LucideIcon
 } from 'lucide-react'
@@ -51,7 +51,6 @@ export const dashboardSections: NavSection[] = [
     description: 'API access and configuration',
     items: [
       { href: '/dashboard/tokens', icon: Key, label: 'API Tokens', desc: 'Generate and manage API access keys', gradient: 'from-rose-500 to-pink-600' },
-      { href: '/dashboard/identifiers', icon: Tag, label: 'Identifiers', desc: 'Server analytics identifiers', gradient: 'from-cyan-500 to-blue-500' },
       { href: '/dashboard/settings', icon: Settings, label: 'Settings', desc: 'General app configuration', gradient: 'from-slate-500 to-slate-600' },
     ]
   },

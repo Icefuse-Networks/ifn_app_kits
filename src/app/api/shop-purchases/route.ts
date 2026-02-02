@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@clickhouse/client";
+import { clickhouse } from "@/lib/clickhouse";
 import { authenticateWithScope } from "@/services/api-auth";
 import { prisma } from "@/lib/db";
 import { auditCreate, auditDelete } from "@/services/audit";
 import { z } from "zod";
-
-const client = createClient({
-  url: "http://168.100.163.49:8124",
-  username: "default",
-  password: "DvqUTqWMe7cQ9NJme83coT48RA0ex3D7lgnWO1fhhkFQp4oVneM93WwrMpwGDl90",
-  database: "default",
-});
 
 interface CacheEntry<T> {
   data: T;
@@ -112,11 +105,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached.data);
     }
 
-    const totalCountResult = await client.query({ query: "SELECT COUNT(*) as count FROM shop_purchases", format: "JSONEachRow" });
+    const totalCountResult = await clickhouse.query({ query: "SELECT COUNT(*) as count FROM shop_purchases", format: "JSONEachRow" });
     const totalCountRows = await totalCountResult.json<{ count: string }>();
     const recordsTotal = parseInt(totalCountRows[0]?.count || "0", 10);
 
-    const filteredCountResult = await client.query({
+    const filteredCountResult = await clickhouse.query({
       query: "SELECT COUNT(*) as count FROM shop_purchases WHERE 1=1 AND ({server:String} = '' OR server_name = {server:String}) AND ({search:String} = '' OR player_name ILIKE {searchPattern:String} OR steamid64 = {search:String} OR item_name ILIKE {searchPattern:String})",
       query_params: { server, search, searchPattern: `%${search}%` },
       format: "JSONEachRow",
@@ -124,7 +117,7 @@ export async function GET(request: NextRequest) {
     const filteredCountRows = await filteredCountResult.json<{ count: string }>();
     const recordsFiltered = parseInt(filteredCountRows[0]?.count || "0", 10);
 
-    const dataResult = await client.query({
+    const dataResult = await clickhouse.query({
       query: `SELECT formatDateTime(timestamp, '%Y-%m-%d %H:%i:%s') as timestamp, server_name, player_name, steamid64, item_name, amount, currency, cost FROM shop_purchases WHERE 1=1 AND ({server:String} = '' OR server_name = {server:String}) AND ({search:String} = '' OR player_name ILIKE {searchPattern:String} OR steamid64 = {search:String} OR item_name ILIKE {searchPattern:String}) ORDER BY ${orderColumn} ${orderDir.toUpperCase()} LIMIT {length:UInt32} OFFSET {start:UInt32}`,
       query_params: { server, search, searchPattern: `%${search}%`, length, start },
       format: "JSONEachRow",
@@ -196,7 +189,7 @@ export async function POST(request: NextRequest) {
         cost: p.cost,
       }));
 
-      await client.insert({ table: "shop_purchases", values: rows, format: "JSONEachRow" });
+      await clickhouse.insert({ table: "shop_purchases", values: rows, format: "JSONEachRow" });
 
       await auditCreate("shop_purchase_batch", `batch_${Date.now()}`, authResult.context, { count: rows.length, server: resolvedServerName || rows[0]?.server_name }, request);
 
@@ -221,7 +214,7 @@ export async function POST(request: NextRequest) {
       cost: cost ?? 0,
     };
 
-    await client.insert({ table: "shop_purchases", values: [row], format: "JSONEachRow" });
+    await clickhouse.insert({ table: "shop_purchases", values: [row], format: "JSONEachRow" });
 
     await auditCreate("shop_purchase", `${steamid64}_${Date.now()}`, authResult.context, row, request);
 
@@ -258,13 +251,13 @@ export async function DELETE(request: NextRequest) {
     const { server_name } = parsed.data;
 
     if (server_name) {
-      await client.command({
+      await clickhouse.command({
         query: "ALTER TABLE shop_purchases DELETE WHERE server_name = {server_name:String}",
         query_params: { server_name },
       });
       await auditDelete("shop_purchases", `server_${server_name}`, authResult.context, { server_name }, request);
     } else {
-      await client.command({ query: "TRUNCATE TABLE shop_purchases" });
+      await clickhouse.command({ query: "TRUNCATE TABLE shop_purchases" });
       await auditDelete("shop_purchases", "all", authResult.context, { action: "truncate" }, request);
     }
 
