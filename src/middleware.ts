@@ -26,6 +26,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/telemetry',
   '/api/servers',
   '/api/identifiers',
+  '/api/redirect',
   '/api/items',
   '/api/skins',
   '/_next',
