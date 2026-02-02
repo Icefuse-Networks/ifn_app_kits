@@ -767,12 +767,31 @@ model RedirectConfig {
   maxPlayersForEmptyServer Int      @default(2) @map("max_players_for_empty_server")
   preferredEmptyServers    String   @map("preferred_empty_servers")
   excludedServers          String   @map("excluded_servers")
+  enableWipeRedirect       Boolean  @default(true) @map("enable_wipe_redirect")
+  wipeRedirectMinutesBefore Int     @default(2) @map("wipe_redirect_minutes_before")
+  overrideRedirectServer   String?  @map("override_redirect_server") @db.VarChar(60)
   isActive                 Boolean  @default(true) @map("is_active")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
   @@index([isActive])
   @@map("redirect_config")
+}
+
+model WipeSchedule {
+  id                 String   @id @db.VarChar(60)
+  serverIdentifierId String   @map("server_identifier_id") @db.VarChar(60)
+  dayOfWeek          Int      @map("day_of_week")
+  hour               Int
+  minute             Int
+  wipeType           String   @default("regular") @map("wipe_type") @db.VarChar(20)
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([serverIdentifierId])
+  @@index([dayOfWeek, hour, minute])
+  @@map("wipe_schedule")
 }
 
 model RedirectLog {

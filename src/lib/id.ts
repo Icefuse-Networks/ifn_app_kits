@@ -131,6 +131,7 @@ registerPrefix('bannedWord', 'bannedword', 'Banned Word', 'moderation')
 registerPrefix('redirectConfig', 'redircfg', 'Redirect Config', 'redirect')
 registerPrefix('redirectLog', 'redirlog', 'Redirect Log', 'redirect')
 registerPrefix('redirectQueue', 'redirq', 'Redirect Queue', 'redirect')
+registerPrefix('wipeSchedule', 'wipesched', 'Wipe Schedule', 'redirect')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Prefixes (uncomment when adding plugins)
@@ -186,6 +187,7 @@ export type IdType =
   | 'redirectConfig'
   | 'redirectLog'
   | 'redirectQueue'
+  | 'wipeSchedule'
 
 // =============================================================================
 // Core Functions
@@ -355,6 +357,7 @@ export const id = {
   redirectConfig: () => generateId('redirectConfig'),
   redirectLog: () => generateId('redirectLog'),
   redirectQueue: () => generateId('redirectQueue'),
+  wipeSchedule: () => generateId('wipeSchedule'),
 } as const
 
 /**

@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRightLeft, Settings, Activity, RefreshCw, Save,
-  Users, Clock, TrendingUp, AlertTriangle, Filter,
-  ChevronLeft, ChevronRight, Search, X
+  Users, Clock, TrendingUp, AlertTriangle,
+  ChevronLeft, ChevronRight, Search, X, Shield, Server, Zap,
+  Calendar
 } from "lucide-react";
 
 interface RedirectConfig {
@@ -19,6 +20,15 @@ interface RedirectConfig {
   maxPlayersForEmptyServer: number;
   preferredEmptyServers: string[];
   excludedServers: string[];
+  enableWipeRedirect: boolean;
+  wipeRedirectMinutesBefore: number;
+  overrideRedirectServer: string | null;
+}
+
+interface ServerIdentifier {
+  id: string;
+  name: string;
+  hashedId: string;
 }
 
 interface RedirectLog {
@@ -53,7 +63,10 @@ const defaultConfig: RedirectConfig = {
   minPlayersForEmptyServer: 0,
   maxPlayersForEmptyServer: 2,
   preferredEmptyServers: [],
-  excludedServers: []
+  excludedServers: [],
+  enableWipeRedirect: true,
+  wipeRedirectMinutesBefore: 2,
+  overrideRedirectServer: null
 };
 
 type TabType = "settings" | "logs";
@@ -112,8 +125,9 @@ function StatCard({ label, value, icon: Icon, subtitle, color = "purple" }: {
   );
 }
 
-function ListManager({ label, items, onChange, placeholder }: {
+function ListManager({ label, description, items, onChange, placeholder }: {
   label: string;
+  description?: string;
   items: string[];
   onChange: (items: string[]) => void;
   placeholder: string;
@@ -134,7 +148,10 @@ function ListManager({ label, items, onChange, placeholder }: {
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-[var(--text-muted)]">{label}</label>
+      <div>
+        <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
+        {description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>}
+      </div>
       <div className="flex gap-2">
         <input
           type="text"
@@ -164,6 +181,29 @@ function ListManager({ label, items, onChange, placeholder }: {
   );
 }
 
+function SettingInput({ label, description, value, onChange, type = "number", step }: {
+  label: string;
+  description?: string;
+  value: number;
+  onChange: (val: number) => void;
+  type?: string;
+  step?: string;
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
+      {description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>}
+      <input
+        type={type}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(type === "number" ? (parseFloat(e.target.value) || 0) : parseInt(e.target.value) || 0)}
+        className="w-full mt-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
+      />
+    </div>
+  );
+}
+
 export default function RedirectionPage() {
   const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [config, setConfig] = useState<RedirectConfig>(defaultConfig);
@@ -178,6 +218,8 @@ export default function RedirectionPage() {
   const [searchSteamId, setSearchSteamId] = useState("");
   const logLimit = 25;
 
+  const [servers, setServers] = useState<ServerIdentifier[]>([]);
+
   const fetchConfig = useCallback(async () => {
     try {
       const res = await fetch("/api/redirect/config");
@@ -187,6 +229,18 @@ export default function RedirectionPage() {
       }
     } catch (err) {
       console.error("Failed to fetch config:", err);
+    }
+  }, []);
+
+  const fetchServers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/identifiers");
+      const data = await res.json();
+      if (data.success) {
+        setServers(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch servers:", err);
     }
   }, []);
 
@@ -215,7 +269,8 @@ export default function RedirectionPage() {
 
   useEffect(() => {
     fetchConfig();
-  }, [fetchConfig]);
+    fetchServers();
+  }, [fetchConfig, fetchServers]);
 
   useEffect(() => {
     if (activeTab === "logs") {
@@ -238,7 +293,7 @@ export default function RedirectionPage() {
       } else {
         setToast({ message: data.error?.message || "Failed to save", type: "error" });
       }
-    } catch (err) {
+    } catch {
       setToast({ message: "Failed to save configuration", type: "error" });
     } finally {
       setSaving(false);
@@ -268,10 +323,7 @@ export default function RedirectionPage() {
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleString();
-  };
+  const formatDate = (iso: string) => new Date(iso).toLocaleString();
 
   const totalPages = Math.ceil(logTotal / logLimit);
 
@@ -286,7 +338,7 @@ export default function RedirectionPage() {
               </div>
               Redirection
             </h1>
-            <p className="text-zinc-500 mt-2">Configure AFK redirects and monitor redirect activity</p>
+            <p className="text-zinc-500 mt-2">Configure staff AFK redirects and wipe redirects</p>
           </div>
 
           <div className="flex gap-2">
@@ -335,111 +387,175 @@ export default function RedirectionPage() {
               className="space-y-6"
             >
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-purple-400" />
-                  AFK Management
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-orange-400" />
+                  Staff AFK Redirect
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">AFK Timeout (seconds)</label>
-                    <input
-                      type="number"
-                      value={config.afkTimeSeconds}
-                      onChange={(e) => setConfig({ ...config, afkTimeSeconds: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">Check Interval (seconds)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={config.checkInterval}
-                      onChange={(e) => setConfig({ ...config, checkInterval: parseFloat(e.target.value) || 0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">Config Update Interval (seconds)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={config.configUpdateInterval}
-                      onChange={(e) => setConfig({ ...config, configUpdateInterval: parseFloat(e.target.value) || 0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
+                <p className="text-sm text-zinc-500 mb-4">Monitors staff members and redirects them to empty servers when AFK</p>
+
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
                     <button
                       onClick={() => setConfig({ ...config, enableAFKRedirect: !config.enableAFKRedirect })}
                       className={`relative w-12 h-6 rounded-full transition-colors ${config.enableAFKRedirect ? "bg-purple-500" : "bg-zinc-600"}`}
                     >
                       <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${config.enableAFKRedirect ? "translate-x-6" : ""}`} />
                     </button>
-                    <span className="text-sm text-white">Enable AFK Redirect</span>
+                    <div>
+                      <span className="text-sm font-medium text-white">Enable Staff AFK Redirect</span>
+                      <p className="text-xs text-zinc-500">When enabled, monitors staff for AFK and redirects them</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <ListManager
+                      label="Staff Groups to Monitor"
+                      description="Permission groups that will be monitored for AFK (e.g., admin, moderator)"
+                      items={config.staffGroups}
+                      onChange={(items) => setConfig({ ...config, staffGroups: items })}
+                      placeholder="e.g., admin, moderator"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <SettingInput
+                      label="AFK Timeout"
+                      description="Seconds of inactivity before redirect"
+                      value={config.afkTimeSeconds}
+                      onChange={(v) => setConfig({ ...config, afkTimeSeconds: v })}
+                    />
+                    <SettingInput
+                      label="Check Interval"
+                      description="How often to check AFK status (seconds)"
+                      value={config.checkInterval}
+                      onChange={(v) => setConfig({ ...config, checkInterval: v })}
+                      step="0.1"
+                    />
+                    <SettingInput
+                      label="Max Redirect Attempts"
+                      description="Retry attempts before giving up"
+                      value={config.maxRedirectAttempts}
+                      onChange={(v) => setConfig({ ...config, maxRedirectAttempts: v })}
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Users className="h-5 w-5 text-blue-400" />
-                  Server Population
+                  Population Thresholds
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">Min Players for Empty Server</label>
-                    <input
-                      type="number"
-                      value={config.minPlayersForEmptyServer}
-                      onChange={(e) => setConfig({ ...config, minPlayersForEmptyServer: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    />
+                <p className="text-sm text-zinc-500 mb-4">AFK redirects only trigger when server population is within these limits</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <SettingInput
+                    label="Min Players for Empty Server"
+                    description="Target server must have at least this many players"
+                    value={config.minPlayersForEmptyServer}
+                    onChange={(v) => setConfig({ ...config, minPlayersForEmptyServer: v })}
+                  />
+                  <SettingInput
+                    label="Max Players for Empty Server"
+                    description="Target server must have at most this many players"
+                    value={config.maxPlayersForEmptyServer}
+                    onChange={(v) => setConfig({ ...config, maxPlayersForEmptyServer: v })}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-red-400" />
+                  Wipe Redirect
+                </h2>
+                <p className="text-sm text-zinc-500 mb-4">Redirect players before server wipes. Configure schedules on each server.</p>
+
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                    <button
+                      onClick={() => setConfig({ ...config, enableWipeRedirect: !config.enableWipeRedirect })}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${config.enableWipeRedirect ? "bg-purple-500" : "bg-zinc-600"}`}
+                    >
+                      <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${config.enableWipeRedirect ? "translate-x-6" : ""}`} />
+                    </button>
+                    <div>
+                      <span className="text-sm font-medium text-white">Enable Wipe Redirect</span>
+                      <p className="text-xs text-zinc-500">Redirects all players before scheduled wipes</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">Max Players for Empty Server</label>
-                    <input
-                      type="number"
-                      value={config.maxPlayersForEmptyServer}
-                      onChange={(e) => setConfig({ ...config, maxPlayersForEmptyServer: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-[var(--text-muted)]">Max Redirect Attempts</label>
-                    <input
-                      type="number"
-                      value={config.maxRedirectAttempts}
-                      onChange={(e) => setConfig({ ...config, maxRedirectAttempts: parseInt(e.target.value) || 1 })}
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <SettingInput
+                      label="Minutes Before Wipe"
+                      description="Start redirecting players this many minutes before wipe (EST/EDT)"
+                      value={config.wipeRedirectMinutesBefore}
+                      onChange={(v) => setConfig({ ...config, wipeRedirectMinutesBefore: v })}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
-                  <ListManager
-                    label="Staff Groups (exempt from redirect)"
-                    items={config.staffGroups}
-                    onChange={(items) => setConfig({ ...config, staffGroups: items })}
-                    placeholder="e.g., admin, moderator"
-                  />
+              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <Server className="h-5 w-5 text-green-400" />
+                  Target Server Selection
+                </h2>
+                <p className="text-sm text-zinc-500 mb-4">Control which servers are used as redirect targets</p>
+
+                <div className="space-y-6">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <label className="text-sm font-medium text-[var(--text-primary)]">Override Redirect Server</label>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-2">Forces all redirects (AFK and wipe) to this server, bypassing population checks</p>
+                    <select
+                      value={config.overrideRedirectServer || ""}
+                      onChange={(e) => setConfig({ ...config, overrideRedirectServer: e.target.value || null })}
+                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="">None (use population-based selection)</option>
+                      {servers.map((s) => (
+                        <option key={s.id} value={s.hashedId}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <ListManager
+                        label="Preferred Empty Servers"
+                        description="Server identifiers to prioritize when no override set"
+                        items={config.preferredEmptyServers}
+                        onChange={(items) => setConfig({ ...config, preferredEmptyServers: items })}
+                        placeholder="Server identifier"
+                      />
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <ListManager
+                        label="Excluded Servers"
+                        description="Server identifiers to never redirect to"
+                        items={config.excludedServers}
+                        onChange={(items) => setConfig({ ...config, excludedServers: items })}
+                        placeholder="Server identifier to exclude"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
-                  <ListManager
-                    label="Preferred Empty Servers"
-                    items={config.preferredEmptyServers}
-                    onChange={(items) => setConfig({ ...config, preferredEmptyServers: items })}
-                    placeholder="Server identifier"
-                  />
-                </div>
-                <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6 lg:col-span-2">
-                  <ListManager
-                    label="Excluded Servers"
-                    items={config.excludedServers}
-                    onChange={(items) => setConfig({ ...config, excludedServers: items })}
-                    placeholder="Server identifier to exclude"
+              </div>
+
+              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-400" />
+                  Global Settings
+                </h2>
+                <p className="text-sm text-zinc-500 mb-4">General configuration that applies to all redirect systems</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <SettingInput
+                    label="Config Update Interval"
+                    description="How often servers fetch this config (seconds)"
+                    value={config.configUpdateInterval}
+                    onChange={(v) => setConfig({ ...config, configUpdateInterval: v })}
+                    step="0.1"
                   />
                 </div>
               </div>
@@ -549,7 +665,8 @@ export default function RedirectionPage() {
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
                                 log.redirectReason === "AFK_TIMEOUT" ? "bg-orange-500/20 text-orange-400" :
-                                log.redirectReason === "WIPE" ? "bg-red-500/20 text-red-400" :
+                                log.redirectReason === "WIPE" || log.redirectReason === "WIPE_REDIRECT" ? "bg-red-500/20 text-red-400" :
+                                log.redirectReason === "PLAYER_RETURN" ? "bg-cyan-500/20 text-cyan-400" :
                                 "bg-green-500/20 text-green-400"
                               }`}>
                                 {log.redirectReason}

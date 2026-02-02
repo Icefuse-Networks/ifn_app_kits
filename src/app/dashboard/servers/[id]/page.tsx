@@ -1,8 +1,15 @@
 'use client'
 
 import { useState, useEffect, use, useCallback } from 'react'
-import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square } from 'lucide-react'
+import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square, Edit3, Trash2, Calendar, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface IdentifierCategory {
+  id: string
+  name: string
+  description: string | null
+}
 
 interface PlayerData {
   steamId: string
@@ -15,6 +22,7 @@ interface ServerIdentifier {
   id: string
   name: string
   hashedId: string
+  description: string | null
   ip: string | null
   port: number | null
   connectEndpoint: string | null
@@ -35,6 +43,23 @@ interface ServerOption {
   port: number | null
   playerCount: number
 }
+
+interface WipeSchedule {
+  id: string
+  serverIdentifierId: string
+  dayOfWeek: number
+  hour: number
+  minute: number
+  wipeType: string
+  createdAt: string
+}
+
+const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const WIPE_TYPES = [
+  { value: "regular", label: "Regular" },
+  { value: "force", label: "Force Wipe" },
+  { value: "bp", label: "BP Wipe" }
+]
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`
@@ -58,7 +83,9 @@ function formatLastUpdate(dateStr: string | null): string {
 
 export default function ServerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: serverId } = use(params)
+  const router = useRouter()
   const [server, setServer] = useState<ServerIdentifier | null>(null)
+  const [categories, setCategories] = useState<IdentifierCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set())
@@ -68,6 +95,16 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
   const [redirecting, setRedirecting] = useState(false)
   const [redirectMode, setRedirectMode] = useState<'single' | 'multi' | 'all'>('single')
   const [singlePlayerTarget, setSinglePlayerTarget] = useState<PlayerData | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [wipeSchedules, setWipeSchedules] = useState<WipeSchedule[]>([])
+  const [newSchedule, setNewSchedule] = useState({ dayOfWeek: 4, hour: 14, minute: 0, wipeType: "regular" })
+  const [addingSchedule, setAddingSchedule] = useState(false)
 
   const fetchServer = useCallback(async () => {
     try {
@@ -82,11 +119,26 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     }
   }, [serverId])
 
+  const fetchWipeSchedules = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/redirect/wipe-schedules?serverId=${serverId}`, { credentials: 'include' })
+      const data = await res.json()
+      if (data.success) setWipeSchedules(data.data)
+    } catch (err) {
+      console.error('Failed to fetch wipe schedules:', err)
+    }
+  }, [serverId])
+
   useEffect(() => {
     fetchServer()
+    fetchWipeSchedules()
+    fetch('/api/identifier-categories', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : [])
+      .then(setCategories)
+      .catch(() => setCategories([]))
     const interval = setInterval(fetchServer, 30000)
     return () => clearInterval(interval)
-  }, [fetchServer])
+  }, [fetchServer, fetchWipeSchedules])
 
   useEffect(() => {
     if (redirectModalOpen) {
@@ -128,6 +180,98 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     setSinglePlayerTarget(player || null)
     setRedirectTarget(null)
     setRedirectModalOpen(true)
+  }
+
+  function openEditModal() {
+    if (!server) return
+    setEditName(server.name)
+    setEditDescription(server.description || '')
+    setEditCategoryId(server.categoryId)
+    setEditModalOpen(true)
+  }
+
+  async function saveServer() {
+    if (!server) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/identifiers/${server.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName.trim() || undefined,
+          description: editDescription.trim() || null,
+          categoryId: editCategoryId,
+        }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setServer(prev => prev ? { ...prev, ...updated } : null)
+        setEditModalOpen(false)
+      }
+    } catch (err) {
+      console.error('Failed to save:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteServer() {
+    if (!server) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/identifiers/${server.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        router.push('/dashboard/servers')
+      }
+    } catch (err) {
+      console.error('Failed to delete:', err)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  async function addWipeSchedule() {
+    if (!server) return
+    setAddingSchedule(true)
+    try {
+      const res = await fetch('/api/redirect/wipe-schedules', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serverIdentifierId: server.id,
+          ...newSchedule
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setWipeSchedules(prev => [...prev, data.data])
+      }
+    } catch (err) {
+      console.error('Failed to add schedule:', err)
+    } finally {
+      setAddingSchedule(false)
+    }
+  }
+
+  async function deleteWipeSchedule(scheduleId: string) {
+    try {
+      const res = await fetch('/api/redirect/wipe-schedules', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: scheduleId })
+      })
+      if (res.ok) {
+        setWipeSchedules(prev => prev.filter(s => s.id !== scheduleId))
+      }
+    } catch (err) {
+      console.error('Failed to delete schedule:', err)
+    }
   }
 
   async function executeRedirect() {
@@ -227,9 +371,40 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
             {server.category?.name || 'Uncategorized'} • Last update: {formatLastUpdate(server.lastPlayerUpdate)}
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-          <Activity className="w-4 h-4" />
-          <span>Auto-refresh: 30s</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openEditModal}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          >
+            <Edit3 className="w-4 h-4 text-[var(--text-muted)]" />
+            <span className="text-[var(--text-secondary)]">Edit</span>
+          </button>
+          {deleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={deleteServer}
+                disabled={deleting}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-red-500 text-white"
+              >
+                {deleting ? 'Deleting...' : 'Confirm'}
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--text-muted)]"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="p-2 rounded-lg transition-colors hover:bg-red-500/10"
+              title="Delete server"
+            >
+              <Trash2 className="w-4 h-4 text-[var(--text-muted)] hover:text-red-400" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -515,6 +690,173 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                 style={{ background: 'var(--accent-primary)', color: 'white' }}
               >
                 {redirecting ? 'Redirecting...' : 'Confirm Redirect'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setEditModalOpen(false)}>
+          <div
+            className="w-full max-w-xl rounded-xl p-6 max-h-[90vh] overflow-y-auto"
+            style={{ background: '#1a1a2e', border: '1px solid var(--glass-border)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Edit Server</h3>
+              <button onClick={() => setEditModalOpen(false)} className="p-1 rounded hover:bg-[var(--bg-card-hover)]">
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description</label>
+                <input
+                  type="text"
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  placeholder="Optional"
+                  className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category</label>
+                <select
+                  value={editCategoryId || ''}
+                  onChange={e => setEditCategoryId(e.target.value || null)}
+                  className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                >
+                  <option value="">No category</option>
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Server ID</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 rounded-lg text-xs font-mono truncate" style={{ background: 'var(--bg-input)', color: 'var(--accent-primary)' }}>
+                    {server?.hashedId}
+                  </code>
+                  <button
+                    onClick={() => server && copyToClipboard(server.hashedId, 'hashedId')}
+                    className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)]"
+                  >
+                    {copied === 'hashedId' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-[var(--text-muted)]" />}
+                  </button>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-[var(--glass-border)]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-4 h-4 text-orange-400" />
+                  <label className="text-sm font-medium text-[var(--text-secondary)]">Wipe Schedule (EST/EDT)</label>
+                </div>
+                {wipeSchedules.length === 0 ? (
+                  <p className="text-xs text-[var(--text-muted)] mb-3">No wipe schedules configured</p>
+                ) : (
+                  <div className="space-y-2 mb-3">
+                    {wipeSchedules.map((schedule) => (
+                      <div key={schedule.id} className="flex items-center justify-between p-2 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-2 py-0.5 rounded text-xs font-medium"
+                            style={{
+                              background: schedule.wipeType === "force" ? 'rgba(239, 68, 68, 0.2)' : schedule.wipeType === "bp" ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                              color: schedule.wipeType === "force" ? 'rgb(248, 113, 113)' : schedule.wipeType === "bp" ? 'rgb(192, 132, 252)' : 'rgb(96, 165, 250)',
+                            }}
+                          >
+                            {WIPE_TYPES.find(t => t.value === schedule.wipeType)?.label || schedule.wipeType}
+                          </span>
+                          <span className="text-xs text-[var(--text-primary)]">
+                            {DAYS_OF_WEEK[schedule.dayOfWeek]} {String(schedule.hour).padStart(2, "0")}:{String(schedule.minute).padStart(2, "0")}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => deleteWipeSchedule(schedule.id)}
+                          className="p-1 rounded hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-3 h-3 text-[var(--text-muted)] hover:text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={newSchedule.dayOfWeek}
+                    onChange={(e) => setNewSchedule({ ...newSchedule, dayOfWeek: parseInt(e.target.value) })}
+                    className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-primary)]"
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                  >
+                    {DAYS_OF_WEEK.map((day, i) => <option key={i} value={i}>{day}</option>)}
+                  </select>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={newSchedule.hour}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, hour: parseInt(e.target.value) || 0 })}
+                      className="w-12 px-2 py-1.5 rounded-lg text-xs text-center text-[var(--text-primary)]"
+                      style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                    />
+                    <span className="text-[var(--text-muted)]">:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={newSchedule.minute}
+                      onChange={(e) => setNewSchedule({ ...newSchedule, minute: parseInt(e.target.value) || 0 })}
+                      className="w-12 px-2 py-1.5 rounded-lg text-xs text-center text-[var(--text-primary)]"
+                      style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                    />
+                  </div>
+                  <select
+                    value={newSchedule.wipeType}
+                    onChange={(e) => setNewSchedule({ ...newSchedule, wipeType: e.target.value })}
+                    className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-primary)]"
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                  >
+                    {WIPE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                  <button
+                    onClick={addWipeSchedule}
+                    disabled={addingSchedule}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    style={{ background: 'var(--accent-primary)', color: 'white' }}
+                  >
+                    <Plus className="w-3 h-3" />
+                    {addingSchedule ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveServer}
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                style={{ background: 'var(--accent-primary)', color: 'white' }}
+              >
+                {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

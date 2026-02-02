@@ -17,6 +17,9 @@ interface RedirectConfig {
   maxPlayersForEmptyServer: number
   preferredEmptyServers: string[]
   excludedServers: string[]
+  enableWipeRedirect: boolean
+  wipeRedirectMinutesBefore: number
+  overrideRedirectServer: string | null
 }
 
 const defaultConfig: RedirectConfig = {
@@ -29,7 +32,10 @@ const defaultConfig: RedirectConfig = {
   minPlayersForEmptyServer: 0,
   maxPlayersForEmptyServer: 2,
   preferredEmptyServers: [],
-  excludedServers: []
+  excludedServers: [],
+  enableWipeRedirect: true,
+  wipeRedirectMinutesBefore: 2,
+  overrideRedirectServer: null
 }
 
 const updateConfigSchema = z.object({
@@ -42,7 +48,10 @@ const updateConfigSchema = z.object({
   minPlayersForEmptyServer: z.number().min(0),
   maxPlayersForEmptyServer: z.number().min(0),
   preferredEmptyServers: z.array(z.string()).default([]),
-  excludedServers: z.array(z.string()).default([])
+  excludedServers: z.array(z.string()).default([]),
+  enableWipeRedirect: z.boolean().default(true),
+  wipeRedirectMinutesBefore: z.number().min(1).max(60).default(2),
+  overrideRedirectServer: z.string().nullable().default(null)
 }).refine(data => data.minPlayersForEmptyServer <= data.maxPlayersForEmptyServer, {
   message: 'minPlayersForEmptyServer must be <= maxPlayersForEmptyServer'
 })
@@ -77,6 +86,9 @@ export async function GET(request: NextRequest) {
           maxPlayersForEmptyServer: defaultConfig.maxPlayersForEmptyServer,
           preferredEmptyServers: JSON.stringify(defaultConfig.preferredEmptyServers),
           excludedServers: JSON.stringify(defaultConfig.excludedServers),
+          enableWipeRedirect: defaultConfig.enableWipeRedirect,
+          wipeRedirectMinutesBefore: defaultConfig.wipeRedirectMinutesBefore,
+          overrideRedirectServer: defaultConfig.overrideRedirectServer,
           isActive: true
         }
       })
@@ -106,6 +118,9 @@ export async function GET(request: NextRequest) {
         maxPlayersForEmptyServer: config.maxPlayersForEmptyServer,
         preferredEmptyServers: JSON.parse(config.preferredEmptyServers) as string[],
         excludedServers: JSON.parse(config.excludedServers) as string[],
+        enableWipeRedirect: config.enableWipeRedirect,
+        wipeRedirectMinutesBefore: config.wipeRedirectMinutesBefore,
+        overrideRedirectServer: config.overrideRedirectServer,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt
       }
@@ -152,7 +167,10 @@ export async function PUT(request: NextRequest) {
       minPlayersForEmptyServer: data.minPlayersForEmptyServer,
       maxPlayersForEmptyServer: data.maxPlayersForEmptyServer,
       preferredEmptyServers: [...new Set(data.preferredEmptyServers.filter(s => s.trim() !== ''))],
-      excludedServers: [...new Set(data.excludedServers.filter(s => s.trim() !== ''))]
+      excludedServers: [...new Set(data.excludedServers.filter(s => s.trim() !== ''))],
+      enableWipeRedirect: data.enableWipeRedirect,
+      wipeRedirectMinutesBefore: data.wipeRedirectMinutesBefore,
+      overrideRedirectServer: data.overrideRedirectServer?.trim() || null
     }
 
     const oldConfig = await prisma.redirectConfig.findFirst({
@@ -177,6 +195,9 @@ export async function PUT(request: NextRequest) {
         maxPlayersForEmptyServer: cleanConfig.maxPlayersForEmptyServer,
         preferredEmptyServers: JSON.stringify(cleanConfig.preferredEmptyServers),
         excludedServers: JSON.stringify(cleanConfig.excludedServers),
+        enableWipeRedirect: cleanConfig.enableWipeRedirect,
+        wipeRedirectMinutesBefore: cleanConfig.wipeRedirectMinutesBefore,
+        overrideRedirectServer: cleanConfig.overrideRedirectServer,
         isActive: true
       }
     })
