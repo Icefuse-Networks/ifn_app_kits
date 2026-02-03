@@ -8,7 +8,7 @@ export async function GET() {
         config: { select: { id: true, name: true, currentVersion: true, publishedVersion: true } },
         serverIdentifier: { select: { id: true, name: true, hashedId: true, ip: true, port: true } },
       },
-      orderBy: [{ serverIdentifierId: "asc" }, { hoursAfterWipe: "asc" }],
+      orderBy: [{ serverIdentifierId: "asc" }, { minutesAfterWipe: "asc" }],
     });
     return NextResponse.json(mappings);
   } catch (error) {
@@ -20,16 +20,16 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { configId, serverIdentifierId, isLive, hoursAfterWipe } = body;
+    const { configId, serverIdentifierId, isLive, minutesAfterWipe } = body;
 
     if (!configId || !serverIdentifierId) {
       return NextResponse.json({ error: "configId and serverIdentifierId are required" }, { status: 400 });
     }
 
-    const hours = hoursAfterWipe !== undefined && hoursAfterWipe !== null ? hoursAfterWipe : null;
+    const minutes = minutesAfterWipe !== undefined && minutesAfterWipe !== null ? minutesAfterWipe : null;
 
     const mapping = await prisma.lootMapping.create({
-      data: { configId, serverIdentifierId, isLive: isLive ?? false, hoursAfterWipe: hours },
+      data: { configId, serverIdentifierId, isLive: isLive ?? false, minutesAfterWipe: minutes },
       include: {
         config: { select: { id: true, name: true, currentVersion: true, publishedVersion: true } },
         serverIdentifier: { select: { id: true, name: true, hashedId: true, ip: true, port: true } },
@@ -63,15 +63,15 @@ export async function DELETE(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, isLive, hoursAfterWipe, configId } = body;
+    const { id, isLive, minutesAfterWipe, configId } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Mapping id is required" }, { status: 400 });
     }
 
-    const data: { isLive?: boolean; hoursAfterWipe?: number | null; configId?: number } = {};
+    const data: { isLive?: boolean; minutesAfterWipe?: number | null; configId?: number } = {};
     if (isLive !== undefined) data.isLive = isLive;
-    if (hoursAfterWipe !== undefined) data.hoursAfterWipe = hoursAfterWipe;
+    if (minutesAfterWipe !== undefined) data.minutesAfterWipe = minutesAfterWipe;
     if (configId !== undefined) data.configId = configId;
 
     const mapping = await prisma.lootMapping.update({

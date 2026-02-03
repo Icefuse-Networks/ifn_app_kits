@@ -61,10 +61,18 @@ interface LootMapping {
   configId: number;
   serverIdentifierId: string;
   isLive: boolean;
-  hoursAfterWipe: number | null;
+  minutesAfterWipe: number | null;
   config: { id: number; name: string; currentVersion: number; publishedVersion: number | null };
   serverIdentifier: ServerIdentifier;
 }
+
+const formatDuration = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
 
 const MAX_HISTORY = 50;
 
@@ -168,6 +176,7 @@ export default function LootManagerPage() {
   const [selectedMappingConfig, setSelectedMappingConfig] = useState<number | null>(null);
   const [selectedMappingServer, setSelectedMappingServer] = useState<string | null>(null);
   const [selectedMappingHours, setSelectedMappingHours] = useState<string>("");
+  const [selectedMappingMinutes, setSelectedMappingMinutes] = useState<string>("");
   const [editingMappingId, setEditingMappingId] = useState<number | null>(null);
   const [configDropdownOpen, setConfigDropdownOpen] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
@@ -377,15 +386,17 @@ export default function LootManagerPage() {
 
   const handleAddMapping = async () => {
     if (!selectedMappingConfig || !selectedMappingServer) { toast.error("Select both config and server"); return; }
-    const hoursAfterWipe = selectedMappingHours.trim() === "" ? null : parseInt(selectedMappingHours);
-    if (selectedMappingHours.trim() !== "" && (isNaN(hoursAfterWipe!) || hoursAfterWipe! < 0)) { toast.error("Hours must be a valid number >= 0"); return; }
+    const hours = selectedMappingHours.trim() === "" ? 0 : parseInt(selectedMappingHours);
+    const mins = selectedMappingMinutes.trim() === "" ? 0 : parseInt(selectedMappingMinutes);
+    if (isNaN(hours) || hours < 0 || isNaN(mins) || mins < 0 || mins > 59) { toast.error("Invalid time values"); return; }
+    const minutesAfterWipe = (selectedMappingHours.trim() === "" && selectedMappingMinutes.trim() === "") ? null : (hours * 60 + mins);
     try {
       const res = await fetch("/api/lootmanager/mappings", {
         method: editingMappingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingMappingId
-          ? { id: editingMappingId, configId: selectedMappingConfig, hoursAfterWipe }
-          : { configId: selectedMappingConfig, serverIdentifierId: selectedMappingServer, isLive: false, hoursAfterWipe }),
+          ? { id: editingMappingId, configId: selectedMappingConfig, minutesAfterWipe }
+          : { configId: selectedMappingConfig, serverIdentifierId: selectedMappingServer, isLive: false, minutesAfterWipe }),
       });
       if (res.ok) {
         toast.success(editingMappingId ? "Mapping updated" : "Mapping created");
@@ -399,6 +410,7 @@ export default function LootManagerPage() {
     setSelectedMappingServer(serverId);
     setSelectedMappingConfig(null);
     setSelectedMappingHours("");
+    setSelectedMappingMinutes("");
     setEditingMappingId(null);
     setShowAddMappingModal(true);
   };
@@ -408,6 +420,7 @@ export default function LootManagerPage() {
     setSelectedMappingConfig(null);
     setSelectedMappingServer(null);
     setSelectedMappingHours("");
+    setSelectedMappingMinutes("");
     setEditingMappingId(null);
     setConfigDropdownOpen(false);
     setServerDropdownOpen(false);
@@ -417,7 +430,13 @@ export default function LootManagerPage() {
     setEditingMappingId(mapping.id);
     setSelectedMappingConfig(mapping.configId);
     setSelectedMappingServer(mapping.serverIdentifierId);
-    setSelectedMappingHours(mapping.hoursAfterWipe !== null ? String(mapping.hoursAfterWipe) : "");
+    if (mapping.minutesAfterWipe !== null) {
+      setSelectedMappingHours(String(Math.floor(mapping.minutesAfterWipe / 60)));
+      setSelectedMappingMinutes(String(mapping.minutesAfterWipe % 60));
+    } else {
+      setSelectedMappingHours("");
+      setSelectedMappingMinutes("");
+    }
     setShowAddMappingModal(true);
   };
 
@@ -825,7 +844,7 @@ export default function LootManagerPage() {
               </div>
             ) : (() => {
               const server = servers.find(s => s.id === selectedMappingServerId);
-              const serverMappings = mappings.filter(m => m.serverIdentifierId === selectedMappingServerId).sort((a, b) => (a.hoursAfterWipe ?? -1) - (b.hoursAfterWipe ?? -1));
+              const serverMappings = mappings.filter(m => m.serverIdentifierId === selectedMappingServerId).sort((a, b) => (a.minutesAfterWipe ?? -1) - (b.minutesAfterWipe ?? -1));
               const liveMappings = serverMappings.filter(m => m.isLive);
               if (!server) return null;
               return (
@@ -874,8 +893,8 @@ export default function LootManagerPage() {
                                     {mapping.config.publishedVersion && <span className="text-xs text-zinc-500">v{mapping.config.publishedVersion}</span>}
                                   </div>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    {mapping.hoursAfterWipe !== null ? (
-                                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="h-3 w-3" />{mapping.hoursAfterWipe}h after wipe</span>
+                                    {mapping.minutesAfterWipe !== null ? (
+                                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(mapping.minutesAfterWipe)} after wipe</span>
                                     ) : (
                                       <span className="text-xs text-zinc-500">Wipe day default</span>
                                     )}
@@ -903,7 +922,7 @@ export default function LootManagerPage() {
                           {serverMappings.map((m) => (
                             <div key={m.id} className="flex items-center gap-2">
                               <span className={m.isLive ? "text-green-400" : "text-zinc-600"}>{m.isLive ? "●" : "○"}</span>
-                              <span className={m.isLive ? "text-white" : ""}>{m.hoursAfterWipe !== null ? `${m.hoursAfterWipe}h+` : "Wipe day"}: {m.config.name}</span>
+                              <span className={m.isLive ? "text-white" : ""}>{m.minutesAfterWipe !== null ? `${formatDuration(m.minutesAfterWipe)}+` : "Wipe day"}: {m.config.name}</span>
                             </div>
                           ))}
                         </div>
@@ -1151,16 +1170,37 @@ export default function LootManagerPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Hours After Wipe (optional)</label>
-                <input
-                  type="number"
-                  value={selectedMappingHours}
-                  onChange={(e) => setSelectedMappingHours(e.target.value)}
-                  placeholder="Leave empty for wipe day default"
-                  min={0}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none"
-                />
-                <p className="text-xs text-zinc-500 mt-1">Set to 0 for wipe day, 24 for day 2, 48 for day 3, etc. Leave empty for default.</p>
+                <label className="block text-sm text-zinc-400 mb-2">Time After Wipe (optional)</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={selectedMappingHours}
+                        onChange={(e) => setSelectedMappingHours(e.target.value)}
+                        placeholder="0"
+                        min={0}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">h</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={selectedMappingMinutes}
+                        onChange={(e) => setSelectedMappingMinutes(e.target.value)}
+                        placeholder="0"
+                        min={0}
+                        max={59}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">m</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">Leave both empty for wipe day default. Example: 1h 30m = 90 minutes after wipe.</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">

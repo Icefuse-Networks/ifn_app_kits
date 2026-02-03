@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     if (!serverId) return NextResponse.json({ error: "serverId parameter required" }, { status: 400 });
 
     const wipeTimeParam = request.nextUrl.searchParams.get("wipeTime");
-    let hoursElapsed: number | null = null;
+    let minutesElapsed: number | null = null;
 
     if (wipeTimeParam) {
       const wipeTimeUnix = parseInt(wipeTimeParam);
       if (!isNaN(wipeTimeUnix)) {
         const wipeTimeMs = wipeTimeUnix * 1000;
         const now = Date.now();
-        hoursElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60 * 60));
+        minutesElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60));
       }
     }
 
@@ -31,18 +31,18 @@ export async function GET(request: NextRequest) {
         config: { publishedVersion: { not: null } },
       },
       include: { config: true },
-      orderBy: { hoursAfterWipe: "desc" },
+      orderBy: { minutesAfterWipe: "desc" },
     });
 
     if (mappings.length === 0) {
       return NextResponse.json({ error: "No live published config found for server" }, { status: 404 });
     }
 
-    let selectedMapping = mappings.find(m => m.hoursAfterWipe === null);
+    let selectedMapping = mappings.find(m => m.minutesAfterWipe === null);
 
-    if (hoursElapsed !== null) {
+    if (minutesElapsed !== null) {
       for (const mapping of mappings) {
-        if (mapping.hoursAfterWipe !== null && hoursElapsed >= mapping.hoursAfterWipe) {
+        if (mapping.minutesAfterWipe !== null && minutesElapsed >= mapping.minutesAfterWipe) {
           selectedMapping = mapping;
           break;
         }
@@ -64,15 +64,15 @@ export async function GET(request: NextRequest) {
     if (!version) return NextResponse.json({ error: "Published version not found" }, { status: 404 });
 
     const schedule = mappings
-      .filter(m => m.hoursAfterWipe !== null)
-      .sort((a, b) => (a.hoursAfterWipe ?? 0) - (b.hoursAfterWipe ?? 0))
-      .map(m => ({ hoursAfterWipe: m.hoursAfterWipe, configId: m.configId, configName: m.config.name }));
+      .filter(m => m.minutesAfterWipe !== null)
+      .sort((a, b) => (a.minutesAfterWipe ?? 0) - (b.minutesAfterWipe ?? 0))
+      .map(m => ({ minutesAfterWipe: m.minutesAfterWipe, configId: m.configId, configName: m.config.name }));
 
     return NextResponse.json({
       name: selectedMapping.config.name,
       configId: selectedMapping.config.id,
       version: selectedMapping.config.publishedVersion,
-      hoursAfterWipe: selectedMapping.hoursAfterWipe,
+      minutesAfterWipe: selectedMapping.minutesAfterWipe,
       data: JSON.parse(version.lootData),
       schedule: schedule.length > 0 ? schedule : undefined,
     });
