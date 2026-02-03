@@ -93,6 +93,10 @@ registerScope('clans:write', 'Create, update, and delete clans', 'clans')
 registerScope('redirect:read', 'Read redirect configuration and logs', 'redirect')
 registerScope('redirect:write', 'Manage redirect configuration and submit logs', 'redirect')
 
+// LootManager plugin scopes
+registerScope('lootmanager:read', 'Read loot configurations from game servers', 'lootmanager')
+registerScope('lootmanager:write', 'Create and update loot configurations', 'lootmanager')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Scopes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -312,6 +316,10 @@ registerResourceType('redirect_config', 'Redirect Configuration', 'redirect')
 registerResourceType('redirect_log', 'Redirect Log', 'redirect')
 registerResourceType('redirect_queue', 'Redirect Queue', 'redirect')
 registerResourceType('wipe_schedule', 'Wipe Schedule', 'redirect')
+
+// LootManager plugin resources
+registerResourceType('loot_config', 'Loot Configuration', 'lootmanager')
+registerResourceType('loot_mapping', 'Loot Mapping', 'lootmanager')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Resources (uncomment when adding plugins)

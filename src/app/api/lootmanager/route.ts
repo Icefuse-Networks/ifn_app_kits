@@ -1,7 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requireSession } from "@/services/api-auth";
+
+const createSchema = z.object({
+  name: z.string().min(1).max(255).trim(),
+  description: z.string().max(1000).trim().nullable().optional(),
+  lootData: z.string().min(1),
+});
 
 export async function GET(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   const unstaged = request.nextUrl.searchParams.get("unstaged");
   try {
     const configs = await prisma.lootConfig.findMany({
@@ -22,13 +35,19 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const body = await request.json();
-    const { name, description, lootData } = body;
-
-    if (!name || !lootData) {
-      return NextResponse.json({ error: "Name and lootData are required" }, { status: 400 });
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
+
+    const { name, description, lootData } = parsed.data;
 
     const config = await prisma.lootConfig.create({
       data: {

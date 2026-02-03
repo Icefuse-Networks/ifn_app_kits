@@ -29,6 +29,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/redirect',
   '/api/items',
   '/api/skins',
+  '/api/lootmanager/download',
   '/_next',
   '/logos',
 ]

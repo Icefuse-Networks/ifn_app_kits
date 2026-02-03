@@ -1,7 +1,32 @@
 import { NextResponse, NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requireSession } from "@/services/api-auth";
 
-export async function GET() {
+const createMappingSchema = z.object({
+  configId: z.number().int().positive(),
+  serverIdentifierId: z.string().min(1),
+  isLive: z.boolean().optional().default(false),
+  minutesAfterWipe: z.number().int().min(0).nullable().optional(),
+});
+
+const updateMappingSchema = z.object({
+  id: z.number().int().positive(),
+  isLive: z.boolean().optional(),
+  minutesAfterWipe: z.number().int().min(0).nullable().optional(),
+  configId: z.number().int().positive().optional(),
+});
+
+const deleteMappingSchema = z.object({
+  id: z.number().int().positive(),
+});
+
+export async function GET(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const mappings = await prisma.lootMapping.findMany({
       include: {
@@ -18,18 +43,23 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const body = await request.json();
-    const { configId, serverIdentifierId, isLive, minutesAfterWipe } = body;
-
-    if (!configId || !serverIdentifierId) {
-      return NextResponse.json({ error: "configId and serverIdentifierId are required" }, { status: 400 });
+    const parsed = createMappingSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
 
+    const { configId, serverIdentifierId, isLive, minutesAfterWipe } = parsed.data;
     const minutes = minutesAfterWipe !== undefined && minutesAfterWipe !== null ? minutesAfterWipe : null;
 
     const mapping = await prisma.lootMapping.create({
-      data: { configId, serverIdentifierId, isLive: isLive ?? false, minutesAfterWipe: minutes },
+      data: { configId, serverIdentifierId, isLive, minutesAfterWipe: minutes },
       include: {
         config: { select: { id: true, name: true, currentVersion: true, publishedVersion: true } },
         serverIdentifier: { select: { id: true, name: true, hashedId: true, ip: true, port: true } },
@@ -44,15 +74,19 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const body = await request.json();
-    const { id } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Mapping id is required" }, { status: 400 });
+    const parsed = deleteMappingSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    await prisma.lootMapping.delete({ where: { id } });
+    await prisma.lootMapping.delete({ where: { id: parsed.data.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting loot mapping:", error);
@@ -61,13 +95,19 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const body = await request.json();
-    const { id, isLive, minutesAfterWipe, configId } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Mapping id is required" }, { status: 400 });
+    const parsed = updateMappingSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
+
+    const { id, isLive, minutesAfterWipe, configId } = parsed.data;
 
     const data: { isLive?: boolean; minutesAfterWipe?: number | null; configId?: number } = {};
     if (isLive !== undefined) data.isLive = isLive;

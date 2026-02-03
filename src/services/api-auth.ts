@@ -241,6 +241,20 @@ export async function requireRedirectWrite(request: NextRequest): Promise<AuthRe
 }
 
 /**
+ * Require authentication for lootmanager:read
+ */
+export async function requireLootManagerRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'lootmanager:read')
+}
+
+/**
+ * Require authentication for lootmanager:write
+ */
+export async function requireLootManagerWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'lootmanager:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

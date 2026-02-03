@@ -1,27 +1,35 @@
 import { NextResponse, NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requireLootManagerRead } from "@/services/api-auth";
+
+const querySchema = z.object({
+  serverId: z.string().min(1),
+  wipeTime: z.coerce.number().int().optional(),
+});
 
 export async function GET(request: NextRequest) {
+  const authResult = await requireLootManagerRead(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   try {
-    const apiKey = request.headers.get("x-api-key");
-    if (!apiKey) return NextResponse.json({ error: "API key required" }, { status: 401 });
+    const parsed = querySchema.safeParse({
+      serverId: request.nextUrl.searchParams.get("serverId"),
+      wipeTime: request.nextUrl.searchParams.get("wipeTime") || undefined,
+    });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
+    }
 
-    const validKey = await prisma.lootApiKey.findUnique({ where: { key: apiKey } });
-    if (!validKey) return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
-
-    const serverId = request.nextUrl.searchParams.get("serverId");
-    if (!serverId) return NextResponse.json({ error: "serverId parameter required" }, { status: 400 });
-
-    const wipeTimeParam = request.nextUrl.searchParams.get("wipeTime");
+    const { serverId, wipeTime } = parsed.data;
     let minutesElapsed: number | null = null;
 
-    if (wipeTimeParam) {
-      const wipeTimeUnix = parseInt(wipeTimeParam);
-      if (!isNaN(wipeTimeUnix)) {
-        const wipeTimeMs = wipeTimeUnix * 1000;
-        const now = Date.now();
-        minutesElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60));
-      }
+    if (wipeTime !== undefined) {
+      const wipeTimeMs = wipeTime * 1000;
+      const now = Date.now();
+      minutesElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60));
     }
 
     const mappings = await prisma.lootMapping.findMany({
