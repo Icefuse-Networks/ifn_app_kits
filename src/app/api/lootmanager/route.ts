@@ -4,23 +4,16 @@ import { prisma } from "@/lib/db";
 export async function GET(request: NextRequest) {
   const unstaged = request.nextUrl.searchParams.get("unstaged");
   try {
-    if (unstaged === "true") {
-      const configs = await prisma.$queryRaw`
-        SELECT id, name, description, target_name as "targetName", current_version as "currentVersion",
-               published_version as "publishedVersion", created_at as "createdAt", updated_at as "updatedAt"
-        FROM ifn_admin.loot_configs
-        WHERE current_version > COALESCE(published_version, 0)
-        ORDER BY updated_at DESC
-` as { id: number; name: string; description: string | null; targetName: string; currentVersion: number; publishedVersion: number | null; createdAt: Date; updatedAt: Date }[];
-      return NextResponse.json(configs);
-    }
     const configs = await prisma.lootConfig.findMany({
       orderBy: { updatedAt: "desc" },
       select: {
-        id: true, name: true, description: true, targetName: true,
+        id: true, name: true, description: true,
         currentVersion: true, publishedVersion: true, createdAt: true, updatedAt: true
       },
     });
+    if (unstaged === "true") {
+      return NextResponse.json(configs.filter(c => c.currentVersion > (c.publishedVersion ?? 0)));
+    }
     return NextResponse.json(configs);
   } catch (error) {
     console.error("Error fetching loot configs:", error);
@@ -31,7 +24,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, lootData, targetName } = body;
+    const { name, description, lootData } = body;
 
     if (!name || !lootData) {
       return NextResponse.json({ error: "Name and lootData are required" }, { status: 400 });
@@ -42,7 +35,6 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         lootData,
-        targetName: targetName || "",
         currentVersion: 1,
       },
     });

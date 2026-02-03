@@ -9,39 +9,72 @@ export async function GET(request: NextRequest) {
     const validKey = await prisma.lootApiKey.findUnique({ where: { key: apiKey } });
     if (!validKey) return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
 
-    const target = request.nextUrl.searchParams.get("target");
-    if (!target) return NextResponse.json({ error: "Target parameter required" }, { status: 400 });
+    const serverId = request.nextUrl.searchParams.get("serverId");
+    if (!serverId) return NextResponse.json({ error: "serverId parameter required" }, { status: 400 });
 
-    let config = await prisma.lootConfig.findFirst({
-      where: { targetName: target, publishedVersion: { not: null } },
-      orderBy: { updatedAt: "desc" },
-    });
+    const wipeTimeParam = request.nextUrl.searchParams.get("wipeTime");
+    let hoursElapsed: number | null = null;
 
-    if (!config) {
-      const rateMatch = target.match(/(\d+x)/i);
-      if (rateMatch) {
-        config = await prisma.lootConfig.findFirst({
-          where: { targetName: { contains: rateMatch[1], mode: "insensitive" }, publishedVersion: { not: null } },
-          orderBy: { updatedAt: "desc" },
-        });
+    if (wipeTimeParam) {
+      const wipeTimeUnix = parseInt(wipeTimeParam);
+      if (!isNaN(wipeTimeUnix)) {
+        const wipeTimeMs = wipeTimeUnix * 1000;
+        const now = Date.now();
+        hoursElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60 * 60));
       }
     }
 
-    if (!config || !config.publishedVersion) {
-      return NextResponse.json({ error: "No published config found for target" }, { status: 404 });
+    const mappings = await prisma.lootMapping.findMany({
+      where: {
+        serverIdentifier: { hashedId: serverId },
+        isLive: true,
+        config: { publishedVersion: { not: null } },
+      },
+      include: { config: true },
+      orderBy: { hoursAfterWipe: "desc" },
+    });
+
+    if (mappings.length === 0) {
+      return NextResponse.json({ error: "No live published config found for server" }, { status: 404 });
+    }
+
+    let selectedMapping = mappings.find(m => m.hoursAfterWipe === null);
+
+    if (hoursElapsed !== null) {
+      for (const mapping of mappings) {
+        if (mapping.hoursAfterWipe !== null && hoursElapsed >= mapping.hoursAfterWipe) {
+          selectedMapping = mapping;
+          break;
+        }
+      }
+    }
+
+    if (!selectedMapping) {
+      selectedMapping = mappings[mappings.length - 1];
+    }
+
+    if (!selectedMapping?.config?.publishedVersion) {
+      return NextResponse.json({ error: "No live published config found for server" }, { status: 404 });
     }
 
     const version = await prisma.lootConfigVersion.findUnique({
-      where: { configId_version: { configId: config.id, version: config.publishedVersion } },
+      where: { configId_version: { configId: selectedMapping.config.id, version: selectedMapping.config.publishedVersion } },
     });
 
     if (!version) return NextResponse.json({ error: "Published version not found" }, { status: 404 });
 
+    const schedule = mappings
+      .filter(m => m.hoursAfterWipe !== null)
+      .sort((a, b) => (a.hoursAfterWipe ?? 0) - (b.hoursAfterWipe ?? 0))
+      .map(m => ({ hoursAfterWipe: m.hoursAfterWipe, configId: m.configId, configName: m.config.name }));
+
     return NextResponse.json({
-      name: config.name,
-      target: config.targetName,
-      version: config.publishedVersion,
+      name: selectedMapping.config.name,
+      configId: selectedMapping.config.id,
+      version: selectedMapping.config.publishedVersion,
+      hoursAfterWipe: selectedMapping.hoursAfterWipe,
       data: JSON.parse(version.lootData),
+      schedule: schedule.length > 0 ? schedule : undefined,
     });
   } catch (error) {
     console.error("Error downloading loot config:", error);

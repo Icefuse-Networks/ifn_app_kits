@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Package, Plus, Trash2, Upload, Download, Search, X, ChevronDown, Copy, Clipboard,
-  Percent, Grid, List, Save, Undo2, Redo2, FolderOpen, FileText, Check, GitBranch, CloudUpload,
+  Percent, Grid, List, Save, Undo2, Redo2, FolderOpen, FileText, Check, CloudUpload, Server, Link2, ToggleLeft, ToggleRight, Clock, Pencil,
 } from "lucide-react";
 
 interface LootItem {
@@ -42,11 +42,28 @@ interface SavedConfig {
   id: number;
   name: string;
   description: string | null;
-  targetName: string;
   currentVersion: number;
   publishedVersion: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface ServerIdentifier {
+  id: string;
+  name: string;
+  hashedId: string;
+  ip: string | null;
+  port: number | null;
+}
+
+interface LootMapping {
+  id: number;
+  configId: number;
+  serverIdentifierId: string;
+  isLive: boolean;
+  hoursAfterWipe: number | null;
+  config: { id: number; name: string; currentVersion: number; publishedVersion: number | null };
+  serverIdentifier: ServerIdentifier;
 }
 
 const MAX_HISTORY = 50;
@@ -110,6 +127,7 @@ function useUndoRedo<T>(initialState: T) {
 }
 
 export default function LootManagerPage() {
+  const [activeTab, setActiveTab] = useState<"tables" | "mapping">("tables");
   const { current: data, setState: setData, undo, redo, canUndo, canRedo, reset: resetHistory } = useUndoRedo<LootManagerData>({ ContainerItems: {} });
   const [selectedContainer, setSelectedContainer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,14 +154,23 @@ export default function LootManagerPage() {
   const [currentConfigName, setCurrentConfigName] = useState<string>("");
   const [saveName, setSaveName] = useState("");
   const [saveDescription, setSaveDescription] = useState("");
-  const [saveTargetName, setSaveTargetName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showUnstagedModal, setShowUnstagedModal] = useState(false);
   const [unstagedConfigs, setUnstagedConfigs] = useState<SavedConfig[]>([]);
   const [currentConfigVersion, setCurrentConfigVersion] = useState<number>(1);
   const [currentPublishedVersion, setCurrentPublishedVersion] = useState<number | null>(null);
-  const [currentTargetName, setCurrentTargetName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [mappings, setMappings] = useState<LootMapping[]>([]);
+  const [servers, setServers] = useState<ServerIdentifier[]>([]);
+  const [selectedMappingServerId, setSelectedMappingServerId] = useState<string | null>(null);
+  const [showAddMappingModal, setShowAddMappingModal] = useState(false);
+  const [selectedMappingConfig, setSelectedMappingConfig] = useState<number | null>(null);
+  const [selectedMappingServer, setSelectedMappingServer] = useState<string | null>(null);
+  const [selectedMappingHours, setSelectedMappingHours] = useState<string>("");
+  const [editingMappingId, setEditingMappingId] = useState<number | null>(null);
+  const [configDropdownOpen, setConfigDropdownOpen] = useState(false);
+  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -163,7 +190,7 @@ export default function LootManagerPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canUndo, canRedo, undo, redo, currentConfigId]);
 
-  useEffect(() => { fetchSavedConfigs(); fetchUnstagedConfigs(); }, []);
+  useEffect(() => { fetchSavedConfigs(); fetchUnstagedConfigs(); fetchMappings(); fetchServers(); }, []);
 
   const fetchSavedConfigs = async () => {
     setLoadingSavedConfigs(true);
@@ -179,6 +206,27 @@ export default function LootManagerPage() {
       const res = await fetch("/api/lootmanager?unstaged=true");
       if (res.ok) setUnstagedConfigs(await res.json());
     } catch (error) { console.error("Failed to fetch unstaged configs:", error); }
+  };
+
+  const fetchMappings = async () => {
+    try {
+      const res = await fetch("/api/lootmanager/mappings");
+      if (res.ok) setMappings(await res.json());
+    } catch (error) { console.error("Failed to fetch mappings:", error); }
+  };
+
+  const fetchServers = async () => {
+    try {
+      const res = await fetch("/api/identifiers", { credentials: "include" });
+      console.log("identifiers response status:", res.status);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("identifiers data:", data.length, "total,", data.filter((s: { ip: string | null; port: number | null }) => s.ip && s.port).length, "with ip/port");
+        if (Array.isArray(data)) {
+          setServers(data.filter((s: { ip: string | null; port: number | null }) => s.ip && s.port));
+        }
+      }
+    } catch (error) { console.error("Failed to fetch servers:", error); }
   };
 
   const handlePublish = async (configId: number) => {
@@ -248,13 +296,12 @@ export default function LootManagerPage() {
 
   const handleSaveConfig = async () => {
     if (!saveName.trim()) { toast.error("Please enter a name"); return; }
-    if (!saveTargetName.trim()) { toast.error("Please enter a target name"); return; }
     setIsSaving(true);
     try {
       const res = await fetch("/api/lootmanager", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: saveName, description: saveDescription || null, lootData: JSON.stringify(data), targetName: saveTargetName }),
+        body: JSON.stringify({ name: saveName, description: saveDescription || null, lootData: JSON.stringify(data) }),
       });
       if (res.ok) {
         const newConfig = await res.json();
@@ -262,12 +309,10 @@ export default function LootManagerPage() {
         setCurrentConfigName(saveName);
         setCurrentConfigVersion(newConfig.currentVersion);
         setCurrentPublishedVersion(newConfig.publishedVersion);
-        setCurrentTargetName(saveTargetName);
         toast.success("Config saved successfully");
         setShowSaveModal(false);
         setSaveName("");
         setSaveDescription("");
-        setSaveTargetName("");
         fetchSavedConfigs();
         fetchUnstagedConfigs();
       } else { const err = await res.json(); toast.error(err.error || "Failed to save"); }
@@ -310,7 +355,6 @@ export default function LootManagerPage() {
         setCurrentConfigName(config.name);
         setCurrentConfigVersion(fullConfig.currentVersion || 1);
         setCurrentPublishedVersion(fullConfig.publishedVersion);
-        setCurrentTargetName(fullConfig.targetName || "");
         setSelectedContainer(null);
         setShowLoadModal(false);
         toast.success(`Loaded "${config.name}"`);
@@ -326,8 +370,82 @@ export default function LootManagerPage() {
         if (currentConfigId === id) { setCurrentConfigId(null); setCurrentConfigName(""); }
         toast.success("Config deleted");
         fetchSavedConfigs();
+        fetchMappings();
       } else toast.error("Failed to delete");
     } catch { toast.error("Failed to delete"); }
+  };
+
+  const handleAddMapping = async () => {
+    if (!selectedMappingConfig || !selectedMappingServer) { toast.error("Select both config and server"); return; }
+    const hoursAfterWipe = selectedMappingHours.trim() === "" ? null : parseInt(selectedMappingHours);
+    if (selectedMappingHours.trim() !== "" && (isNaN(hoursAfterWipe!) || hoursAfterWipe! < 0)) { toast.error("Hours must be a valid number >= 0"); return; }
+    try {
+      const res = await fetch("/api/lootmanager/mappings", {
+        method: editingMappingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingMappingId
+          ? { id: editingMappingId, configId: selectedMappingConfig, hoursAfterWipe }
+          : { configId: selectedMappingConfig, serverIdentifierId: selectedMappingServer, isLive: false, hoursAfterWipe }),
+      });
+      if (res.ok) {
+        toast.success(editingMappingId ? "Mapping updated" : "Mapping created");
+        fetchMappings();
+        closeAddMappingModal();
+      } else { const err = await res.json(); toast.error(err.error || "Failed to save mapping"); }
+    } catch { toast.error("Failed to save mapping"); }
+  };
+
+  const handleAddToRotation = (serverId: string) => {
+    setSelectedMappingServer(serverId);
+    setSelectedMappingConfig(null);
+    setSelectedMappingHours("");
+    setEditingMappingId(null);
+    setShowAddMappingModal(true);
+  };
+
+  const closeAddMappingModal = () => {
+    setShowAddMappingModal(false);
+    setSelectedMappingConfig(null);
+    setSelectedMappingServer(null);
+    setSelectedMappingHours("");
+    setEditingMappingId(null);
+    setConfigDropdownOpen(false);
+    setServerDropdownOpen(false);
+  };
+
+  const handleEditMapping = (mapping: LootMapping) => {
+    setEditingMappingId(mapping.id);
+    setSelectedMappingConfig(mapping.configId);
+    setSelectedMappingServer(mapping.serverIdentifierId);
+    setSelectedMappingHours(mapping.hoursAfterWipe !== null ? String(mapping.hoursAfterWipe) : "");
+    setShowAddMappingModal(true);
+  };
+
+  const handleDeleteMapping = async (id: number) => {
+    if (!confirm("Remove this server assignment?")) return;
+    try {
+      const res = await fetch("/api/lootmanager/mappings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) { toast.success("Mapping removed"); fetchMappings(); }
+      else toast.error("Failed to remove mapping");
+    } catch { toast.error("Failed to remove mapping"); }
+  };
+
+  const handleToggleLive = async (mapping: LootMapping) => {
+    try {
+      const res = await fetch("/api/lootmanager/mappings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: mapping.id, isLive: !mapping.isLive }),
+      });
+      if (res.ok) {
+        toast.success(mapping.isLive ? "Set to inactive" : "Set to live");
+        fetchMappings();
+      } else toast.error("Failed to update");
+    } catch { toast.error("Failed to update"); }
   };
 
   const updateContainer = useCallback((containerName: string, updates: Partial<ContainerConfig>) => {
@@ -444,173 +562,357 @@ export default function LootManagerPage() {
   }, [data.ContainerItems, updateContainer]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <div className="flex h-[calc(100vh-4rem)] bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
       <div className="w-72 flex flex-col bg-white/[0.02] border-r border-white/5">
         <div className="p-4 border-b border-white/5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Package className="h-5 w-5 text-purple-400" />
-              Containers
-            </h2>
-            <div className="flex items-center gap-1">
-              <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Undo"><Undo2 className="h-4 w-4" /></button>
-              <button onClick={redo} disabled={!canRedo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Redo"><Redo2 className="h-4 w-4" /></button>
-            </div>
-          </div>
-          {currentConfigName && (
-            <div className="mb-3 flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
-              <FileText className="h-4 w-4 text-purple-400" />
-              <span className="text-sm text-purple-400 truncate flex-1">{currentConfigName}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded ${currentConfigVersion > (currentPublishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
-                v{currentConfigVersion}{currentPublishedVersion ? ` / v${currentPublishedVersion}` : ""}
-              </span>
-              {isSaving && <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
-            </div>
-          )}
-          {currentTargetName && (
-            <div className="mb-3 flex items-center gap-2 px-2 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <GitBranch className="h-3 w-3 text-blue-400" />
-              <span className="text-xs text-blue-400">{currentTargetName}</span>
-            </div>
-          )}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search containers..." className="w-full rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none" />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2">
-          {filteredContainers.length === 0 ? (
-            <div className="text-center py-8 text-zinc-600">
-              <Package className="h-8 w-8 mx-auto mb-2 opacity-50 text-purple-400" />
-              <p className="text-sm">No containers found</p>
-              <p className="text-xs mt-1">Upload a LootManager.json</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredContainers.map((name) => {
-                const container = data.ContainerItems[name];
-                const isSelected = selectedContainer === name;
-                return (
-                  <motion.div key={name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                    className={`group relative rounded-lg cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/[0.02] text-zinc-500 hover:bg-white/5"}`}
-                    onClick={() => setSelectedContainer(name)}
-                  >
-                    <div className="flex items-center justify-between p-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${container.Enabled ? "bg-green-400" : "bg-red-400"}`} />
-                        <span className="truncate text-sm font-medium">{name}</span>
-                      </div>
-                      <span className="text-xs opacity-60 flex-shrink-0">{container.Items.length}</span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="p-3 space-y-2 border-t border-white/5">
-          <button onClick={() => setShowUnstagedModal(true)} className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border ${unstagedConfigs.length > 0 ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" : "text-zinc-500 bg-white/5 border-white/10"}`}>
-            <CloudUpload className="h-4 w-4" />Unstaged{unstagedConfigs.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-yellow-500/30 text-xs">{unstagedConfigs.length}</span>}
-          </button>
-          <div className="flex gap-2">
-            <button onClick={() => setShowLoadModal(true)} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><FolderOpen className="h-4 w-4" />Load</button>
-            <button onClick={() => currentConfigId ? handleQuickSave() : setShowSaveModal(true)} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-green-400 px-3 py-2 rounded-lg text-sm bg-green-500/10 border border-green-500/30 disabled:opacity-50"><Save className="h-4 w-4" />{currentConfigId ? "Save" : "Save As"}</button>
-          </div>
-          {currentConfigId && currentConfigVersion > (currentPublishedVersion || 0) && (
-            <button onClick={() => handlePublish(currentConfigId)} className="w-full flex items-center justify-center gap-2 text-green-400 px-3 py-2 rounded-lg text-sm font-medium bg-green-500/20 border border-green-500/30">
-              <CloudUpload className="h-4 w-4" />Publish v{currentConfigVersion}
+          <div className="flex gap-1 mb-4 p-1 rounded-lg bg-white/5">
+            <button
+              onClick={() => setActiveTab("tables")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "tables" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "text-zinc-500 hover:text-white"}`}
+            >
+              <Package className="h-4 w-4" />Tables
             </button>
+            <button
+              onClick={() => setActiveTab("mapping")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "mapping" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "text-zinc-500 hover:text-white"}`}
+            >
+              <Link2 className="h-4 w-4" />Mapping
+            </button>
+          </div>
+
+          {activeTab === "tables" && (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Package className="h-5 w-5 text-purple-400" />
+                  Containers
+                </h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Undo"><Undo2 className="h-4 w-4" /></button>
+                  <button onClick={redo} disabled={!canRedo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Redo"><Redo2 className="h-4 w-4" /></button>
+                </div>
+              </div>
+              {currentConfigName && (
+                <div className="mb-3 flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                  <FileText className="h-4 w-4 text-purple-400" />
+                  <span className="text-sm text-purple-400 truncate flex-1">{currentConfigName}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${currentConfigVersion > (currentPublishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
+                    v{currentConfigVersion}{currentPublishedVersion ? ` / v${currentPublishedVersion}` : ""}
+                  </span>
+                  {isSaving && <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
+                </div>
+              )}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search containers..." className="w-full rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none" />
+              </div>
+            </>
           )}
-          <button onClick={() => setShowNewContainerModal(true)} className="w-full flex items-center justify-center gap-2 text-white px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />New Container</button>
-          <div className="flex gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><Upload className="h-4 w-4" />Upload</button>
-            <button onClick={handleExport} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-50"><Download className="h-4 w-4" />Export</button>
-          </div>
+
+          {activeTab === "mapping" && (
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Server className="h-5 w-5 text-blue-400" />
+                Server Assignments
+              </h2>
+            </div>
+          )}
         </div>
-      </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {!selectedContainer ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-zinc-600">
-              <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-purple-400" />
-              <h3 className="text-xl font-medium text-zinc-500 mb-2">Select a Container</h3>
-              <p className="text-sm">Choose a container from the sidebar or upload a LootManager.json</p>
-            </div>
-          </div>
-        ) : (
+        {activeTab === "tables" && (
           <>
-            <div className="p-4 bg-white/[0.02] border-b border-white/5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-white">{selectedContainer}</h1>
-                  <button onClick={() => toggleContainerEnabled(selectedContainer)} className={`px-3 py-1 rounded-full text-xs font-medium ${currentContainer?.Enabled ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
-                    {currentContainer?.Enabled ? "Enabled" : "Disabled"}
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={copyContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Copy"><Copy className="h-4 w-4" /></button>
-                  <button onClick={pasteContainer} disabled={!copiedContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10 disabled:opacity-50" title="Paste"><Clipboard className="h-4 w-4" /></button>
-                  <button onClick={() => setShowMultiplierModal(true)} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Multiplier"><Percent className="h-4 w-4" /></button>
-                  <button onClick={clearAllItems} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Clear all"><Trash2 className="h-4 w-4" /></button>
-                  <button onClick={() => deleteContainer(selectedContainer)} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Delete"><X className="h-4 w-4" /></button>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-4">
-                {[
-                  { label: "Min Items", key: "Min items" as const },
-                  { label: "Max Items", key: "Max Items" as const },
-                  { label: "Min Scrap", key: "Min Scrap" as const },
-                  { label: "Max Scrap", key: "Max Scrap" as const },
-                ].map(({ label, key }) => (
-                  <div key={key} className="rounded-lg p-3 bg-white/[0.02] border border-white/5">
-                    <label className="block text-xs text-zinc-500 mb-1">{label}</label>
-                    <input type="number" value={currentContainer?.[key] ?? 0} onChange={(e) => updateContainer(selectedContainer, { [key]: parseInt(e.target.value) || 0 })} className="w-full rounded px-3 py-2 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="px-4 py-3 flex items-center justify-between bg-white/[0.02] border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                  <input type="text" value={itemSearchTerm} onChange={(e) => setItemSearchTerm(e.target.value)} placeholder="Search items..." className="rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/[0.02] border border-white/5 focus:outline-none w-64" />
-                </div>
-                <span className="text-sm text-zinc-500">{filteredItems.length} items</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><Grid className="h-4 w-4" /></button>
-                <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-colors ${viewMode === "list" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><List className="h-4 w-4" /></button>
-                <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />Add Item</button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {filteredItems.length === 0 ? (
-                <div className="text-center py-12 text-zinc-600">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-400" />
-                  <p>No items in this container</p>
-                  <button onClick={() => setShowAddItem(true)} className="mt-3 text-purple-400 hover:text-purple-300 text-sm">Add your first item</button>
-                </div>
-              ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredItems.map((item) => {
-                    const realIndex = currentContainer!.Items.indexOf(item);
-                    return <ItemCard key={`${getItemShortname(item)}-${realIndex}`} item={item} index={realIndex} containerName={selectedContainer} onUpdate={updateItem} onRemove={removeItem} />;
-                  })}
+            <div className="flex-1 overflow-y-auto p-2">
+              {filteredContainers.length === 0 ? (
+                <div className="text-center py-8 text-zinc-600">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50 text-purple-400" />
+                  <p className="text-sm">No containers found</p>
+                  <p className="text-xs mt-1">Upload a LootManager.json</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredItems.map((item) => {
-                    const realIndex = currentContainer!.Items.indexOf(item);
-                    return <ItemListRow key={`${getItemShortname(item)}-${realIndex}`} item={item} index={realIndex} containerName={selectedContainer} onUpdate={updateItem} onRemove={removeItem} />;
+                <div className="space-y-1">
+                  {filteredContainers.map((name) => {
+                    const container = data.ContainerItems[name];
+                    const isSelected = selectedContainer === name;
+                    return (
+                      <motion.div key={name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                        className={`group relative rounded-lg cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/[0.02] text-zinc-500 hover:bg-white/5"}`}
+                        onClick={() => setSelectedContainer(name)}
+                      >
+                        <div className="flex items-center justify-between p-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${container.Enabled ? "bg-green-400" : "bg-red-400"}`} />
+                            <span className="truncate text-sm font-medium">{name}</span>
+                          </div>
+                          <span className="text-xs opacity-60 flex-shrink-0">{container.Items.length}</span>
+                        </div>
+                      </motion.div>
+                    );
                   })}
                 </div>
               )}
             </div>
+
+            <div className="p-3 space-y-2 border-t border-white/5">
+              <button onClick={() => setShowUnstagedModal(true)} className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border ${unstagedConfigs.length > 0 ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" : "text-zinc-500 bg-white/5 border-white/10"}`}>
+                <CloudUpload className="h-4 w-4" />Unstaged{unstagedConfigs.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-yellow-500/30 text-xs">{unstagedConfigs.length}</span>}
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowLoadModal(true)} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><FolderOpen className="h-4 w-4" />Load</button>
+                <button onClick={() => currentConfigId ? handleQuickSave() : setShowSaveModal(true)} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-green-400 px-3 py-2 rounded-lg text-sm bg-green-500/10 border border-green-500/30 disabled:opacity-50"><Save className="h-4 w-4" />{currentConfigId ? "Save" : "Save As"}</button>
+              </div>
+              {currentConfigId && currentConfigVersion > (currentPublishedVersion || 0) && (
+                <button onClick={() => handlePublish(currentConfigId)} className="w-full flex items-center justify-center gap-2 text-green-400 px-3 py-2 rounded-lg text-sm font-medium bg-green-500/20 border border-green-500/30">
+                  <CloudUpload className="h-4 w-4" />Publish v{currentConfigVersion}
+                </button>
+              )}
+              <button onClick={() => setShowNewContainerModal(true)} className="w-full flex items-center justify-center gap-2 text-white px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />New Container</button>
+              <div className="flex gap-2">
+                <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><Upload className="h-4 w-4" />Upload</button>
+                <button onClick={handleExport} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-50"><Download className="h-4 w-4" />Export</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === "mapping" && (
+          <>
+            <div className="flex-1 overflow-y-auto p-2">
+              {servers.length === 0 ? (
+                <div className="text-center py-8 text-zinc-600">
+                  <Server className="h-8 w-8 mx-auto mb-2 opacity-50 text-blue-400" />
+                  <p className="text-sm">No servers</p>
+                  <p className="text-xs mt-1">Servers register automatically</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {servers.map((server) => {
+                    const serverMappings = mappings.filter(m => m.serverIdentifierId === server.id);
+                    const liveMappings = serverMappings.filter(m => m.isLive);
+                    const isSelected = selectedMappingServerId === server.id;
+                    return (
+                      <motion.div
+                        key={server.id}
+                        onClick={() => setSelectedMappingServerId(server.id)}
+                        className={`rounded-lg p-3 cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30" : "bg-white/[0.02] border border-transparent hover:bg-white/[0.04]"}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-white truncate">{server.name}</div>
+                            <div className="text-xs text-zinc-500 truncate">{server.ip}:{server.port}</div>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {liveMappings.length > 0 ? (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">{liveMappings.length} live</span>
+                            ) : serverMappings.length > 0 ? (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">{serverMappings.length}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {activeTab === "tables" && (
+          <>
+            {!selectedContainer ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-zinc-600">
+                  <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-purple-400" />
+                  <h3 className="text-xl font-medium text-zinc-500 mb-2">Select a Container</h3>
+                  <p className="text-sm">Choose a container from the sidebar or upload a LootManager.json</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="p-4 bg-white/[0.02] border-b border-white/5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold text-white">{selectedContainer}</h1>
+                      <button onClick={() => toggleContainerEnabled(selectedContainer)} className={`px-3 py-1 rounded-full text-xs font-medium ${currentContainer?.Enabled ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+                        {currentContainer?.Enabled ? "Enabled" : "Disabled"}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={copyContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Copy"><Copy className="h-4 w-4" /></button>
+                      <button onClick={pasteContainer} disabled={!copiedContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10 disabled:opacity-50" title="Paste"><Clipboard className="h-4 w-4" /></button>
+                      <button onClick={() => setShowMultiplierModal(true)} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Multiplier"><Percent className="h-4 w-4" /></button>
+                      <button onClick={clearAllItems} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Clear all"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={() => deleteContainer(selectedContainer)} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Delete"><X className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-4">
+                    {[
+                      { label: "Min Items", key: "Min items" as const },
+                      { label: "Max Items", key: "Max Items" as const },
+                      { label: "Min Scrap", key: "Min Scrap" as const },
+                      { label: "Max Scrap", key: "Max Scrap" as const },
+                    ].map(({ label, key }) => (
+                      <div key={key} className="rounded-lg p-3 bg-white/[0.02] border border-white/5">
+                        <label className="block text-xs text-zinc-500 mb-1">{label}</label>
+                        <input type="number" value={currentContainer?.[key] ?? 0} onChange={(e) => updateContainer(selectedContainer, { [key]: parseInt(e.target.value) || 0 })} className="w-full rounded px-3 py-2 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="px-4 py-3 flex items-center justify-between bg-white/[0.02] border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                      <input type="text" value={itemSearchTerm} onChange={(e) => setItemSearchTerm(e.target.value)} placeholder="Search items..." className="rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/[0.02] border border-white/5 focus:outline-none w-64" />
+                    </div>
+                    <span className="text-sm text-zinc-500">{filteredItems.length} items</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><Grid className="h-4 w-4" /></button>
+                    <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-colors ${viewMode === "list" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><List className="h-4 w-4" /></button>
+                    <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />Add Item</button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {filteredItems.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-600">
+                      <Package className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-400" />
+                      <p>No items in this container</p>
+                      <button onClick={() => setShowAddItem(true)} className="mt-3 text-purple-400 hover:text-purple-300 text-sm">Add your first item</button>
+                    </div>
+                  ) : viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {filteredItems.map((item) => {
+                        const realIndex = currentContainer!.Items.indexOf(item);
+                        return <ItemCard key={`${getItemShortname(item)}-${realIndex}`} item={item} index={realIndex} containerName={selectedContainer} onUpdate={updateItem} onRemove={removeItem} />;
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredItems.map((item) => {
+                        const realIndex = currentContainer!.Items.indexOf(item);
+                        return <ItemListRow key={`${getItemShortname(item)}-${realIndex}`} item={item} index={realIndex} containerName={selectedContainer} onUpdate={updateItem} onRemove={removeItem} />;
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {activeTab === "mapping" && (
+          <>
+            {!selectedMappingServerId ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-zinc-600 max-w-lg">
+                  <Server className="h-16 w-16 mx-auto mb-4 opacity-30 text-blue-400" />
+                  <h3 className="text-xl font-medium text-zinc-500 mb-2">Select a Server</h3>
+                  <p className="text-sm mb-4">Choose a server from the sidebar to manage its loot table rotation.</p>
+                  <div className="bg-white/[0.02] rounded-lg p-4 text-left border border-white/5">
+                    <h4 className="text-sm font-medium text-zinc-400 mb-2 flex items-center gap-2"><Clock className="h-4 w-4" />Rolling Loot Example</h4>
+                    <div className="text-xs text-zinc-500 space-y-1">
+                      <p>• Wipe day (empty): Standard loot</p>
+                      <p>• 24h after wipe: Medium loot</p>
+                      <p>• 48h after wipe: High-tier loot</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (() => {
+              const server = servers.find(s => s.id === selectedMappingServerId);
+              const serverMappings = mappings.filter(m => m.serverIdentifierId === selectedMappingServerId).sort((a, b) => (a.hoursAfterWipe ?? -1) - (b.hoursAfterWipe ?? -1));
+              const liveMappings = serverMappings.filter(m => m.isLive);
+              if (!server) return null;
+              return (
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="p-4 bg-white/[0.02] border-b border-white/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h1 className="text-2xl font-bold text-white">{server.name}</h1>
+                        <p className="text-sm text-zinc-500">{server.ip}:{server.port}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {liveMappings.length > 0 && (
+                          <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">{liveMappings.length} live</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-600 font-mono">{server.hashedId}</p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-medium text-white">Loot Table Rotation</h2>
+                        <button onClick={() => handleAddToRotation(server.id)} disabled={savedConfigs.length === 0} className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm disabled:opacity-50">
+                          <Plus className="h-4 w-4" />Add Table
+                        </button>
+                      </div>
+
+                      {serverMappings.length === 0 ? (
+                        <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-white/5">
+                          <Link2 className="h-8 w-8 mx-auto mb-2 opacity-50 text-blue-400" />
+                          <p className="text-sm text-zinc-500">No loot tables assigned</p>
+                          <button onClick={() => handleAddToRotation(server.id)} disabled={savedConfigs.length === 0} className="mt-2 text-blue-400 hover:text-blue-300 text-sm disabled:opacity-50">Add your first table</button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {serverMappings.map((mapping) => (
+                            <div key={mapping.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <button onClick={() => handleToggleLive(mapping)} className="flex-shrink-0">
+                                  {mapping.isLive ? <ToggleRight className="h-6 w-6 text-green-400" /> : <ToggleLeft className="h-6 w-6 text-zinc-600" />}
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-white truncate">{mapping.config.name}</span>
+                                    {mapping.config.publishedVersion && <span className="text-xs text-zinc-500">v{mapping.config.publishedVersion}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {mapping.hoursAfterWipe !== null ? (
+                                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="h-3 w-3" />{mapping.hoursAfterWipe}h after wipe</span>
+                                    ) : (
+                                      <span className="text-xs text-zinc-500">Wipe day default</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button onClick={() => handleEditMapping(mapping)} className="p-2 text-zinc-500 hover:text-blue-400 transition-colors" title="Edit">
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button onClick={() => handleDeleteMapping(mapping.id)} className="p-2 text-zinc-500 hover:text-red-400 transition-colors" title="Remove">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {serverMappings.length > 0 && (
+                      <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
+                        <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2"><Clock className="h-4 w-4" />Rotation Schedule</h3>
+                        <div className="text-xs text-zinc-500 space-y-1">
+                          {serverMappings.map((m) => (
+                            <div key={m.id} className="flex items-center gap-2">
+                              <span className={m.isLive ? "text-green-400" : "text-zinc-600"}>{m.isLive ? "●" : "○"}</span>
+                              <span className={m.isLive ? "text-white" : ""}>{m.hoursAfterWipe !== null ? `${m.hoursAfterWipe}h+` : "Wipe day"}: {m.config.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>
@@ -650,10 +952,10 @@ export default function LootManagerPage() {
                 <label className="block text-sm text-zinc-400 mb-2">Apply To</label>
                 <div className="flex flex-wrap gap-2">
                   {[{ label: "Min", checked: multiplierApplyMin, set: setMultiplierApplyMin }, { label: "Max", checked: multiplierApplyMax, set: setMultiplierApplyMax }, { label: "Chance", checked: multiplierApplyChance, set: setMultiplierApplyChance }, { label: "Scrap", checked: multiplierApplyScrap, set: setMultiplierApplyScrap }].map(({ label, checked, set }) => (
-                    <label key={label} className={`cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-medium transition ${checked ? "bg-purple-500/20 border-purple-500 text-purple-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
-                      <input type="checkbox" className="sr-only" checked={checked} onChange={() => set(!checked)} />{label}
-                    </label>
-                  ))}
+                      <label key={label} className={`cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-medium transition ${checked ? "bg-purple-500/20 border-purple-500 text-purple-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
+                        <input type="checkbox" className="sr-only" checked={checked} onChange={() => set(!checked)} />{label}
+                      </label>
+                    ))}
                 </div>
               </div>
               <label className={`cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-medium transition inline-block ${multiplierSkipOnes ? "bg-yellow-500/20 border-yellow-500 text-yellow-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
@@ -687,16 +989,11 @@ export default function LootManagerPage() {
 
       <AnimatePresence>
         {showSaveModal && (
-          <Modal onClose={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); setSaveTargetName(""); }} title="Save Configuration">
+          <Modal onClose={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} title="Save Configuration">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-zinc-400 mb-2">Name *</label>
                 <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="e.g., 1000x Server Loot" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none" autoFocus />
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-2">Target Name *</label>
-                <input type="text" value={saveTargetName} onChange={(e) => setSaveTargetName(e.target.value)} placeholder="e.g., 5x, battlefield, bravo" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none" />
-                <p className="text-xs text-zinc-600 mt-1">Server will match this name to download the config</p>
               </div>
               <div>
                 <label className="block text-sm text-zinc-400 mb-2">Description (optional)</label>
@@ -704,8 +1001,8 @@ export default function LootManagerPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); setSaveTargetName(""); }} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={handleSaveConfig} disabled={isSaving || !saveName.trim() || !saveTargetName.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
+              <button onClick={handleSaveConfig} disabled={isSaving || !saveName.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                 {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="h-4 w-4" />Save</>}
               </button>
             </div>
@@ -730,10 +1027,7 @@ export default function LootManagerPage() {
                     <div key={config.id} className="bg-white/5 rounded-lg border border-white/10 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-white font-medium truncate">{config.name}</h4>
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">{config.targetName}</span>
-                          </div>
+                          <h4 className="text-white font-medium truncate">{config.name}</h4>
                           <p className="text-xs text-zinc-500 mt-1">v{config.currentVersion} → publish (current: {config.publishedVersion || "none"})</p>
                         </div>
                         <button onClick={() => handlePublish(config.id)} className="ml-4 flex items-center gap-2 text-green-400 px-3 py-1.5 rounded-lg text-sm bg-green-500/20 border border-green-500/30">
@@ -768,7 +1062,6 @@ export default function LootManagerPage() {
                       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadConfig(config)}>
                         <div className="flex items-center gap-2">
                           <h4 className="text-white font-medium truncate group-hover:text-purple-400 transition-colors">{config.name}</h4>
-                          {config.targetName && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">{config.targetName}</span>}
                           <span className={`text-xs px-1.5 py-0.5 rounded ${config.currentVersion > (config.publishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
                             v{config.currentVersion}
                           </span>
@@ -786,6 +1079,96 @@ export default function LootManagerPage() {
               )}
             </div>
             <button onClick={() => setShowLoadModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAddMappingModal && (
+          <Modal onClose={closeAddMappingModal} title={editingMappingId ? "Edit Mapping" : "Assign Server to Loot Table"}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-2">Loot Table *</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setConfigDropdownOpen(!configDropdownOpen)}
+                    className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
+                  >
+                    <span className={selectedMappingConfig ? "text-white" : "text-zinc-500"}>
+                      {selectedMappingConfig
+                        ? savedConfigs.find(c => c.id === selectedMappingConfig)?.name + (savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion ? ` (v${savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion})` : " (unpublished)")
+                        : "Select a loot table..."}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${configDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {configDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {savedConfigs.map((config) => (
+                        <button
+                          key={config.id}
+                          type="button"
+                          onClick={() => { setSelectedMappingConfig(config.id); setConfigDropdownOpen(false); }}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingConfig === config.id ? "bg-purple-500/20 text-purple-400" : "text-white"}`}
+                        >
+                          {config.name} {config.publishedVersion ? `(v${config.publishedVersion})` : "(unpublished)"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-2">Server *</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => !editingMappingId && setServerDropdownOpen(!serverDropdownOpen)}
+                    disabled={!!editingMappingId}
+                    className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none disabled:opacity-50 flex items-center justify-between"
+                  >
+                    <span className={selectedMappingServer ? "text-white" : "text-zinc-500"}>
+                      {selectedMappingServer
+                        ? `${servers.find(s => s.id === selectedMappingServer)?.name} (${servers.find(s => s.id === selectedMappingServer)?.ip}:${servers.find(s => s.id === selectedMappingServer)?.port})`
+                        : "Select a server..."}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${serverDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {serverDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {servers.map((server) => (
+                        <button
+                          key={server.id}
+                          type="button"
+                          onClick={() => { setSelectedMappingServer(server.id); setServerDropdownOpen(false); }}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingServer === server.id ? "bg-blue-500/20 text-blue-400" : "text-white"}`}
+                        >
+                          {server.name} ({server.ip}:{server.port})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-2">Hours After Wipe (optional)</label>
+                <input
+                  type="number"
+                  value={selectedMappingHours}
+                  onChange={(e) => setSelectedMappingHours(e.target.value)}
+                  placeholder="Leave empty for wipe day default"
+                  min={0}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none"
+                />
+                <p className="text-xs text-zinc-500 mt-1">Set to 0 for wipe day, 24 for day 2, 48 for day 3, etc. Leave empty for default.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={closeAddMappingModal} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
+              <button onClick={handleAddMapping} disabled={!selectedMappingConfig || !selectedMappingServer} className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50">
+                {editingMappingId ? <><Pencil className="h-4 w-4 inline mr-2" />Update</> : <><Plus className="h-4 w-4 inline mr-2" />Assign</>}
+              </button>
+            </div>
           </Modal>
         )}
       </AnimatePresence>

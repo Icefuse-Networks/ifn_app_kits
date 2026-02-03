@@ -17,18 +17,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   try {
     const body = await request.json();
-    const { name, description, lootData, targetName } = body;
+    const { name, description, lootData } = body;
     const configId = parseInt(id);
 
     const existing = await prisma.lootConfig.findUnique({ where: { id: configId } });
     if (!existing) return NextResponse.json({ error: "Config not found" }, { status: 404 });
 
     const newVersion = existing.currentVersion + 1;
-    const updateData: { currentVersion: number; name?: string; description?: string; lootData?: string; targetName?: string } = { currentVersion: newVersion };
+    const updateData: { currentVersion: number; name?: string; description?: string; lootData?: string } = { currentVersion: newVersion };
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (lootData !== undefined) updateData.lootData = lootData;
-    if (targetName !== undefined) updateData.targetName = targetName;
 
     const [config] = await prisma.$transaction([
       prisma.lootConfig.update({ where: { id: configId }, data: updateData }),
