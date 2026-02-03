@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const mappings = await prisma.lootMapping.findMany({
       where: {
-        serverIdentifier: { hashedId: serverId },
+        serverIdentifier: { id: serverId },
         isLive: true,
         config: { publishedVersion: { not: null } },
       },
