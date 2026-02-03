@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Package, Plus, Trash2, Upload, Download, Search, X, ChevronDown, Copy, Clipboard,
-  Percent, Grid, List, Save, Undo2, Redo2, FolderOpen, FileText, Check, CloudUpload, Server, Link2, ToggleLeft, ToggleRight, Clock, Pencil,
+  Percent, Grid, List, Save, Undo2, Redo2, FolderOpen, FileText, Check, CloudUpload, Server, Link2, ToggleLeft, ToggleRight, Clock, Pencil, History, RotateCcw, ChevronRight,
 } from "lucide-react";
+import { useSidebarCompact } from "@/contexts/SidebarContext";
+import { RustItem, fetchRustItems, getItemImageUrl, ITEM_CATEGORIES, searchItems, groupItemsByCategory, ItemCategory } from "@/lib/rust-items";
 
 interface LootItem {
   "Item Shortname"?: string;
@@ -66,6 +68,12 @@ interface LootMapping {
   serverIdentifier: ServerIdentifier;
 }
 
+interface ConfigVersion {
+  id: number;
+  version: number;
+  createdAt: string;
+}
+
 const formatDuration = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -75,9 +83,6 @@ const formatDuration = (minutes: number): string => {
 };
 
 const MAX_HISTORY = 50;
-
-const getImageSrc = (shortname: string) =>
-  `https://rust.icefuse.net/content/items/${shortname}.png`;
 
 const defaultItem: LootItem = {
   "Item Shortname": "",
@@ -135,6 +140,7 @@ function useUndoRedo<T>(initialState: T) {
 }
 
 export default function LootManagerPage() {
+  useSidebarCompact(true);
   const [activeTab, setActiveTab] = useState<"tables" | "mapping">("tables");
   const { current: data, setState: setData, undo, redo, canUndo, canRedo, reset: resetHistory } = useUndoRedo<LootManagerData>({ ContainerItems: {} });
   const [selectedContainer, setSelectedContainer] = useState<string | null>(null);
@@ -180,6 +186,30 @@ export default function LootManagerPage() {
   const [editingMappingId, setEditingMappingId] = useState<number | null>(null);
   const [configDropdownOpen, setConfigDropdownOpen] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
+  const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
+  const [versions, setVersions] = useState<ConfigVersion[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [rustItems, setRustItems] = useState<RustItem[]>([]);
+  const [itemBrowserSearch, setItemBrowserSearch] = useState("");
+  const [itemBrowserCategory, setItemBrowserCategory] = useState<ItemCategory | "All">("All");
+  const [showItemBrowser, setShowItemBrowser] = useState(true);
+
+  useEffect(() => {
+    fetchRustItems().then(setRustItems).catch(() => toast.error("Failed to load items"));
+  }, []);
+
+  const filteredRustItems = useMemo(() => {
+    let items = rustItems;
+    if (itemBrowserCategory !== "All") {
+      items = items.filter(i => i.Category === itemBrowserCategory);
+    }
+    if (itemBrowserSearch) {
+      items = searchItems(items, itemBrowserSearch);
+    }
+    return items.slice(0, 100);
+  }, [rustItems, itemBrowserSearch, itemBrowserCategory]);
+
+  const groupedItems = useMemo(() => groupItemsByCategory(rustItems), [rustItems]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -257,6 +287,39 @@ export default function LootManagerPage() {
     for (const config of unstagedConfigs) {
       await handlePublish(config.id);
     }
+  };
+
+  const fetchVersions = async (configId: number) => {
+    setLoadingVersions(true);
+    try {
+      const res = await fetch(`/api/lootmanager/${configId}/versions`);
+      if (res.ok) setVersions(await res.json());
+    } catch (error) { console.error("Failed to fetch versions:", error); }
+    finally { setLoadingVersions(false); }
+  };
+
+  const handleOpenVersionHistory = () => {
+    if (!currentConfigId) return;
+    fetchVersions(currentConfigId);
+    setShowVersionHistoryModal(true);
+  };
+
+  const handleRestoreVersion = async (version: number) => {
+    if (!currentConfigId) return;
+    try {
+      const res = await fetch(`/api/lootmanager/${currentConfigId}/versions/${version}`);
+      if (res.ok) {
+        const versionData = await res.json();
+        const lootData = typeof versionData.lootData === "string" ? JSON.parse(versionData.lootData) : versionData.lootData;
+        const migrated: LootManagerData = {
+          ContainerItems: Object.fromEntries(Object.entries(lootData.ContainerItems || {}).map(([k, v]) => [k, migrateContainer(v as ContainerConfig)])),
+        };
+        resetHistory(migrated);
+        setSelectedContainer(null);
+        setShowVersionHistoryModal(false);
+        toast.success(`Restored version ${version}`);
+      } else toast.error("Failed to load version");
+    } catch { toast.error("Failed to restore version"); }
   };
 
   const containerNames = useMemo(() => Object.keys(data.ContainerItems).sort(), [data.ContainerItems]);
@@ -581,7 +644,7 @@ export default function LootManagerPage() {
   }, [data.ContainerItems, updateContainer]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <div className="flex h-[calc(100vh-5rem)] bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 overflow-hidden">
       <div className="w-72 flex flex-col bg-white/[0.02] border-r border-white/5">
         <div className="p-4 border-b border-white/5">
           <div className="flex gap-1 mb-4 p-1 rounded-lg bg-white/5">
@@ -615,6 +678,9 @@ export default function LootManagerPage() {
                 <div className="mb-3 flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
                   <FileText className="h-4 w-4 text-purple-400" />
                   <span className="text-sm text-purple-400 truncate flex-1">{currentConfigName}</span>
+                  <button onClick={handleOpenVersionHistory} className="p-1 rounded hover:bg-purple-500/20 transition-colors" title="Version History">
+                    <History className="h-3.5 w-3.5 text-purple-400" />
+                  </button>
                   <span className={`text-xs px-1.5 py-0.5 rounded ${currentConfigVersion > (currentPublishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
                     v{currentConfigVersion}{currentPublishedVersion ? ` / v${currentPublishedVersion}` : ""}
                   </span>
@@ -741,11 +807,55 @@ export default function LootManagerPage() {
         {activeTab === "tables" && (
           <>
             {!selectedContainer ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-zinc-600">
-                  <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-purple-400" />
-                  <h3 className="text-xl font-medium text-zinc-500 mb-2">Select a Container</h3>
-                  <p className="text-sm">Choose a container from the sidebar or upload a LootManager.json</p>
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-white/5">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5 text-purple-400" />
+                    Quick Load
+                  </h2>
+                  <p className="text-sm text-zinc-500 mt-1">Select a saved config to start editing</p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {loadingSavedConfigs ? (
+                    <div className="text-center py-12">
+                      <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-zinc-500">Loading configs...</p>
+                    </div>
+                  ) : savedConfigs.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-purple-400" />
+                      <h3 className="text-xl font-medium text-zinc-500 mb-2">No Saved Configs</h3>
+                      <p className="text-sm text-zinc-600 mb-4">Upload a LootManager.json to get started</p>
+                      <button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
+                        <Upload className="h-4 w-4" />Upload JSON
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {savedConfigs.map((config) => (
+                        <button
+                          key={config.id}
+                          onClick={() => handleLoadConfig(config)}
+                          className="group text-left p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h3 className="font-medium text-white group-hover:text-purple-400 transition-colors truncate">{config.name}</h3>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {config.currentVersion > (config.publishedVersion ?? 0) ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">draft</span>
+                              ) : config.publishedVersion ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">v{config.publishedVersion}</span>
+                              ) : null}
+                            </div>
+                          </div>
+                          {config.description && <p className="text-xs text-zinc-500 line-clamp-2 mb-2">{config.description}</p>}
+                          <div className="text-xs text-zinc-600">
+                            Updated {new Date(config.updatedAt).toLocaleDateString()}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -827,18 +937,52 @@ export default function LootManagerPage() {
         {activeTab === "mapping" && (
           <>
             {!selectedMappingServerId ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center text-zinc-600 max-w-lg">
-                  <Server className="h-16 w-16 mx-auto mb-4 opacity-30 text-blue-400" />
-                  <h3 className="text-xl font-medium text-zinc-500 mb-2">Select a Server</h3>
-                  <p className="text-sm mb-4">Choose a server from the sidebar to manage its loot table rotation.</p>
-                  <div className="bg-white/[0.02] rounded-lg p-4 text-left border border-white/5">
-                    <h4 className="text-sm font-medium text-zinc-400 mb-2 flex items-center gap-2"><Clock className="h-4 w-4" />Rolling Loot Example</h4>
-                    <div className="text-xs text-zinc-500 space-y-1">
-                      <p>• Wipe day (empty): Standard loot</p>
-                      <p>• 24h after wipe: Medium loot</p>
-                      <p>• 48h after wipe: High-tier loot</p>
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-white/5">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Server className="h-5 w-5 text-blue-400" />
+                    Server Loot Rotation
+                  </h2>
+                  <p className="text-sm text-zinc-500 mt-1">Assign loot tables to servers with time-based rotation</p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                      <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 rounded-lg bg-blue-500/20"><Clock className="h-5 w-5 text-blue-400" /></div>
+                          <h3 className="font-medium text-white">Rolling Loot</h3>
+                        </div>
+                        <p className="text-xs text-zinc-400">Automatically switch loot tables based on time since wipe</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 rounded-lg bg-green-500/20"><ToggleRight className="h-5 w-5 text-green-400" /></div>
+                          <h3 className="font-medium text-white">Live Toggle</h3>
+                        </div>
+                        <p className="text-xs text-zinc-400">Enable/disable tables without removing them from rotation</p>
+                      </div>
                     </div>
+                    <div className="rounded-xl bg-white/[0.02] border border-white/5 p-5">
+                      <h4 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-400" />Example Rotation Schedule
+                      </h4>
+                      <div className="relative pl-4 border-l-2 border-blue-500/30 space-y-4">
+                        {[
+                          { time: "Wipe Day", desc: "Standard vanilla-like loot", color: "blue" },
+                          { time: "12h+", desc: "Slightly increased rates", color: "cyan" },
+                          { time: "24h+", desc: "Medium tier progression", color: "purple" },
+                          { time: "48h+", desc: "High-tier end-game loot", color: "pink" },
+                        ].map((stage, i) => (
+                          <div key={i} className="relative">
+                            <div className={`absolute -left-[21px] w-3 h-3 rounded-full bg-${stage.color}-500 border-2 border-zinc-900`} />
+                            <div className="text-sm font-medium text-white">{stage.time}</div>
+                            <div className="text-xs text-zinc-500">{stage.desc}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-center text-zinc-600 text-sm mt-6">Select a server from the sidebar to configure its rotation</p>
                   </div>
                 </div>
               </div>
@@ -849,85 +993,137 @@ export default function LootManagerPage() {
               if (!server) return null;
               return (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="p-4 bg-white/[0.02] border-b border-white/5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h1 className="text-2xl font-bold text-white">{server.name}</h1>
-                        <p className="text-sm text-zinc-500">{server.ip}:{server.port}</p>
+                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 border-b border-white/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                          <Server className="h-6 w-6 text-blue-400" />
+                        </div>
+                        <div>
+                          <h1 className="text-xl font-bold text-white">{server.name}</h1>
+                          <p className="text-sm text-zinc-500">{server.ip}:{server.port}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {liveMappings.length > 0 && (
-                          <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">{liveMappings.length} live</span>
+                      <div className="flex items-center gap-3">
+                        {liveMappings.length > 0 ? (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                            <span className="text-sm text-green-400">{liveMappings.length} active</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-500/10 border border-zinc-500/20">
+                            <div className="w-2 h-2 rounded-full bg-zinc-500" />
+                            <span className="text-sm text-zinc-500">No active tables</span>
+                          </div>
                         )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-600 font-mono">{server.hashedId}</p>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-4">
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-lg font-medium text-white">Loot Table Rotation</h2>
-                        <button onClick={() => handleAddToRotation(server.id)} disabled={savedConfigs.length === 0} className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm disabled:opacity-50">
+                        <button
+                          onClick={() => handleAddToRotation(server.id)}
+                          disabled={savedConfigs.length === 0}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
                           <Plus className="h-4 w-4" />Add Table
                         </button>
                       </div>
+                    </div>
+                  </div>
 
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="p-4">
                       {serverMappings.length === 0 ? (
-                        <div className="text-center py-8 bg-white/[0.02] rounded-lg border border-white/5">
-                          <Link2 className="h-8 w-8 mx-auto mb-2 opacity-50 text-blue-400" />
-                          <p className="text-sm text-zinc-500">No loot tables assigned</p>
-                          <button onClick={() => handleAddToRotation(server.id)} disabled={savedConfigs.length === 0} className="mt-2 text-blue-400 hover:text-blue-300 text-sm disabled:opacity-50">Add your first table</button>
+                        <div className="text-center py-16 rounded-xl bg-white/[0.01] border border-dashed border-white/10">
+                          <div className="p-4 rounded-full bg-blue-500/10 w-fit mx-auto mb-4">
+                            <Link2 className="h-8 w-8 text-blue-400" />
+                          </div>
+                          <h3 className="text-lg font-medium text-zinc-400 mb-2">No Loot Tables Assigned</h3>
+                          <p className="text-sm text-zinc-600 mb-4 max-w-md mx-auto">Add your first loot table to this server to start configuring the rotation schedule.</p>
+                          <button
+                            onClick={() => handleAddToRotation(server.id)}
+                            disabled={savedConfigs.length === 0}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-sm disabled:opacity-50 transition-colors"
+                          >
+                            <Plus className="h-4 w-4" />Add First Table
+                          </button>
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          {serverMappings.map((mapping) => (
-                            <div key={mapping.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <button onClick={() => handleToggleLive(mapping)} className="flex-shrink-0">
-                                  {mapping.isLive ? <ToggleRight className="h-6 w-6 text-green-400" /> : <ToggleLeft className="h-6 w-6 text-zinc-600" />}
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-white truncate">{mapping.config.name}</span>
-                                    {mapping.config.publishedVersion && <span className="text-xs text-zinc-500">v{mapping.config.publishedVersion}</span>}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    {mapping.minutesAfterWipe !== null ? (
-                                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(mapping.minutesAfterWipe)} after wipe</span>
-                                    ) : (
-                                      <span className="text-xs text-zinc-500">Wipe day default</span>
-                                    )}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="text-sm font-medium text-zinc-400 mb-3">Rotation Tables</h3>
+                            <div className="space-y-2">
+                              {serverMappings.map((mapping) => (
+                                <div
+                                  key={mapping.id}
+                                  className={`relative p-4 rounded-xl border transition-all ${
+                                    mapping.isLive
+                                      ? "bg-gradient-to-r from-green-500/5 to-emerald-500/5 border-green-500/20"
+                                      : "bg-white/[0.02] border-white/5 opacity-60"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                      <button
+                                        onClick={() => handleToggleLive(mapping)}
+                                        className={`mt-0.5 flex-shrink-0 transition-colors ${mapping.isLive ? "text-green-400" : "text-zinc-600 hover:text-zinc-400"}`}
+                                      >
+                                        {mapping.isLive ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6" />}
+                                      </button>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-medium text-white">{mapping.config.name}</span>
+                                          {mapping.config.publishedVersion && (
+                                            <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">v{mapping.config.publishedVersion}</span>
+                                          )}
+                                        </div>
+                                        <div className="mt-1">
+                                          {mapping.minutesAfterWipe !== null ? (
+                                            <span className="inline-flex items-center gap-1.5 text-sm text-blue-400">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              {formatDuration(mapping.minutesAfterWipe)} after wipe
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1.5 text-sm text-zinc-500">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              Wipe day default
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <button onClick={() => handleEditMapping(mapping)} className="p-2 rounded-lg text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button onClick={() => handleDeleteMapping(mapping.id)} className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Remove">
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <button onClick={() => handleEditMapping(mapping)} className="p-2 text-zinc-500 hover:text-blue-400 transition-colors" title="Edit">
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDeleteMapping(mapping.id)} className="p-2 text-zinc-500 hover:text-red-400 transition-colors" title="Remove">
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-medium text-zinc-400 mb-3">Timeline Preview</h3>
+                            <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
+                              <div className="relative pl-4 border-l-2 border-blue-500/30 space-y-3">
+                                {serverMappings.filter(m => m.isLive).map((m, i) => (
+                                  <div key={m.id} className="relative">
+                                    <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-900" />
+                                    <div className="text-sm font-medium text-white">
+                                      {m.minutesAfterWipe !== null ? `${formatDuration(m.minutesAfterWipe)}+` : "Wipe Day"}
+                                    </div>
+                                    <div className="text-xs text-zinc-500">{m.config.name}</div>
+                                  </div>
+                                ))}
+                                {serverMappings.filter(m => m.isLive).length === 0 && (
+                                  <div className="text-sm text-zinc-600 italic">No active tables in rotation</div>
+                                )}
                               </div>
                             </div>
-                          ))}
+                          </div>
                         </div>
                       )}
                     </div>
-
-                    {serverMappings.length > 0 && (
-                      <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                        <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2"><Clock className="h-4 w-4" />Rotation Schedule</h3>
-                        <div className="text-xs text-zinc-500 space-y-1">
-                          {serverMappings.map((m) => (
-                            <div key={m.id} className="flex items-center gap-2">
-                              <span className={m.isLive ? "text-green-400" : "text-zinc-600"}>{m.isLive ? "●" : "○"}</span>
-                              <span className={m.isLive ? "text-white" : ""}>{m.minutesAfterWipe !== null ? `${formatDuration(m.minutesAfterWipe)}+` : "Wipe day"}: {m.config.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -935,6 +1131,82 @@ export default function LootManagerPage() {
           </>
         )}
       </div>
+
+      {activeTab === "tables" && selectedContainer && (
+        <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${showItemBrowser ? "w-72" : "w-10"}`}>
+          <button
+            onClick={() => setShowItemBrowser(!showItemBrowser)}
+            className="p-2 text-zinc-500 hover:text-white border-b border-white/5 flex items-center justify-center"
+            title={showItemBrowser ? "Hide item browser" : "Show item browser"}
+          >
+            <ChevronRight className={`h-4 w-4 transition-transform ${showItemBrowser ? "rotate-180" : ""}`} />
+          </button>
+          {showItemBrowser && (
+            <>
+              <div className="p-3 border-b border-white/5">
+                <h3 className="text-sm font-semibold text-white mb-2">Item Browser</h3>
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={itemBrowserSearch}
+                    onChange={(e) => setItemBrowserSearch(e.target.value)}
+                    placeholder="Search items..."
+                    className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none"
+                  />
+                </div>
+                <select
+                  value={itemBrowserCategory}
+                  onChange={(e) => setItemBrowserCategory(e.target.value as ItemCategory | "All")}
+                  className="w-full rounded-lg px-2 py-1.5 text-xs text-white bg-white/5 border border-white/5 focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                  {ITEM_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2">
+                {rustItems.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-600">
+                    <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-xs">Loading items...</p>
+                  </div>
+                ) : filteredRustItems.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-600">
+                    <p className="text-xs">No items found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-1">
+                    {filteredRustItems.map((item) => (
+                      <button
+                        key={item.shortname}
+                        onClick={() => { addItem(selectedContainer, item.shortname); toast.success(`Added ${item.Name}`); }}
+                        className="group relative aspect-square rounded-lg bg-white/[0.02] border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all p-1"
+                        title={`${item.Name}\n${item.shortname}`}
+                      >
+                        <img
+                          src={getItemImageUrl(item.shortname)}
+                          alt={item.Name}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
+                          <Plus className="h-4 w-4 text-purple-400" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {filteredRustItems.length >= 100 && (
+                  <p className="text-xs text-zinc-500 text-center mt-2">Showing first 100 results</p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
 
@@ -947,7 +1219,7 @@ export default function LootManagerPage() {
             </div>
             {addItemSearch.trim() && (
               <button onClick={() => addItem(selectedContainer, addItemSearch.trim())} className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
-                <img src={getImageSrc(addItemSearch.trim())} alt={addItemSearch} className="w-10 h-10 object-contain bg-zinc-900 rounded-lg p-1" onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.png"; }} />
+                <img src={getItemImageUrl(addItemSearch.trim())} alt={addItemSearch} referrerPolicy="no-referrer" className="w-10 h-10 object-contain bg-zinc-900 rounded-lg p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 <div className="flex-1 text-left">
                   <span className="text-white font-medium">{addItemSearch.trim()}</span>
                   <p className="text-xs text-zinc-500">Press Enter or click to add</p>
@@ -1212,6 +1484,43 @@ export default function LootManagerPage() {
           </Modal>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showVersionHistoryModal && (
+          <Modal onClose={() => setShowVersionHistoryModal(false)} title="Version History" wide>
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {loadingVersions ? (
+                <div className="text-center py-12"><div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" /><p className="text-zinc-500">Loading...</p></div>
+              ) : versions.length === 0 ? (
+                <div className="text-center py-12 text-zinc-500"><History className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No version history</p></div>
+              ) : (
+                versions.map((v) => (
+                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-medium ${v.version === currentConfigVersion ? "text-purple-400" : "text-white"}`}>
+                        v{v.version}
+                        {v.version === currentConfigVersion && <span className="ml-2 text-xs opacity-60">(current)</span>}
+                        {v.version === currentPublishedVersion && <span className="ml-2 text-xs text-green-400">(published)</span>}
+                      </span>
+                      <span className="text-xs text-zinc-500">{new Date(v.createdAt).toLocaleString()}</span>
+                    </div>
+                    {v.version !== currentConfigVersion && (
+                      <button
+                        onClick={() => handleRestoreVersion(v.version)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 bg-purple-500/20 border border-purple-500/30 rounded-lg hover:bg-purple-500/30 transition-colors"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />Restore
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 mt-4">Up to 50 versions are retained per config. Older versions are automatically deleted.</p>
+            <button onClick={() => setShowVersionHistoryModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Close</button>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1236,7 +1545,7 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
-          <img src={getImageSrc(getItemShortname(item))} alt={getItemShortname(item)} className="w-12 h-12 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-12 h-12 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-medium text-white truncate">{getItemShortname(item)}</h4>
             <div className="flex items-center gap-2 mt-1">
@@ -1275,7 +1584,7 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
 function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item: LootItem; index: number; containerName: string; onUpdate: (c: string, i: number, u: Partial<LootItem>) => void; onRemove: (c: string, i: number) => void }) {
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="rounded-lg p-3 flex items-center gap-4 bg-white/[0.02] border border-white/5">
-      <img src={getImageSrc(getItemShortname(item))} alt={getItemShortname(item)} className="w-10 h-10 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+      <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-10 h-10 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       <div className="flex-1 min-w-0"><span className="text-sm font-medium text-white truncate block">{getItemShortname(item)}</span></div>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">

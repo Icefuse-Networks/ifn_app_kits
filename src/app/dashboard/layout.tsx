@@ -13,38 +13,35 @@ import { authOptions } from '@/lib/auth'
 import { requireAdmin } from '@/services/admin-auth'
 import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
+import { SidebarProvider } from '@/contexts/SidebarContext'
 import Sidebar from './Sidebar'
+import DashboardContent from './DashboardContent'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // SECURITY: Get session on server
   const session = await getServerSession(authOptions())
 
-  // If no session, redirect to sign in
   if (!session?.user) {
     redirect('/')
   }
 
-  // SECURITY: Verify admin access via Auth Server API
   try {
     await requireAdmin(session)
   } catch {
-    // Not an admin - redirect to landing page with error
     redirect('/?error=AccessDenied')
   }
 
-  // User is authenticated admin - render dashboard
   return (
-    <div className="portal-root">
-      <Header />
-      <Sidebar />
-      <main className="pt-20 pl-56 min-h-screen">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <SidebarProvider>
+      <div className="portal-root">
+        <Header />
+        <Sidebar />
+        <DashboardContent>{children}</DashboardContent>
+        <Footer />
+      </div>
+    </SidebarProvider>
   )
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireSession } from "@/services/api-auth";
 
 const idSchema = z.coerce.number().int().positive();
+const MAX_VERSIONS = 50;
 
 const updateSchema = z.object({
   name: z.string().min(1).max(255).trim().optional(),
@@ -70,6 +71,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         data: { configId, lootData: lootData || existing.lootData, version: newVersion },
       }),
     ]);
+
+    const versionCount = await prisma.lootConfigVersion.count({ where: { configId } });
+    if (versionCount > MAX_VERSIONS) {
+      const oldVersions = await prisma.lootConfigVersion.findMany({
+        where: { configId },
+        orderBy: { version: "asc" },
+        take: versionCount - MAX_VERSIONS,
+        select: { id: true },
+      });
+      if (oldVersions.length > 0) {
+        await prisma.lootConfigVersion.deleteMany({
+          where: { id: { in: oldVersions.map(v => v.id) } },
+        });
+      }
+    }
 
     return NextResponse.json(config);
   } catch (error) {
