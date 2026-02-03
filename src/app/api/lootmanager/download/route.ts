@@ -32,19 +32,37 @@ export async function GET(request: NextRequest) {
       minutesElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60));
     }
 
-    const mappings = await prisma.lootMapping.findMany({
-      where: {
-        serverIdentifier: { id: serverId },
-        isLive: true,
-        config: { publishedVersion: { not: null } },
-      },
-      include: { config: true },
-      orderBy: { minutesAfterWipe: "desc" },
+    const serverIdentifier = await prisma.serverIdentifier.findFirst({
+      where: { OR: [{ id: serverId }, { hashedId: serverId }] },
     });
 
-    if (mappings.length === 0) {
-      return NextResponse.json({ error: "No live published config found for server" }, { status: 404 });
+    if (!serverIdentifier) {
+      return NextResponse.json({ error: "Server not found", serverId }, { status: 404 });
     }
+
+    const allMappingsForServer = await prisma.lootMapping.findMany({
+      where: { serverIdentifierId: serverIdentifier.id },
+      include: { config: true },
+    });
+
+    const mappings = allMappingsForServer.filter(
+      m => m.isLive && m.config.publishedVersion !== null
+    );
+
+    if (mappings.length === 0) {
+      const debugInfo = {
+        serverId,
+        resolvedServerId: serverIdentifier.id,
+        serverName: serverIdentifier.name,
+        totalMappings: allMappingsForServer.length,
+        mappingsNotLive: allMappingsForServer.filter(m => !m.isLive).length,
+        mappingsNotPublished: allMappingsForServer.filter(m => m.config.publishedVersion === null).length,
+      };
+      console.log("[LootManager Download] No valid mappings found:", debugInfo);
+      return NextResponse.json({ error: "No live published config found for server", debug: debugInfo }, { status: 404 });
+    }
+
+    mappings.sort((a, b) => (b.minutesAfterWipe ?? -1) - (a.minutesAfterWipe ?? -1));
 
     let selectedMapping = mappings.find(m => m.minutesAfterWipe === null);
 

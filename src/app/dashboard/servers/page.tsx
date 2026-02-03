@@ -81,6 +81,8 @@ export default function ServersPage() {
     return liveServers.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.ip?.includes(q) ||
+      s.id.toLowerCase().includes(q) ||
+      s.hashedId.toLowerCase().includes(q) ||
       s.category?.name.toLowerCase().includes(q)
     )
   }, [liveServers, search])
@@ -191,7 +193,7 @@ export default function ServersPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input type="text" placeholder="Search servers..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors" />
+            <input type="text" placeholder="Search by name, IP, or ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors" />
           </div>
         </motion.div>
 
