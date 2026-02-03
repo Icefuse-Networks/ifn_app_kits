@@ -1,7 +1,7 @@
 import {
   Package, Settings, BarChart2, Shield, Key, HardDrive,
   MessageSquare, Box, ShoppingCart, ArrowRightLeft, TrendingUp,
-  LucideIcon
+  Gift, LucideIcon
 } from 'lucide-react'
 
 export interface NavItem {
@@ -27,6 +27,7 @@ export const dashboardSections: NavSection[] = [
       { href: '/dashboard/clans', icon: Shield, label: 'Clans', desc: 'Clan perks, settings and banned names', gradient: 'from-amber-500 to-orange-500' },
       { href: '/dashboard/lootmanager', icon: Box, label: 'Loot Manager', desc: 'Configure loot tables and drop rates', gradient: 'from-yellow-500 to-orange-500' },
       { href: '/dashboard/redirection', icon: ArrowRightLeft, label: 'Redirection', desc: 'AFK redirect settings and logs', gradient: 'from-orange-500 to-red-500' },
+      { href: '/dashboard/giveaways', icon: Gift, label: 'Giveaways', desc: 'Manage giveaway players and select winners', gradient: 'from-pink-500 to-purple-600' },
     ]
   },
   {

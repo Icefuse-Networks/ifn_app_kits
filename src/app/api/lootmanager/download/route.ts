@@ -5,7 +5,6 @@ import { requireLootManagerRead } from "@/services/api-auth";
 
 const querySchema = z.object({
   serverId: z.string().min(1),
-  wipeTime: z.coerce.number().int().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -17,20 +16,12 @@ export async function GET(request: NextRequest) {
   try {
     const parsed = querySchema.safeParse({
       serverId: request.nextUrl.searchParams.get("serverId"),
-      wipeTime: request.nextUrl.searchParams.get("wipeTime") || undefined,
     });
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { serverId, wipeTime } = parsed.data;
-    let minutesElapsed: number | null = null;
-
-    if (wipeTime !== undefined) {
-      const wipeTimeMs = wipeTime * 1000;
-      const now = Date.now();
-      minutesElapsed = Math.floor((now - wipeTimeMs) / (1000 * 60));
-    }
+    const { serverId } = parsed.data;
 
     const serverIdentifier = await prisma.serverIdentifier.findFirst({
       where: { OR: [{ id: serverId }, { hashedId: serverId }] },
@@ -62,45 +53,37 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No live published config found for server", debug: debugInfo }, { status: 404 });
     }
 
-    mappings.sort((a, b) => (b.minutesAfterWipe ?? -1) - (a.minutesAfterWipe ?? -1));
-
-    let selectedMapping = mappings.find(m => m.minutesAfterWipe === null);
-
-    if (minutesElapsed !== null) {
-      for (const mapping of mappings) {
-        if (mapping.minutesAfterWipe !== null && minutesElapsed >= mapping.minutesAfterWipe) {
-          selectedMapping = mapping;
-          break;
-        }
-      }
-    }
-
-    if (!selectedMapping) {
-      selectedMapping = mappings[mappings.length - 1];
-    }
-
-    if (!selectedMapping?.config?.publishedVersion) {
-      return NextResponse.json({ error: "No live published config found for server" }, { status: 404 });
-    }
-
-    const version = await prisma.lootConfigVersion.findUnique({
-      where: { configId_version: { configId: selectedMapping.config.id, version: selectedMapping.config.publishedVersion } },
+    const configIds = [...new Set(mappings.map(m => m.config.id))];
+    const versions = await prisma.lootConfigVersion.findMany({
+      where: {
+        OR: configIds.map(configId => {
+          const mapping = mappings.find(m => m.config.id === configId);
+          return { configId, version: mapping!.config.publishedVersion! };
+        }),
+      },
     });
 
-    if (!version) return NextResponse.json({ error: "Published version not found" }, { status: 404 });
+    const versionMap = new Map(versions.map(v => [`${v.configId}-${v.version}`, v]));
 
-    const schedule = mappings
-      .filter(m => m.minutesAfterWipe !== null)
-      .sort((a, b) => (a.minutesAfterWipe ?? 0) - (b.minutesAfterWipe ?? 0))
-      .map(m => ({ minutesAfterWipe: m.minutesAfterWipe, configId: m.configId, configName: m.config.name }));
+    const sortedMappings = [...mappings].sort((a, b) => (a.minutesAfterWipe ?? -1) - (b.minutesAfterWipe ?? -1));
+
+    const configs = sortedMappings.map(m => {
+      const version = versionMap.get(`${m.config.id}-${m.config.publishedVersion}`);
+      return {
+        name: m.config.name,
+        configId: m.config.id,
+        version: m.config.publishedVersion,
+        minutesAfterWipe: m.minutesAfterWipe,
+        data: version ? JSON.parse(version.lootData) : null,
+      };
+    }).filter(c => c.data !== null);
+
+    const baseConfig = configs.find(c => c.minutesAfterWipe === null);
+    const schedule = configs.filter(c => c.minutesAfterWipe !== null);
 
     return NextResponse.json({
-      name: selectedMapping.config.name,
-      configId: selectedMapping.config.id,
-      version: selectedMapping.config.publishedVersion,
-      minutesAfterWipe: selectedMapping.minutesAfterWipe,
-      data: JSON.parse(version.lootData),
-      schedule: schedule.length > 0 ? schedule : undefined,
+      baseConfig: baseConfig || null,
+      schedule,
     });
   } catch (error) {
     console.error("Error downloading loot config:", error);

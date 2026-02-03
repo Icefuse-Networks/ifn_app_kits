@@ -97,6 +97,10 @@ registerScope('redirect:write', 'Manage redirect configuration and submit logs',
 registerScope('lootmanager:read', 'Read loot configurations from game servers', 'lootmanager')
 registerScope('lootmanager:write', 'Create and update loot configurations', 'lootmanager')
 
+// Giveaway plugin scopes
+registerScope('giveaways:read', 'Read giveaway players', 'giveaways')
+registerScope('giveaways:write', 'Create and delete giveaway players', 'giveaways')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Scopes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -320,6 +324,11 @@ registerResourceType('wipe_schedule', 'Wipe Schedule', 'redirect')
 // LootManager plugin resources
 registerResourceType('loot_config', 'Loot Configuration', 'lootmanager')
 registerResourceType('loot_mapping', 'Loot Mapping', 'lootmanager')
+
+// Giveaway plugin resources
+registerResourceType('giveaway_player', 'Giveaway Player', 'giveaways')
+registerResourceType('giveaway', 'Giveaway', 'giveaways')
+registerResourceType('giveaway_server', 'Giveaway Server', 'giveaways')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Resources (uncomment when adding plugins)

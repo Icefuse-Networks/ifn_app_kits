@@ -133,6 +133,11 @@ registerPrefix('redirectLog', 'redirlog', 'Redirect Log', 'redirect')
 registerPrefix('redirectQueue', 'redirq', 'Redirect Queue', 'redirect')
 registerPrefix('wipeSchedule', 'wipesched', 'Wipe Schedule', 'redirect')
 
+// Giveaway plugin entities
+registerPrefix('giveawayPlayer', 'giveawayp', 'Giveaway Player', 'giveaways')
+registerPrefix('giveaway', 'giveaway', 'Giveaway', 'giveaways')
+registerPrefix('giveawayServer', 'giveaways', 'Giveaway Server', 'giveaways')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Prefixes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -188,6 +193,10 @@ export type IdType =
   | 'redirectLog'
   | 'redirectQueue'
   | 'wipeSchedule'
+  // Giveaway plugin
+  | 'giveawayPlayer'
+  | 'giveaway'
+  | 'giveawayServer'
 
 // =============================================================================
 // Core Functions
@@ -358,6 +367,11 @@ export const id = {
   redirectLog: () => generateId('redirectLog'),
   redirectQueue: () => generateId('redirectQueue'),
   wipeSchedule: () => generateId('wipeSchedule'),
+
+  // Giveaway plugin
+  giveawayPlayer: () => generateId('giveawayPlayer'),
+  giveaway: () => generateId('giveaway'),
+  giveawayServer: () => generateId('giveawayServer'),
 } as const
 
 /**
