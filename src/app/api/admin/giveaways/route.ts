@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
 
     const { serverIdentifiers, startAt, endAt, ...data } = parsed.data
 
-    const giveaway = await prisma.$transaction(async (tx: typeof prisma) => {
+    const giveaway = await prisma.$transaction(async (tx) => {
       if (serverIdentifiers !== undefined) {
         await tx.giveawayServer.deleteMany({ where: { giveawayId } })
         if (serverIdentifiers.length > 0) {

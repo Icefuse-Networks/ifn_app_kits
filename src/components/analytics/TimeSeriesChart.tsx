@@ -70,6 +70,7 @@ export function TimeSeriesChart({
         borderColor: "rgba(168,85,247,0.5)",
         textStyle: { color: "#fff" },
         axisPointer: { type: "cross", crossStyle: { color: "#999" } },
+        order: "valueDesc",
       },
       legend: {
         data: series.map((s) => s.name),

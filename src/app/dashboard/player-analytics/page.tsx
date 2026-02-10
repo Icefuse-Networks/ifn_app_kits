@@ -54,7 +54,7 @@ interface ServerOption {
 }
 
 type TimeRange = "1h" | "6h" | "24h" | "7d" | "30d" | "custom";
-type GroupBy = "hour" | "day" | "week";
+type GroupBy = "minute" | "hour" | "day" | "week";
 
 const TIME_PRESETS: Record<TimeRange, { label: string; hours?: number }> = {
   "1h": { label: "1 Hour", hours: 1 },
@@ -189,7 +189,7 @@ function MultiSelectDropdown({
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
-  const [groupBy, setGroupBy] = useState<GroupBy>("hour");
+  const [groupBy, setGroupBy] = useState<GroupBy>("minute");
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [servers, setServers] = useState<ServerOption[]>([]);
   const [timeseries, setTimeseries] = useState<TimeSeriesPoint[]>([]);
@@ -217,7 +217,8 @@ export default function AnalyticsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const { from, to } = getTimeParams();
-    const baseParams = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&server=all&groupBy=${groupBy}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const baseParams = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&server=all&groupBy=${groupBy}&timezone=${encodeURIComponent(timezone)}`;
 
     try {
       const [serversRes, timeseriesRes, totalsRes, aggregateRes, heatmapRes, currentRes] = await Promise.all([
@@ -257,9 +258,26 @@ export default function AnalyticsPage() {
 
   const totalPlayersData = useMemo(() => {
     return totals.map((t) => {
-      const d = new Date(t.time_bucket);
+      // ClickHouse returns timestamp in user's timezone, parse without conversion
+      const parts = t.time_bucket.split(/[\s:-]/);
+      const d = new Date(
+        parseInt(parts[0]),           // year
+        parseInt(parts[1]) - 1,        // month (0-indexed)
+        parseInt(parts[2]),            // day
+        parseInt(parts[3] || '0'),     // hour
+        parseInt(parts[4] || '0'),     // minute
+        parseInt(parts[5] || '0')      // second
+      );
+      let dateStr: string;
+      if (groupBy === "minute") {
+        dateStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } else if (groupBy === "hour") {
+        dateStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } else {
+        dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+      }
       return {
-        date: groupBy === "hour" ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], { month: "short", day: "numeric" }),
+        date: dateStr,
         total_players: Number(t.total_players),
       };
     });
@@ -316,9 +334,26 @@ export default function AnalyticsPage() {
     const serverNames = Array.from(serverGroups.keys()).slice(0, 8);
     const allBuckets = [...new Set(filteredTimeseries.map(t => t.time_bucket))].sort();
     const data = allBuckets.map((bucket) => {
-      const d = new Date(bucket);
+      // Parse timestamp in local timezone (already converted by ClickHouse)
+      const parts = bucket.split(/[\s:-]/);
+      const d = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2]),
+        parseInt(parts[3] || '0'),
+        parseInt(parts[4] || '0'),
+        parseInt(parts[5] || '0')
+      );
+      let dateStr: string;
+      if (groupBy === "minute") {
+        dateStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } else if (groupBy === "hour") {
+        dateStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } else {
+        dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+      }
       const row: Record<string, string | number> = {
-        date: groupBy === "hour" ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], { month: "short", day: "numeric" }),
+        date: dateStr,
       };
       serverNames.forEach((name) => {
         const point = serverGroups.get(name)?.find(p => p.time_bucket === bucket);
@@ -421,6 +456,7 @@ export default function AnalyticsPage() {
               onChange={(e) => setGroupBy(e.target.value as GroupBy)}
               className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500"
             >
+              <option value="minute">Group by Minute</option>
               <option value="hour">Group by Hour</option>
               <option value="day">Group by Day</option>
               <option value="week">Group by Week</option>

@@ -8,8 +8,7 @@
  */
 
 import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth/provider'
 import { requireAdmin } from '@/services/admin-auth'
 import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
@@ -22,10 +21,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions())
+  const session = await auth()
 
   if (!session?.user) {
-    redirect('/')
+    // Redirect to OIDC signin flow
+    redirect('/api/auth/signin/icefuse?callbackUrl=/dashboard')
   }
 
   try {

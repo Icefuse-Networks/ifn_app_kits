@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("ServerID", "IFN.GG", "2.7.0")]
+    [Info("ServerID", "IFN.GG", "2.8.0")]
     public class ServerID : RustPlugin
     {
         private const string ApiToken = "ifn_kit_2332cee8bbf922c98d547a901d725460";
@@ -15,7 +15,7 @@ namespace Oxide.Plugins
         private const string PlayersApiUrl = "https://kits.icefuse.net/api/identifiers/players";
         private const int MaxRetries = 3;
         private const float RetryDelay = 5f;
-        private const float PlayerPollInterval = 70f;
+        private const float PlayerPollInterval = 60f;
 
         private string _serverId;
         private int _retryCount;
@@ -185,6 +185,7 @@ namespace Oxide.Plugins
             var payload = JsonConvert.SerializeObject(new
             {
                 serverId = _serverId,
+                serverName = ConVar.Server.hostname,
                 playerCount = _playerInfoList.Count,
                 players = _playerInfoList
             });

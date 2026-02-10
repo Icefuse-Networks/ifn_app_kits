@@ -1,0 +1,58 @@
+{
+  "name": "@icefuse/auth",
+  "version": "1.0.0",
+  "description": "Plug-and-play authentication for Icefuse Networks applications",
+  "main": "./index.ts",
+  "types": "./types.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "require": "./index.ts",
+      "types": "./types.ts"
+    },
+    "./components": {
+      "import": "./components.tsx",
+      "require": "./components.tsx"
+    },
+    "./logout": {
+      "import": "./logout.ts",
+      "require": "./logout.ts"
+    },
+    "./admin": {
+      "import": "./admin.ts",
+      "require": "./admin.ts"
+    },
+    "./guards": {
+      "import": "./guards.ts",
+      "require": "./guards.ts"
+    },
+    "./config": {
+      "import": "./config.ts",
+      "require": "./config.ts"
+    },
+    "./revocation": {
+      "import": "./revocation.ts",
+      "require": "./revocation.ts"
+    }
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0",
+    "next-auth": "^4.24.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "keywords": [
+    "icefuse",
+    "auth",
+    "oidc",
+    "nextauth",
+    "authentication"
+  ],
+  "author": "Icefuse Networks",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icefuse/ifn_app_auth_v2"
+  }
+}

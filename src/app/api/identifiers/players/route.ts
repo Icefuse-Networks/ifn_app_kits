@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { clickhouse } from '@/lib/clickhouse'
 import { authenticateWithScope } from '@/services/api-auth'
 import { logger } from '@/lib/logger'
+import { auditUpdate } from '@/services/audit'
 
 const playerSchema = z.object({
   steamId: z.string().min(1).max(20),
@@ -14,6 +15,7 @@ const playerSchema = z.object({
 
 const playersUpdateSchema = z.object({
   serverId: z.string().min(1).max(60),
+  serverName: z.string().min(1).max(100).optional(),
   playerCount: z.number().int().min(0),
   players: z.array(playerSchema).max(500),
 })
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { serverId, playerCount, players } = parsed.data
+    const { serverId, serverName, playerCount, players } = parsed.data
 
     const identifier = await prisma.serverIdentifier.findFirst({
       where: { hashedId: serverId },
@@ -53,20 +55,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // SECURITY: Session-derived context from auth
+    // Update server name if provided and different
+    const updateData: any = {
+      playerData: players,
+      playerCount,
+      lastPlayerUpdate: new Date(),
+    }
+
+    const nameChanged = serverName && serverName !== identifier.name
+    if (nameChanged) {
+      updateData.name = serverName
+    }
+
     await prisma.serverIdentifier.update({
       where: { id: identifier.id },
-      data: {
-        playerData: players,
-        playerCount,
-        lastPlayerUpdate: new Date(),
-      },
+      data: updateData,
     })
 
+    // SECURITY: Audit logged - server name change
+    if (nameChanged) {
+      await auditUpdate(
+        'server_identifier',
+        identifier.id,
+        authResult.context,
+        { name: identifier.name },
+        { name: serverName },
+        request
+      ).catch(err => logger.admin.error('Audit log failed', err))
+    }
+
     if (identifier.ip && identifier.port) {
+      const currentName = serverName || identifier.name
       clickhouse.insert({
         table: 'server_population_stats',
         values: [{
-          server_name: identifier.name,
+          server_id: serverId,
+          server_name: currentName,
           server_ip: identifier.ip,
           server_port: identifier.port,
           category_id: identifier.categoryId ? parseInt(identifier.categoryId, 10) || 0 : 0,

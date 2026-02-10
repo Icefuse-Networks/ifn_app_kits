@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clickhouse } from "@/lib/clickhouse";
 
-type GroupBy = "hour" | "day" | "week";
+type GroupBy = "minute" | "hour" | "day" | "week";
 
-function getGroupByFormat(groupBy: GroupBy): string {
+// SECURITY: Whitelist valid IANA timezones to prevent SQL injection
+const VALID_TIMEZONES = new Set([
+  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Toronto', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Amsterdam',
+  'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney', 'Pacific/Auckland'
+]);
+
+function validateTimezone(tz: string): string {
+  // SECURITY: Only allow whitelisted timezones to prevent SQL injection
+  if (!VALID_TIMEZONES.has(tz)) {
+    return 'UTC';
+  }
+  return tz;
+}
+
+function getGroupByFormat(groupBy: GroupBy, timezone: string = 'UTC'): string {
+  // SECURITY: Timezone validated before use in SQL
+  const safeTimezone = validateTimezone(timezone);
   switch (groupBy) {
-    case "hour": return "toStartOfHour(timestamp)";
-    case "day": return "toStartOfDay(timestamp)";
-    case "week": return "toStartOfWeek(timestamp)";
+    case "minute": return `toStartOfMinute(timestamp, '${safeTimezone}')`;
+    case "hour": return `toStartOfHour(timestamp, '${safeTimezone}')`;
+    case "day": return `toStartOfDay(timestamp, '${safeTimezone}')`;
+    case "week": return `toStartOfWeek(timestamp, '${safeTimezone}')`;
   }
 }
 
@@ -18,6 +36,7 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to");
   const groupBy = (searchParams.get("groupBy") || "hour") as GroupBy;
   const type = searchParams.get("type") || "timeseries";
+  const timezone = searchParams.get("timezone") || "UTC";
 
   try {
     let whereClause = "WHERE 1=1";
@@ -64,20 +83,21 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "timeseries") {
-      const groupByExpr = getGroupByFormat(groupBy);
+      const groupByExpr = getGroupByFormat(groupBy, timezone);
       const result = await clickhouse.query({
         query: `
           SELECT
-            ${groupByExpr} as time_bucket,
-            server_ip,
-            server_name,
-            ROUND(AVG(players)) as avg_players,
+            toString(${groupByExpr}) as time_bucket,
+            server_id,
+            argMax(server_ip, timestamp) as server_ip,
+            argMax(server_name, timestamp) as server_name,
+            ROUND(argMax(players, timestamp)) as avg_players,
             MAX(players) as peak_players,
             MIN(players) as min_players,
-            ROUND(AVG(max_players)) as capacity
+            ROUND(argMax(max_players, timestamp)) as capacity
           FROM server_population_stats
           ${whereClause}
-          GROUP BY time_bucket, server_ip, server_name
+          GROUP BY time_bucket, server_id
           ORDER BY time_bucket ASC
         `,
         format: "JSONEachRow",
@@ -98,9 +118,10 @@ export async function GET(request: NextRequest) {
       const result = await clickhouse.query({
         query: `
           SELECT
-            server_ip,
-            server_name,
-            category,
+            server_id,
+            argMax(server_ip, timestamp) as server_ip,
+            argMax(server_name, timestamp) as server_name,
+            argMax(category, timestamp) as category,
             ROUND(AVG(players)) as avg_players,
             MAX(players) as peak_players,
             MIN(players) as min_players,
@@ -109,7 +130,7 @@ export async function GET(request: NextRequest) {
             ROUND(AVG(players / max_players * 100)) as avg_utilization
           FROM server_population_stats
           ${whereClause}
-          GROUP BY server_ip, server_name, category
+          GROUP BY server_id
           ORDER BY avg_players DESC
         `,
         format: "JSONEachRow",
@@ -119,23 +140,23 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "totals") {
-      const groupByExpr = getGroupByFormat(groupBy);
+      const groupByExpr = getGroupByFormat(groupBy, timezone);
       const result = await clickhouse.query({
         query: `
           SELECT
-            time_bucket,
-            ROUND(SUM(avg_players)) as total_players,
-            ROUND(SUM(avg_capacity)) as total_capacity,
+            toString(time_bucket) as time_bucket,
+            ROUND(SUM(latest_players)) as total_players,
+            ROUND(SUM(latest_capacity)) as total_capacity,
             COUNT(*) as server_count
           FROM (
             SELECT
               ${groupByExpr} as time_bucket,
-              server_ip,
-              AVG(players) as avg_players,
-              AVG(max_players) as avg_capacity
+              server_id,
+              argMax(players, timestamp) as latest_players,
+              argMax(max_players, timestamp) as latest_capacity
             FROM server_population_stats
             ${whereClause}
-            GROUP BY time_bucket, server_ip
+            GROUP BY time_bucket, server_id
           )
           GROUP BY time_bucket
           ORDER BY time_bucket ASC
@@ -160,13 +181,13 @@ export async function GET(request: NextRequest) {
             ROUND(SUM(avg_players)) as avg_players
           FROM (
             SELECT
-              toDayOfWeek(timestamp) as day_of_week,
-              toHour(timestamp) as hour,
-              server_ip,
+              toDayOfWeek(timestamp, '${timezone}') as day_of_week,
+              toHour(timestamp, '${timezone}') as hour,
+              server_id,
               AVG(players) as avg_players
             FROM server_population_stats
             ${whereClause}
-            GROUP BY day_of_week, hour, server_ip
+            GROUP BY day_of_week, hour, server_id
           )
           GROUP BY day_of_week, hour
           ORDER BY day_of_week, hour

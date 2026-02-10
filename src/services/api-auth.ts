@@ -6,8 +6,7 @@
  */
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth/provider'
 import { validateToken, hasScope } from '@/lib/api-token'
 import { isRootUser } from '@/services/admin-auth'
 import type { ApiScope, AuthContext } from '@/types/api'
@@ -84,7 +83,7 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
   }
 
   // Fall back to session auth
-  const session = await getServerSession(authOptions())
+  const session = await auth()
 
   if (!session?.user) {
     return {
@@ -95,7 +94,7 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
   }
 
   // Check if user is root user (admin)
-  const isRoot = await isRootUser(session.user.steamId, session.user.email || undefined)
+  const isRoot = await isRootUser(session.user.steamId, session.user.email)
 
   if (!isRoot) {
     return {
@@ -259,7 +258,7 @@ export async function requireLootManagerWrite(request: NextRequest): Promise<Aut
  * Used for sensitive operations like token management
  */
 export async function requireSession(_request: NextRequest): Promise<AuthResult> {
-  const session = await getServerSession(authOptions())
+  const session = await auth()
 
   if (!session?.user) {
     return {
@@ -269,7 +268,7 @@ export async function requireSession(_request: NextRequest): Promise<AuthResult>
     }
   }
 
-  const isRoot = await isRootUser(session.user.steamId, session.user.email || undefined)
+  const isRoot = await isRootUser(session.user.steamId, session.user.email)
 
   if (!isRoot) {
     return {

@@ -6,13 +6,12 @@
  */
 
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/icefuse-auth'
 import { requireAdmin } from '@/services/admin-auth'
 
 export async function GET() {
   // SECURITY: Auth check at route start
-  const session = await getServerSession(authOptions())
+  const session = await auth()
 
   try {
     await requireAdmin(session)

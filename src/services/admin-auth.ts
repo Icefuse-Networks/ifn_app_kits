@@ -5,8 +5,8 @@
  * Copied 1:1 from PayNow store for consistency.
  */
 
-import { getAuthUrl, getUserSyncSecret } from '@/services/auth-config-service'
-import type { Session } from 'next-auth'
+import { getAuthUrl, getUserSyncSecret } from '@icefuse/auth/config'
+import type { IcefuseSession } from '@icefuse/auth'
 
 // In-memory cache (5 min TTL)
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -88,7 +88,7 @@ async function fetchAdminUsers(): Promise<AdminUsersCache> {
  * @param email - User's email address
  * @returns Promise<boolean> - True if user is root user
  */
-export async function isRootUser(steamId?: string, email?: string): Promise<boolean> {
+export async function isRootUser(steamId?: string | null, email?: string | null): Promise<boolean> {
   const cache = await fetchAdminUsers()
 
   // Check Steam ID
@@ -112,7 +112,7 @@ export async function isRootUser(steamId?: string, email?: string): Promise<bool
  * @param email - User's email address
  * @returns Promise<boolean> - True if user is admin
  */
-export async function isAdminUser(steamId?: string, email?: string): Promise<boolean> {
+export async function isAdminUser(steamId?: string | null, email?: string | null): Promise<boolean> {
   const cache = await fetchAdminUsers()
 
   // Check if root user first
@@ -139,14 +139,14 @@ export async function isAdminUser(steamId?: string, email?: string): Promise<boo
  * @param session - NextAuth session
  * @throws Error if user is not authenticated or not admin
  */
-export async function requireAdmin(session: Session | null): Promise<void> {
+export async function requireAdmin(session: IcefuseSession | null): Promise<void> {
   // SECURITY: Check authentication
   if (!session?.user) {
     throw new Error('Authentication required')
   }
 
   // SECURITY: Check admin status (root users for kit manager)
-  const isRoot = await isRootUser(session.user.steamId, session.user.email || undefined)
+  const isRoot = await isRootUser(session.user.steamId, session.user.email)
 
   if (!isRoot) {
     throw new Error('Admin access required')
