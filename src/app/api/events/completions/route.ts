@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     const dataResult = await clickhouse.query({
       query: `
         SELECT
-          formatDateTime(timestamp, '%Y-%m-%d %H:%i:%s') as timestamp,
+          formatDateTime(timestamp, '%Y-%m-%d %H:%i:%s') as timestamp_str,
           server_id,
           event_type,
           winner_steam_id,

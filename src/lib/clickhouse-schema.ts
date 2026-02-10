@@ -43,6 +43,38 @@ SETTINGS index_granularity = 8192
 `
 
 /**
+ * Event Completions Table
+ * Stores KOTH/Maze event completion data with winners and participants
+ */
+const EVENT_COMPLETIONS_SCHEMA = `
+CREATE TABLE IF NOT EXISTS event_completions (
+    server_id String,
+    event_type Enum8('koth' = 1, 'maze' = 2),
+    winner_steam_id UInt64,
+    winner_name String,
+    winner_clan_tag Nullable(String),
+    winner_kills UInt16,
+    is_clan_mode UInt8,
+    event_modes Array(String),
+    location Nullable(String),
+    duration_seconds UInt32,
+    participants Array(Tuple(
+        steam_id UInt64,
+        name String,
+        kills UInt16,
+        deaths UInt16,
+        position UInt16
+    )),
+    timestamp DateTime64(3) DEFAULT now64(3)
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (server_id, timestamp)
+TTL timestamp + INTERVAL 365 DAY
+SETTINGS index_granularity = 8192
+`
+
+/**
  * Kit Usage Events Table (Future)
  * Uncomment when ready to migrate kit analytics to ClickHouse
  */
@@ -76,6 +108,7 @@ const KIT_USAGE_EVENTS_SCHEMA = `
  */
 const SCHEMAS = [
   { name: 'server_population_stats', schema: SERVER_POPULATION_STATS_SCHEMA },
+  { name: 'event_completions', schema: EVENT_COMPLETIONS_SCHEMA },
   // Add more tables here as needed
   // { name: 'kit_usage_events', schema: KIT_USAGE_EVENTS_SCHEMA },
 ]
@@ -98,6 +131,20 @@ const COLUMN_DEFINITIONS: Record<string, Array<{ name: string; type: string }>> 
     { name: 'next_wipe', type: 'Nullable(DateTime)' },
     { name: 'days_since_wipe', type: 'Nullable(UInt16)' },
     { name: 'timestamp', type: 'DateTime' },
+  ],
+  event_completions: [
+    { name: 'server_id', type: 'String' },
+    { name: 'event_type', type: "Enum8('koth' = 1, 'maze' = 2)" },
+    { name: 'winner_steam_id', type: 'UInt64' },
+    { name: 'winner_name', type: 'String' },
+    { name: 'winner_clan_tag', type: 'Nullable(String)' },
+    { name: 'winner_kills', type: 'UInt16' },
+    { name: 'is_clan_mode', type: 'UInt8' },
+    { name: 'event_modes', type: 'Array(String)' },
+    { name: 'location', type: 'Nullable(String)' },
+    { name: 'duration_seconds', type: 'UInt32' },
+    { name: 'participants', type: 'Array(Tuple(steam_id UInt64, name String, kills UInt16, deaths UInt16, position UInt16))' },
+    { name: 'timestamp', type: 'DateTime64(3)' },
   ],
 }
 
