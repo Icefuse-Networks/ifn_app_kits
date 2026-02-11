@@ -180,15 +180,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build row for ClickHouse - participants as array of tuples
+    // Build row for ClickHouse - participants as array of objects matching tuple fields
     // Note: Pass steam_ids as strings, ClickHouse will convert to UInt64
-    const participantsTuples = data.participants.map(p => [
-      p.steam_id,
-      p.name,
-      p.kills,
-      p.deaths,
-      p.position,
-    ]);
+    const participantsData = data.participants.map(p => ({
+      steam_id: p.steam_id,
+      name: p.name,
+      kills: p.kills,
+      deaths: p.deaths,
+      position: p.position,
+    }));
 
     const row = {
       server_id: data.server_id,
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
       event_modes: data.event_modes,
       location: data.location ?? null,
       duration_seconds: data.duration_seconds,
-      participants: participantsTuples,
+      participants: participantsData,
     };
 
     await clickhouse.insert({
