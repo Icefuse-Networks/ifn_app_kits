@@ -1,28 +1,20 @@
 #!/usr/bin/env python3
 """
 Icefuse Kit Manager - Development Server Launcher
-Connects directly to Dokploy PostgreSQL database for local development
 
-================================================================================
-IMPORTANT NOTES:
-================================================================================
+Launches kits and auth server in development mode.
+All configuration is sourced from .env.local (database, auth, API keys).
 
-1. DATABASE CONNECTION (Dokploy Direct):
-   - Connects directly to PostgreSQL on Dokploy server (104.129.132.73)
-   - Database port exposed externally on port 5433
-   - No SSH tunnel needed - database allows external connections
+MULTI-SITE ARCHITECTURE:
+  - Kit Manager (localhost:3020) - Main kits frontend
+  - Auth Server (localhost:3012) - Auth service
 
-2. MULTI-SITE ARCHITECTURE:
-   - Kit Manager (localhost:3020) - Main kits frontend
-   - Auth Server (localhost:3012) - Auth service
-
-3. KEYBOARD COMMANDS:
-   - [R] Full reboot with Prisma sync
-   - [F] Fast reboot (skip Prisma)
-   - [P] Open Prisma Studio
-   - [Q] Quit
-
-================================================================================
+KEYBOARD COMMANDS:
+  - [R] Full reboot with Prisma sync
+  - [F] Fast reboot (skip Prisma)
+  - [P] Open Prisma Studio
+  - [D] Check database connection
+  - [Q] Quit
 """
 
 import subprocess
@@ -51,7 +43,6 @@ SITES = {
         'dir': os.path.dirname(os.path.abspath(__file__)),
         'color': '\033[96m',  # Cyan
         'enabled': True,
-        'uses_dokploy_db': True  # Uses Dokploy database via SSH tunnel
     },
     'auth': {
         'name': 'Auth Server v2',
@@ -59,7 +50,6 @@ SITES = {
         'dir': r'C:\Users\Corvezeo\Desktop\Github\ifn_app_auth_v2',
         'color': '\033[95m',  # Magenta
         'enabled': True,
-        'uses_dokploy_db': False  # Uses its own database config
     }
 }
 
@@ -288,35 +278,48 @@ def check_dependencies(site_dir, site_name):
     log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Dependencies installed for {site_name}")
     return True
 
-# Dokploy Database Configuration
-DOKPLOY_DB = {
-    'host': '104.129.132.73',
-    'port': 5434,
-    'database': 'ifn_kits',
-    'user': 'kits_user',
-    'password': '37bf60ec9b098bbf74274d586c0945cbc9df3745105aa0e39486e1db98722d3b',
-}
-
-# Build DATABASE_URL for Kit Manager (do NOT set globally - let each site use its own)
-KITS_DATABASE_URL = f"postgresql://{DOKPLOY_DB['user']}:{DOKPLOY_DB['password']}@{DOKPLOY_DB['host']}:{DOKPLOY_DB['port']}/{DOKPLOY_DB['database']}"
+def parse_database_url(site_dir):
+    """Parse DATABASE_URL from the site's .env.local file"""
+    env_file = os.path.join(site_dir, '.env.local')
+    if not os.path.exists(env_file):
+        return None
+    try:
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('DATABASE_URL='):
+                    url = line.split('=', 1)[1].strip('"').strip("'")
+                    return url
+    except Exception:
+        pass
+    return None
 
 def check_database_connection():
-    """Check if we can connect to the Dokploy database"""
+    """Check if we can connect to the database defined in .env.local"""
+    db_url = parse_database_url(PROJECT_DIR)
+    if not db_url:
+        log("No DATABASE_URL found in .env.local", "WARN")
+        return False
     try:
+        # Parse host:port from postgresql://user:pass@host:port/db
+        at_part = db_url.split('@')[1] if '@' in db_url else ''
+        host_port = at_part.split('/')[0] if '/' in at_part else at_part
+        host = host_port.split(':')[0]
+        port = int(host_port.split(':')[1]) if ':' in host_port else 5432
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5)
-        result = sock.connect_ex((DOKPLOY_DB['host'], DOKPLOY_DB['port']))
+        result = sock.connect_ex((host, port))
         sock.close()
         return result == 0
     except Exception as e:
         log(f"Database connection check failed: {e}", "WARN")
         return False
 
-def get_site_env(uses_dokploy_db=False):
-    """Get environment variables for a site, optionally including Dokploy DB URL"""
+def get_site_env():
+    """Get environment variables for a site with dev performance optimizations"""
     env = os.environ.copy()
-    if uses_dokploy_db:
-        env['DATABASE_URL'] = KITS_DATABASE_URL
+    env['NODE_ENV'] = 'development'
 
     # Performance optimizations for Next.js development
     env['NEXT_TELEMETRY_DISABLED'] = '1'  # Disable telemetry overhead
@@ -325,57 +328,35 @@ def get_site_env(uses_dokploy_db=False):
 
     return env
 
-def run_prisma_generate(site_dir, site_name, uses_dokploy_db=False):
+def run_prisma_generate(site_dir, site_name):
     """Generate Prisma client if prisma schema exists"""
     prisma_schema = os.path.join(site_dir, "prisma", "schema.prisma")
     if not os.path.exists(prisma_schema):
         log_print(f"  {Colors.GREEN}[SKIP]{Colors.RESET} No Prisma schema for {site_name}")
         return True
 
-    env = get_site_env(uses_dokploy_db)
+    env = get_site_env()
     if not run_command([NPX_CMD, 'prisma', 'generate'], cwd=site_dir, env=env):
         log_print(f"  {Colors.RED}[ERROR]{Colors.RESET} Failed to generate Prisma client")
         return False
     log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Prisma client generated for {site_name}")
     return True
 
-def run_prisma_migrate(site_dir, site_name, uses_dokploy_db=False):
-    """Run prisma migrate dev to sync schema"""
+def run_prisma_db_push(site_dir, site_name):
+    """Run prisma db push to sync schema (safe - no data loss)"""
     prisma_schema = os.path.join(site_dir, "prisma", "schema.prisma")
     if not os.path.exists(prisma_schema):
         return True
 
-    log_print(f"  {Colors.CYAN}[INFO]{Colors.RESET} Running prisma migrate dev...")
+    log_print(f"  {Colors.CYAN}[INFO]{Colors.RESET} Running prisma db push...")
 
-    env = get_site_env(uses_dokploy_db)
+    env = get_site_env()
 
-    # Run migrate dev with --skip-seed to avoid seed script issues
-    result = subprocess.run(
-        [NPX_CMD, 'prisma', 'migrate', 'dev', '--skip-seed'],
-        cwd=site_dir,
-        shell=True,
-        capture_output=True,
-        text=True,
-        encoding='utf-8',
-        errors='replace',
-        timeout=120,
-        env=env
-    )
-
-    if result.stdout:
-        log_output(result.stdout, "  ")
-    if result.stderr:
-        log_output(result.stderr, "  ")
-
-    if result.returncode == 0:
+    if run_command([NPX_CMD, 'prisma', 'db', 'push'], cwd=site_dir, env=env):
         log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database schema synced for {site_name}")
         return True
     else:
-        # Try db push as fallback
-        log_print(f"  {Colors.YELLOW}[WARN]{Colors.RESET} Migrate failed, trying db push...")
-        if run_command([NPX_CMD, 'prisma', 'db', 'push', '--accept-data-loss'], cwd=site_dir, env=env):
-            log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database schema synced via db push")
-            return True
+        log_print(f"  {Colors.YELLOW}[WARN]{Colors.RESET} Schema sync failed - run manually if needed")
         return False
 
 def wait_for_server_ready(port, timeout=60):
@@ -466,7 +447,7 @@ def print_system_info(node_ver, npm_ver):
   Node:       {node_ver}
   NPM:        {npm_ver}
   Sites:      {', '.join(enabled_sites)}
-  Database:   Dokploy PostgreSQL ({DOKPLOY_DB['host']}:{DOKPLOY_DB['port']})
+  Database:   From .env.local (DATABASE_URL)
 {Colors.CYAN}============================================{Colors.RESET}
 """)
 
@@ -507,9 +488,9 @@ def keyboard_listener():
                 elif key == 'd':
                     log_print(f"\n{Colors.BLUE}  Checking database connection...{Colors.RESET}\n")
                     if check_database_connection():
-                        log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database is reachable at {DOKPLOY_DB['host']}:{DOKPLOY_DB['port']}")
+                        log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database is reachable")
                     else:
-                        log_print(f"  {Colors.RED}[ERROR]{Colors.RESET} Cannot reach database at {DOKPLOY_DB['host']}:{DOKPLOY_DB['port']}")
+                        log_print(f"  {Colors.RED}[ERROR]{Colors.RESET} Cannot reach database")
                     continue
                 elif key == 'q':
                     quit_requested = True
@@ -562,17 +543,8 @@ def run_site_server(site_key, site_config):
 
     log(f"Starting {site_name} on port {port}...")
 
-    env = os.environ.copy()
+    env = get_site_env()
     env['PORT'] = str(port)
-
-    # Performance optimizations for Next.js development
-    env['NEXT_TELEMETRY_DISABLED'] = '1'  # Disable telemetry overhead
-    env['NODE_OPTIONS'] = '--max-old-space-size=4096'  # More memory for faster compilation
-    env['NEXT_PRIVATE_LOCAL_WEBPACK_DEV'] = '1'  # Use local webpack for faster rebuilds
-
-    # Only set DATABASE_URL for sites that use Dokploy database
-    if site_config.get('uses_dokploy_db', False):
-        env['DATABASE_URL'] = KITS_DATABASE_URL
 
     try:
         process = subprocess.Popen(
@@ -678,7 +650,6 @@ def setup_site(site_key, site_config, step_offset, skip_checks=False):
     site_name = site_config['name']
     site_dir = site_config['dir']
     color = site_config['color']
-    uses_dokploy_db = site_config.get('uses_dokploy_db', False)
 
     if not os.path.exists(site_dir):
         log_print(f"  {Colors.RED}[ERROR]{Colors.RESET} {site_name} directory not found: {site_dir}")
@@ -704,18 +675,14 @@ def setup_site(site_key, site_config, step_offset, skip_checks=False):
 
     # Generate Prisma client
     log_print(f"  [{step_offset + 2}/X] Generating Prisma client for {site_name}...")
-    if not run_prisma_generate(site_dir, site_name, uses_dokploy_db):
+    if not run_prisma_generate(site_dir, site_name):
         return False
 
-    # Sync database schema
+    # Sync database schema (safe push, no data loss)
     prisma_schema = os.path.join(site_dir, "prisma", "schema.prisma")
     if os.path.exists(prisma_schema):
         log_print(f"  [{step_offset + 3}/X] Syncing database schema for {site_name}...")
-        if not run_prisma_migrate(site_dir, site_name, uses_dokploy_db):
-            # Fall back to db push if migrate fails
-            log_print(f"  {Colors.YELLOW}[WARN]{Colors.RESET} Migrate failed, trying db push...")
-            env = get_site_env(uses_dokploy_db)
-            run_command([NPX_CMD, 'prisma', 'db', 'push', '--accept-data-loss'], cwd=site_dir, env=env)
+        run_prisma_db_push(site_dir, site_name)
 
     return True
 
@@ -751,9 +718,9 @@ def startup_sequence(skip_node_check=False):
     if not quick_mode:
         log_print(f"\n  [2] Checking database connection...")
         if check_database_connection():
-            log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database is reachable at {DOKPLOY_DB['host']}:{DOKPLOY_DB['port']}")
+            log_print(f"  {Colors.GREEN}[OK]{Colors.RESET} Database is reachable")
         else:
-            log_print(f"  {Colors.YELLOW}[WARN]{Colors.RESET} Cannot reach database at {DOKPLOY_DB['host']}:{DOKPLOY_DB['port']}")
+            log_print(f"  {Colors.YELLOW}[WARN]{Colors.RESET} Cannot reach database (check DATABASE_URL in .env.local)")
 
     # Setup each enabled site
     step = 3

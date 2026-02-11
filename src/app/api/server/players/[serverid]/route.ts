@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authenticateWithScope } from "@/services/api-auth";
 
 interface BattlemetricsIdentifier {
   type: string;
@@ -22,12 +23,19 @@ interface BattlemetricsResponse {
   included?: BattlemetricsIdentifier[];
 }
 
-const BATTLEMETRICS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImVlNGIyM2M4ODhlNjM1YjciLCJpYXQiOjE2OTI4NDY2MjQsIm5iZiI6MTY5Mjg0NjYyNCwiaXNzIjoiaHR0cHM6Ly93d3cuYmF0dGxlbWV0cmljcy5jb20iLCJzdWIiOiJ1cm46dXNlcjo0OTAyNTYifQ.lGhEImJVL5OD10mEu70hokDWBipjQk3iktzmm_afQw4";
+// SECURITY: Token from env vars only (no hardcoded values)
+const BATTLEMETRICS_TOKEN = process.env.SERVERS_API_KEY || '';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ serverid: string }> }
 ): Promise<NextResponse> {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, 'servers:read');
+  if (!authResult.success) {
+    return NextResponse.json({ success: false, error: authResult.error }, { status: authResult.status });
+  }
+
   try {
     const resolvedParams = await params;
     const serverId = resolvedParams?.serverid;
@@ -46,7 +54,7 @@ export async function GET(
       headers: {
         Authorization: `Bearer ${BATTLEMETRICS_TOKEN}`,
         Accept: "application/json",
-        "User-Agent": "IceFuse-Admin-Panel/1.0.0",
+        "User-Agent": "Icefuse-Admin-Panel/1.0.0",
       },
       cache: "no-store",
     });
