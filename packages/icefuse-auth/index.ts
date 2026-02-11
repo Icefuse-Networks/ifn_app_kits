@@ -276,7 +276,7 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
         try {
           const parsed = new URL(url)
           const hostname = parsed.hostname.toLowerCase()
-          const allowedDomains = ['icefuse.com', 'icefuse.net', 'ifn.gg']
+          const allowedDomains = ['icefuse.com', 'ifn.gg']
 
           for (const domain of allowedDomains) {
             if (hostname === domain || hostname.endsWith(`.${domain}`)) {

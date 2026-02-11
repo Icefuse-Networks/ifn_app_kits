@@ -32,7 +32,7 @@ export interface IcefuseAuthConfig {
 
   /**
    * Enable silent authentication for cross-domain SSO.
-   * Use this for apps on icefuse.net or ifn.gg domains.
+   * Use this for apps on icefuse.com or ifn.gg domains.
    * Default: false
    */
   enableSilentAuth?: boolean

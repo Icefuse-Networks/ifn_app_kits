@@ -49,7 +49,7 @@ const PUBLIC_EXACT_PATHS = [
 ]
 
 // Production domain patterns for hostname detection
-const PRODUCTION_DOMAINS = ['icefuse.com', 'icefuse.net', 'ifn.gg']
+const PRODUCTION_DOMAINS = ['icefuse.com', 'ifn.gg']
 
 // App name for cookie naming (must match @icefuse/auth config)
 const APP_NAME = process.env.ICEFUSE_APP_NAME!

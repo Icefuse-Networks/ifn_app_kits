@@ -234,7 +234,7 @@ export function buildCookieConfig(appName: string) {
 /**
  * Allowed base domains for redirects
  */
-const ALLOWED_BASE_DOMAINS = ['icefuse.com', 'icefuse.net', 'ifn.gg']
+const ALLOWED_BASE_DOMAINS = ['icefuse.com', 'ifn.gg']
 
 /**
  * Check if a hostname is allowed for OAuth redirects

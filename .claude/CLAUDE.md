@@ -72,7 +72,7 @@ src/
 
 ## Deployment
 
-Deployed via Dokploy at `kits.icefuse.net`
+Deployed via Dokploy at `kits.icefuse.com`
 
 ## Related Services
 

@@ -13,7 +13,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 export const domainConfig = {
   baseDomain: 'icefuse.com',
   cdnDomain: 'cdn.icefuse.com',
-  websiteDomain: 'icefuse.net',
+  websiteDomain: 'icefuse.com',
   shortDomain: 'ifn.gg',
 
   get cookieDomain(): string {

@@ -12,9 +12,9 @@ export const accountRoutes = {
 
 // Legal/policy routes (external links to main site)
 export const legalRoutes = {
-  terms: 'https://icefuse.net/terms',
-  privacy: 'https://icefuse.net/privacy',
-  refunds: 'https://icefuse.net/refunds',
+  terms: 'https://icefuse.com/terms',
+  privacy: 'https://icefuse.com/privacy',
+  refunds: 'https://icefuse.com/refunds',
 }
 
 // Kit Manager routes

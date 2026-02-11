@@ -171,7 +171,7 @@ export default function GiveawayPage() {
   const fetchPlayerAvatars = async (playersData: GiveawayPlayer[]) => {
     try {
       const steamIds = playersData.map(p => p.playerSteamId64).join(',');
-      const response = await fetch(`https://icefuse.net/api/steam/avatars?steamids=${steamIds}`);
+      const response = await fetch(`https://icefuse.com/api/steam/avatars?steamids=${steamIds}`);
       if (response.ok) {
         const avatars = await response.json();
         setPlayerAvatars(avatars);

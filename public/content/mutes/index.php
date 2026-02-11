@@ -41,7 +41,7 @@ else
 		<meta name="author" content="Icefuse CEO">
 		<link rel="icon" href="favicon.ico" type="image/x-icon"/>
 	    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-		<link href="https://icefuse.net/assets/css/bootstrap.min.css" rel="stylesheet">
+		<link href="https://icefuse.com/assets/css/bootstrap.min.css" rel="stylesheet">
 	</head>
 	<style>
 	@font-face {
