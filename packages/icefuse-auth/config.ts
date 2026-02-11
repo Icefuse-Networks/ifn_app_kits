@@ -87,6 +87,33 @@ export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production'
 }
 
+/**
+ * Check if debug logging is enabled for the @icefuse/auth package.
+ * Set ICEFUSE_AUTH_DEBUG=true to enable verbose logging.
+ */
+export function isDebugEnabled(): boolean {
+  return process.env.ICEFUSE_AUTH_DEBUG === 'true'
+}
+
+/**
+ * Log a debug message if ICEFUSE_AUTH_DEBUG is enabled.
+ * All @icefuse/auth log calls should go through this.
+ */
+export function debugLog(prefix: string, ...args: unknown[]): void {
+  if (isDebugEnabled()) {
+    console.log(`[Icefuse Auth:${prefix}]`, ...args)
+  }
+}
+
+/**
+ * Log a debug warning if ICEFUSE_AUTH_DEBUG is enabled.
+ */
+export function debugWarn(prefix: string, ...args: unknown[]): void {
+  if (isDebugEnabled()) {
+    console.warn(`[Icefuse Auth:${prefix}]`, ...args)
+  }
+}
+
 // ============================================================
 // COOKIE CONFIGURATION
 // ============================================================

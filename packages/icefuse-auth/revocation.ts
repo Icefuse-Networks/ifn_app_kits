@@ -10,6 +10,8 @@
  * See Phase 4 in the implementation roadmap.
  */
 
+import { debugLog } from './config'
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -57,7 +59,7 @@ export function revokeUserSession(userId: string): void {
     revokedAt: now,
     expiresAt: now + REVOCATION_TTL_MS,
   })
-  // console.log(`[Icefuse Auth:Revocation] Added user to revocation cache: ${userId}`)
+  debugLog('Revocation', `Added user to revocation cache: ${userId}`)
 }
 
 /**
@@ -71,7 +73,7 @@ export function revokeUserSession(userId: string): void {
  * @example
  * ```ts
  * // In JWT callback
- * if (isSessionRevoked(token.sub, token.iat * 1000)) {
+ * if (isSessionRevoked(token.sub, token.sessionCreatedAt)) {
  *   return { ...token, error: 'SessionRevoked' }
  * }
  * ```
@@ -103,7 +105,7 @@ export function isSessionRevoked(userId: string, sessionCreatedAt?: number): boo
  */
 export function clearRevocation(userId: string): void {
   if (revokedSessions.delete(userId)) {
-    // console.log(`[Icefuse Auth:Revocation] Cleared revocation for user: ${userId}`)
+    debugLog('Revocation', `Cleared revocation for user: ${userId}`)
   }
 }
 
@@ -148,7 +150,7 @@ export function cleanupExpiredRevocations(): number {
   }
 
   if (cleaned > 0) {
-    // console.log(`[Icefuse Auth:Revocation] Cleaned up ${cleaned} expired revocations`)
+    debugLog('Revocation', `Cleaned up ${cleaned} expired revocations`)
   }
 
   return cleaned

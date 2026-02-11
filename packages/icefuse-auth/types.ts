@@ -147,7 +147,7 @@ export interface IcefuseJWT {
   accessToken: string
   refreshToken?: string
   accessTokenExpires: number
-  sessionCreatedAt?: number // Timestamp when session was created, for revocation comparison
+  sessionCreatedAt?: number // Timestamp when session was created, for revocation race condition protection
   user: IcefuseUser
   error?: IcefuseSessionError
   // Standard JWT fields
@@ -307,6 +307,7 @@ declare module 'next-auth/jwt' {
     accessToken: string
     refreshToken?: string
     accessTokenExpires: number
+    sessionCreatedAt?: number
     user: IcefuseUser
     error?: IcefuseSessionError
   }

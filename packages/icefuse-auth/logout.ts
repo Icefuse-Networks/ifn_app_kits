@@ -34,6 +34,8 @@ import {
   getCookieNames,
   isProduction,
   validateRedirectUrl,
+  debugLog,
+  debugWarn,
 } from './config'
 import { revokeUserSession, isSessionRevoked } from './revocation'
 
@@ -156,7 +158,7 @@ async function notifyAuthServerLogout(
     const syncSecret = getUserSyncSecret()
 
     if (debug) {
-      // console.log(`[Icefuse Auth:Logout] Notifying auth server at: ${authUrl}/api/auth/logout`)
+      debugLog('Logout', `Notifying auth server at: ${authUrl}/api/auth/logout`)
     }
 
     const response = await fetch(`${authUrl}/api/auth/logout`, {
@@ -175,14 +177,14 @@ async function notifyAuthServerLogout(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown')
-      // console.warn(`[Icefuse Auth:Logout] Auth server notification failed: ${response.status}`, { errorText })
+      debugWarn('Logout', `Auth server notification failed: ${response.status}`, { errorText })
     } else if (debug) {
       const result = await response.json().catch(() => ({}))
-      // console.log(`[Icefuse Auth:Logout] Auth server notified of logout for ${userId}`, result)
+      debugLog('Logout', `Auth server notified of logout for ${userId}`, result)
     }
   } catch (error) {
     // Don't block logout if auth server is unavailable
-    // console.warn(`[Icefuse Auth:Logout] Failed to notify auth server:`, error)
+    debugWarn('Logout', 'Failed to notify auth server:', error)
   }
 }
 
@@ -236,7 +238,7 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
    */
   async function GET(request: NextRequest): Promise<NextResponse> {
     if (debug) {
-      // console.log('[Icefuse Auth:Logout:GET] === LOGOUT ROUTE HIT ===')
+      debugLog('Logout', 'GET === LOGOUT ROUTE HIT ===')
     }
 
     const searchParams = request.nextUrl.searchParams
@@ -250,14 +252,9 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
       ? `${forwardedProto}://${forwardedHost}`
       : request.nextUrl.origin
 
-    // if (debug) {
-    //   console.log(`[Icefuse Auth:Logout:GET] Processing logout`, {
-    //     redirect: redirectOption,
-    //     returnUrl: returnUrl || 'none',
-    //     isProduction: isProduction(),
-    //     appBaseUrl,
-    //   })
-    // }
+    if (debug) {
+      debugLog('Logout', 'Processing logout', { redirect: redirectOption, returnUrl: returnUrl || 'none', isProduction: isProduction(), appBaseUrl })
+    }
 
     // Get the session token to extract user ID
     const cookieStore = await cookies()
@@ -272,9 +269,9 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
         if (decoded?.sub) {
           const userId = decoded.sub as string
 
-          // if (debug) {
-          //   console.log(`[Icefuse Auth:Logout] Logging out user: ${userId}`)
-          // }
+          if (debug) {
+            debugLog('Logout', `Logging out user: ${userId}`)
+          }
 
           // Run onLogout callback
           if (onLogout) {
@@ -285,7 +282,7 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
           await notifyAuthServerLogout(userId, source, debug)
         }
       } catch (error) {
-        // console.warn('[Icefuse Auth:Logout] Failed to decode session token:', error)
+        debugWarn('Logout', 'Failed to decode session token:', error)
       }
     }
 
@@ -318,9 +315,9 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
         }
     }
 
-    // if (debug) {
-    //   console.log(`[Icefuse Auth:Logout] Redirecting to: ${redirectUrl}`)
-    // }
+    if (debug) {
+      debugLog('Logout', `Redirecting to: ${redirectUrl}`)
+    }
 
     // Create the redirect response
     const response = NextResponse.redirect(redirectUrl)
@@ -360,11 +357,9 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
       clearCookieWithHeaders(response, name, cookieDomain, canHaveDomain)
     }
 
-    // if (debug) {
-    //   console.log(`[Icefuse Auth:Logout:GET] Cleared ${cookiesToClear.length} cookies`, {
-    //     domain: cookieDomain || 'none (localhost)',
-    //   })
-    // }
+    if (debug) {
+      debugLog('Logout', `Cleared ${cookiesToClear.length} cookies`, { domain: cookieDomain || 'none (localhost)' })
+    }
 
     return response
   }
@@ -377,7 +372,7 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
     try {
       // SECURITY: Validate sync secret from Auth Server
       if (!validateSyncSecret(request)) {
-        // console.warn('[Icefuse Auth:Logout:POST] Invalid or missing sync secret')
+        debugWarn('Logout', 'Invalid or missing sync secret')
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
@@ -389,12 +384,7 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
         return NextResponse.json({ error: 'Missing or invalid userId' }, { status: 400 })
       }
 
-      // console.log(`[Icefuse Auth:Logout:POST] Received cross-app logout broadcast`, {
-      //   userId,
-      //   source: logoutSource || 'unknown',
-      //   reason: reason || 'cross-app-logout',
-      //   timestamp: timestamp || Date.now(),
-      // })
+      debugLog('Logout', 'Received cross-app logout broadcast', { userId, source: logoutSource || 'unknown', reason: reason || 'cross-app-logout' })
 
       // Add user to revocation cache for immediate session invalidation
       revokeUserSession(userId)
@@ -404,7 +394,7 @@ export function createLogoutHandlers(config: LogoutHandlerConfig): LogoutHandler
         await Promise.resolve(onBroadcast(userId))
       }
 
-      // console.log(`[Icefuse Auth:Logout:POST] Session revoked and cached for user: ${userId}`)
+      debugLog('Logout', `Session revoked and cached for user: ${userId}`)
 
       return NextResponse.json({
         success: true,

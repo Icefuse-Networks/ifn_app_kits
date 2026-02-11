@@ -47,8 +47,8 @@ import type {
   IcefuseUser,
   IcefuseJWT,
 } from './types'
-import { buildCookieConfig } from './config'
-import { isSessionRevoked } from './revocation'
+import { buildCookieConfig, debugLog } from './config'
+import { isSessionRevoked, clearRevocation } from './revocation'
 
 // ============================================================
 // CONSTANTS
@@ -103,6 +103,13 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
     onError,
   } = config
 
+  debugLog('Init', `Creating auth config for app: ${appName}`, {
+    clientId,
+    issuer,
+    scopes: scopes.join(', '),
+    debug,
+  })
+
   // Build cookie configuration for this app
   const cookieConfig = buildCookieConfig(appName)
 
@@ -124,7 +131,18 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
         },
         idToken: true,
         checks: ['pkce', 'state'],
+        httpOptions: {
+          timeout: 30000,
+        },
         profile(profile) {
+          debugLog('Profile', `OIDC profile received for: ${profile.sub}`, {
+            name: profile.name,
+            email: profile.email,
+            steamId: profile.steam_id,
+            isAdmin: profile.is_admin,
+            isRoot: profile.is_root,
+          })
+
           return {
             id: profile.sub,
             name: profile.name,
@@ -149,6 +167,18 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
         if (account && user) {
           const icefuseUser = user as IcefuseUser
 
+          debugLog('JWT', `Initial sign-in for user: ${icefuseUser.id}`, {
+            name: icefuseUser.name,
+            isAdmin: icefuseUser.isAdmin,
+            isRoot: icefuseUser.isRoot,
+            hasAccessToken: !!account.access_token,
+            hasRefreshToken: !!account.refresh_token,
+            expiresAt: account.expires_at,
+          })
+
+          // Clear any existing revocation for this user (they just logged in)
+          clearRevocation(icefuseUser.id)
+
           // Call onLogin callback
           if (onLogin) {
             try {
@@ -163,14 +193,15 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
             accessToken: account.access_token!,
             refreshToken: account.refresh_token,
             accessTokenExpires: account.expires_at! * 1000,
+            sessionCreatedAt: Date.now(),
             user: icefuseUser,
           } as JWT
         }
 
         // Check if session has been revoked (cross-app logout)
         const icefuseToken = token as unknown as IcefuseJWT
-        if (icefuseToken.user?.id && isSessionRevoked(icefuseToken.user.id)) {
-          // console.log(`[Icefuse Auth] Session revoked for user: ${icefuseToken.user.id}`)
+        if (icefuseToken.user?.id && isSessionRevoked(icefuseToken.user.id, icefuseToken.sessionCreatedAt)) {
+          debugLog('JWT', `Session revoked for user: ${icefuseToken.user.id}`)
 
           // Call onLogout callback
           if (onLogout) {
@@ -193,6 +224,7 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
         }
 
         // Access token has expired, try to refresh it
+        debugLog('JWT', `Token expired for user: ${icefuseToken.user?.id}, attempting refresh`)
         const refreshedToken = await refreshAccessToken(
           icefuseToken,
           issuer,
@@ -200,11 +232,23 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
           clientSecret,
           onError
         )
+
+        if (refreshedToken.error) {
+          debugLog('JWT', `Token refresh failed: ${refreshedToken.error}`)
+        } else {
+          debugLog('JWT', `Token refreshed for user: ${refreshedToken.user?.id}`)
+        }
+
         return refreshedToken as JWT
       },
 
       async session({ session, token }) {
         const jwtToken = token as unknown as IcefuseJWT
+
+        debugLog('Session', `Building session for user: ${jwtToken.user?.id}`, {
+          hasUser: !!jwtToken.user,
+          error: jwtToken.error || 'none',
+        })
 
         return {
           ...session,
@@ -216,6 +260,8 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
       },
 
       async redirect({ url, baseUrl }) {
+        debugLog('Redirect', `url=${url}, baseUrl=${baseUrl}`)
+
         // Allow relative URLs
         if (url.startsWith('/')) {
           return `${baseUrl}${url}`
@@ -245,7 +291,7 @@ export function createIcefuseAuth(config: IcefuseAuthConfig): IcefuseAuthResult 
       },
     },
     pages: {
-      signIn: `${issuer}/signin`,
+      signIn: '/auth/signin',
       error: '/auth/error',
     },
     session: {
@@ -385,6 +431,9 @@ export {
   isProduction,
   isAllowedHost,
   validateRedirectUrl,
+  isDebugEnabled,
+  debugLog,
+  debugWarn,
 } from './config'
 
 // Revocation
