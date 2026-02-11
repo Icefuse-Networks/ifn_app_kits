@@ -25,7 +25,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createPortal } from 'react-dom'
@@ -36,9 +36,13 @@ import {
   LogOut,
   HelpCircle,
   LayoutDashboard,
+  Package,
+  HardDrive,
+  Shield,
+  Gift,
+  BarChart2,
 } from 'lucide-react'
 import { accountRoutes } from '@/config/routes'
-import { getClientAuthUrl } from '@/config'
 
 // ============================================================================
 // Types
@@ -177,6 +181,10 @@ export function UserProfileCard({
     }
   }, [isOpen])
 
+  // Check admin status from session
+  const userAny = user as Record<string, unknown> | undefined
+  const isUserAdmin = Boolean(userAny?.isAdmin || userAny?.isRoot)
+
   // Build menu items
   const buildMenuItems = (): UserProfileMenuItem[] => {
     if (menuItems) {
@@ -189,8 +197,46 @@ export function UserProfileCard({
         label: 'Dashboard',
         icon: <LayoutDashboard className="w-4 h-4" />,
         href: accountRoutes.dashboard,
+        highlight: true,
       },
     ]
+
+    // Admin-only pages
+    if (isUserAdmin) {
+      items.push(
+        { id: 'divider-admin', label: '', divider: true },
+        {
+          id: 'kits',
+          label: 'Kits',
+          icon: <Package className="w-4 h-4" />,
+          href: '/dashboard/kits',
+        },
+        {
+          id: 'servers',
+          label: 'Servers',
+          icon: <HardDrive className="w-4 h-4" />,
+          href: '/dashboard/servers',
+        },
+        {
+          id: 'clans',
+          label: 'Clans',
+          icon: <Shield className="w-4 h-4" />,
+          href: '/dashboard/clans',
+        },
+        {
+          id: 'giveaways',
+          label: 'Giveaways',
+          icon: <Gift className="w-4 h-4" />,
+          href: '/dashboard/giveaways',
+        },
+        {
+          id: 'analytics',
+          label: 'Player Analytics',
+          icon: <BarChart2 className="w-4 h-4" />,
+          href: '/dashboard/player-analytics',
+        },
+      )
+    }
 
     // Add help link if enabled
     if (showHelpLink) {
@@ -258,12 +304,10 @@ export function UserProfileCard({
     )
   }
 
-  // Handle sign in - redirect to auth server with current page as callback
+  // Handle sign in - use NextAuth OIDC flow (not direct auth server redirect)
   const handleSignIn = () => {
-    const authUrl = getClientAuthUrl()
-    // Use current page as callback URL so user returns here after login
-    const callbackUrl = typeof window !== 'undefined' ? window.location.href : '/'
-    window.location.href = `${authUrl}/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    const callbackUrl = typeof window !== 'undefined' ? window.location.pathname : '/'
+    signIn('icefuse', { callbackUrl, redirect: true })
   }
 
   // Not logged in - show sign in button - h-12 to match consistent height

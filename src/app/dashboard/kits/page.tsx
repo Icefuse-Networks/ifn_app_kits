@@ -1526,7 +1526,7 @@ export default function KitsPage() {
         </p>
         {authError?.status === 401 ? (
           <Link
-            href="/api/auth/signin"
+            href="/api/auth/signin/icefuse"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-white transition-colors"
             style={{ background: 'var(--accent-primary)' }}
           >

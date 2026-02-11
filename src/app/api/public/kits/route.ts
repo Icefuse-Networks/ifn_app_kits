@@ -68,17 +68,26 @@ interface StoreKitData {
 }
 
 /**
- * Store kit entry with optional custom description
+ * Per-server kit variant
  */
-interface StoreKitEntry {
-  /** Custom store description (can be HTML) */
+interface ServerKitVariant {
   storeDescription: string
-  /** Full kit data */
   kit: StoreKitData
 }
 
 /**
- * Full API response - flat structure keyed by kit name
+ * Store kit entry with per-server variants
+ */
+interface StoreKitEntry {
+  /** Primary kit data (first config encountered, backwards compat) */
+  storeDescription: string
+  kit: StoreKitData
+  /** Per-config kit variants keyed by config name (e.g., "5X Servers") */
+  servers: Record<string, ServerKitVariant>
+}
+
+/**
+ * Full API response - keyed by kit name, includes per-server data
  */
 type StoreKitsResponse = Record<string, StoreKitEntry>
 
@@ -188,7 +197,7 @@ export async function GET(request: NextRequest) {
 
     const response: StoreKitsResponse = {}
 
-    // Process each config
+    // Process each config — collect per-server variants
     for (const config of configs) {
       const parsed = safeParseKitData(config.kitData)
       if (!parsed) continue
@@ -206,17 +215,25 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Process each kit
+      // Process each kit in this config
       for (const [kitKey, kit] of Object.entries(parsed._kits)) {
-        // Skip non-store kits if storeOnly is true
         if (storeOnly && !kit.IsStoreKit) continue
 
-        // Skip if kit already exists (first config wins)
-        if (response[kit.Name]) continue
-
-        response[kit.Name] = {
+        const variant: ServerKitVariant = {
           storeDescription: storeDescriptions[kitKey] || kit.Description || '',
           kit: transformKit(kit),
+        }
+
+        if (!response[kit.Name]) {
+          // First config for this kit — set as primary
+          response[kit.Name] = {
+            storeDescription: variant.storeDescription,
+            kit: variant.kit,
+            servers: { [config.name]: variant },
+          }
+        } else {
+          // Additional config — add to servers map
+          response[kit.Name].servers[config.name] = variant
         }
       }
     }
