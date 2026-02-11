@@ -8,8 +8,8 @@
  */
 
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth/provider'
-import { requireAdmin } from '@/services/admin-auth'
+import { auth } from '@/lib/icefuse-auth'
+import { requireAdmin } from '@icefuse/auth'
 import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
 import { SidebarProvider } from '@/contexts/SidebarContext'
@@ -29,7 +29,7 @@ export default async function DashboardLayout({
   }
 
   try {
-    await requireAdmin(session)
+    requireAdmin(session)
   } catch {
     redirect('/?error=AccessDenied')
   }

@@ -7,14 +7,14 @@
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/icefuse-auth'
-import { requireAdmin } from '@/services/admin-auth'
+import { requireAdmin } from '@icefuse/auth'
 
 export async function GET() {
   // SECURITY: Auth check at route start
   const session = await auth()
 
   try {
-    await requireAdmin(session)
+    requireAdmin(session)
     return NextResponse.json({ authorized: true })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

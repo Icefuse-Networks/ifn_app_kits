@@ -6,9 +6,9 @@
  */
 
 import { NextRequest } from 'next/server'
-import { auth } from '@/lib/auth/provider'
+import { auth } from '@/lib/icefuse-auth'
+import { isAdmin } from '@icefuse/auth'
 import { validateToken, hasScope } from '@/lib/api-token'
-import { isRootUser } from '@/services/admin-auth'
 import type { ApiScope, AuthContext } from '@/types/api'
 import { API_SCOPES } from '@/types/api'
 
@@ -93,10 +93,10 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
     }
   }
 
-  // Check if user is root user (admin)
-  const isRoot = await isRootUser(session.user.steamId, session.user.email)
+  // SECURITY: OIDC claims check (synchronous, no API call)
+  const userIsAdmin = isAdmin(session)
 
-  if (!isRoot) {
+  if (!userIsAdmin) {
     return {
       success: false,
       error: 'Admin access required',
@@ -254,6 +254,20 @@ export async function requireLootManagerWrite(request: NextRequest): Promise<Aut
 }
 
 /**
+ * Require authentication for announcements:read
+ */
+export async function requireAnnouncementsRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'announcements:read')
+}
+
+/**
+ * Require authentication for announcements:write
+ */
+export async function requireAnnouncementsWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'announcements:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */
@@ -268,9 +282,10 @@ export async function requireSession(_request: NextRequest): Promise<AuthResult>
     }
   }
 
-  const isRoot = await isRootUser(session.user.steamId, session.user.email)
+  // SECURITY: OIDC claims check (synchronous, no API call)
+  const userIsAdmin = isAdmin(session)
 
-  if (!isRoot) {
+  if (!userIsAdmin) {
     return {
       success: false,
       error: 'Admin access required',

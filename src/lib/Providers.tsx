@@ -1,22 +1,21 @@
-"use client";
+'use client'
 
-import { SessionProvider } from "next-auth/react";
-import { type ReactNode } from "react";
+import { IcefuseAuthProvider } from '@icefuse/auth/components'
+import { type ReactNode } from 'react'
 
 interface ProvidersProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 /**
  * Global Providers Component
  *
- * Wraps the app with necessary providers:
- * - SessionProvider: NextAuth session management
+ * Wraps the app with Icefuse auth session management.
  */
 export function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
+    <IcefuseAuthProvider>
       {children}
-    </SessionProvider>
-  );
+    </IcefuseAuthProvider>
+  )
 }
