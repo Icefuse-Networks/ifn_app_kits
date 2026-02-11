@@ -101,6 +101,10 @@ registerScope('lootmanager:write', 'Create and update loot configurations', 'loo
 registerScope('giveaways:read', 'Read giveaway players', 'giveaways')
 registerScope('giveaways:write', 'Create and delete giveaway players', 'giveaways')
 
+// Announcements plugin scopes
+registerScope('announcements:read', 'Read server announcements', 'announcements')
+registerScope('announcements:write', 'Create, update, and delete server announcements', 'announcements')
+
 // -----------------------------------------------------------------------------
 // Future Plugin Scopes (uncomment when adding plugins)
 // -----------------------------------------------------------------------------
@@ -329,6 +333,9 @@ registerResourceType('loot_mapping', 'Loot Mapping', 'lootmanager')
 registerResourceType('giveaway_player', 'Giveaway Player', 'giveaways')
 registerResourceType('giveaway', 'Giveaway', 'giveaways')
 registerResourceType('giveaway_server', 'Giveaway Server', 'giveaways')
+
+// Announcements plugin resources
+registerResourceType('announcement', 'Announcement', 'announcements')
 
 // -----------------------------------------------------------------------------
 // Future Plugin Resources (uncomment when adding plugins)

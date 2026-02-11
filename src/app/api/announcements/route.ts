@@ -1,6 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { translateText } from "@/lib/translator";
+import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+import { prisma } from "@/lib/db"
+import { translateText } from "@/lib/translator"
+import { authenticateWithScope } from "@/services/api-auth"
+import { auditCreate, auditUpdate, auditDelete } from "@/services/audit"
+import { logger } from "@/lib/logger"
+
+// =============================================================================
+// Types
+// =============================================================================
 
 interface ServerAssignment {
   id: number
@@ -21,6 +29,43 @@ interface AnnouncementRecord {
   serverAssignments?: ServerAssignment[]
 }
 
+// =============================================================================
+// Zod Schemas
+// =============================================================================
+
+// SECURITY: Zod validated
+const createSchema = z.object({
+  text: z.string().min(1).max(2000).trim(),
+  delay: z.number().int().min(0).max(3600).optional().default(0),
+  serverIds: z.array(z.string().min(1).max(100)).optional(),
+  isGlobal: z.boolean().optional().default(false),
+  showCardNotification: z.boolean().optional().default(false),
+  cardDisplayDuration: z.number().int().min(0).max(300).nullable().optional(),
+})
+
+const updateSchema = z.object({
+  id: z.number().int().positive(),
+  text: z.string().min(1).max(2000).trim().optional(),
+  delay: z.number().int().min(0).max(3600).optional(),
+  serverIds: z.array(z.string().min(1).max(100)).optional(),
+  isGlobal: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  showCardNotification: z.boolean().optional(),
+  cardDisplayDuration: z.number().int().min(0).max(300).nullable().optional(),
+})
+
+const deleteSchema = z.object({
+  id: z.coerce.number().int().positive(),
+})
+
+const getSchema = z.object({
+  serverId: z.string().min(1).max(100).optional(),
+})
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
 function serializeAnnouncement(a: AnnouncementRecord) {
   return {
     ...a,
@@ -32,15 +77,30 @@ function serializeAnnouncement(a: AnnouncementRecord) {
       id: Number(s.id),
       announcementId: Number(s.announcementId),
     })),
-  };
+  }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const serverId = searchParams.get("serverId");
+// =============================================================================
+// Route Handlers
+// =============================================================================
 
-    let announcements;
+export async function GET(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, "announcements:read")
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const params = getSchema.safeParse({ serverId: searchParams.get("serverId") || undefined })
+    if (!params.success) {
+      return NextResponse.json({ error: "Invalid query parameters", details: params.error.flatten() }, { status: 400 })
+    }
+
+    const { serverId } = params.data
+
+    let announcements
     if (serverId) {
       announcements = await prisma.announcement.findMany({
         where: {
@@ -49,40 +109,49 @@ export async function GET(request: NextRequest) {
         },
         include: { serverAssignments: true },
         orderBy: [{ isGlobal: "desc" }, { createdAt: "desc" }],
-      });
+      })
     } else {
       announcements = await prisma.announcement.findMany({
         where: { isActive: true },
         include: { serverAssignments: true },
         orderBy: [{ isGlobal: "desc" }, { createdAt: "desc" }],
-      });
+      })
     }
 
-    return NextResponse.json({ announcements: announcements.map(serializeAnnouncement) });
+    return NextResponse.json({ announcements: announcements.map(serializeAnnouncement) })
   } catch (error) {
-    console.error("Error fetching announcements:", error);
-    return NextResponse.json({ error: "Failed to fetch announcements" }, { status: 500 });
+    logger.admin.error("Error fetching announcements", error as Error)
+    return NextResponse.json({ error: "Failed to fetch announcements" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, "announcements:write")
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
   try {
-    const body = await request.json();
-    const { text, delay, serverIds, isGlobal, showCardNotification, cardDisplayDuration } = body;
+    const body = await request.json()
 
-    if (!text || typeof text !== "string" || text.trim().length === 0) {
-      return NextResponse.json({ error: "Text is required and must be a non-empty string" }, { status: 400 });
+    // SECURITY: Zod validated
+    const parsed = createSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
     }
 
-    if (!isGlobal && (!serverIds || !Array.isArray(serverIds) || serverIds.length === 0)) {
-      return NextResponse.json({ error: "At least one server must be selected for non-global announcements" }, { status: 400 });
+    const { text, delay, serverIds, isGlobal, showCardNotification, cardDisplayDuration } = parsed.data
+
+    if (!isGlobal && (!serverIds || serverIds.length === 0)) {
+      return NextResponse.json({ error: "At least one server must be selected for non-global announcements" }, { status: 400 })
     }
 
-    const translations = await translateText(text.trim());
+    const translations = await translateText(text)
 
     const announcement = await prisma.announcement.create({
       data: {
-        text: text.trim(),
+        text,
         textEs: translations.es,
         textFr: translations.fr,
         textDe: translations.de,
@@ -94,102 +163,159 @@ export async function POST(request: NextRequest) {
         textKo: translations.ko,
         textIt: translations.it,
         delay: showCardNotification ? delay : 0,
-        isGlobal: !!isGlobal,
+        isGlobal,
         isActive: true,
-        showCardNotification: showCardNotification || false,
+        showCardNotification,
         cardDisplayDuration: showCardNotification ? cardDisplayDuration : null,
-        serverAssignments: isGlobal ? undefined : { create: serverIds.map((serverId: string) => ({ serverId })) },
+        serverAssignments: isGlobal ? undefined : { create: serverIds!.map((serverId: string) => ({ serverId })) },
       },
       include: { serverAssignments: true },
-    });
+    })
 
-    return NextResponse.json({ announcement: serializeAnnouncement(announcement) }, { status: 201 });
+    // SECURITY: Audit logged
+    await auditCreate("announcement", String(announcement.id), authResult.context, { text, isGlobal, serverIds }, request)
+
+    return NextResponse.json({ announcement: serializeAnnouncement(announcement) }, { status: 201 })
   } catch (error) {
-    console.error("Error creating announcement:", error);
-    return NextResponse.json({ error: "Failed to create announcement" }, { status: 500 });
+    logger.admin.error("Error creating announcement", error as Error)
+    return NextResponse.json({ error: "Failed to create announcement" }, { status: 500 })
   }
 }
 
 export async function PATCH(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, "announcements:write")
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
   try {
-    const body = await request.json();
-    const { id, text, delay, serverIds, isGlobal, isActive, showCardNotification, cardDisplayDuration } = body;
+    const body = await request.json()
 
-    if (!id || !Number.isInteger(id)) {
-      return NextResponse.json({ error: "Valid announcement ID is required" }, { status: 400 });
+    // SECURITY: Zod validated
+    const parsed = updateSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 })
     }
 
-    const updateData: Record<string, any> = {};
+    const { id, text, delay, serverIds, isGlobal, isActive, showCardNotification, cardDisplayDuration } = parsed.data
+
+    // Fetch old values for audit log
+    const oldAnnouncement = await prisma.announcement.findUnique({
+      where: { id },
+      include: { serverAssignments: true },
+    })
+    if (!oldAnnouncement) {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
+    }
+
+    const updateData: Record<string, unknown> = {}
     if (text !== undefined) {
-      updateData.text = text.trim();
-      const translations = await translateText(text.trim());
-      updateData.textEs = translations.es;
-      updateData.textFr = translations.fr;
-      updateData.textDe = translations.de;
-      updateData.textRu = translations.ru;
-      updateData.textZh = translations.zh;
-      updateData.textJa = translations.ja;
-      updateData.textPt = translations.pt;
-      updateData.textAr = translations.ar;
-      updateData.textKo = translations.ko;
-      updateData.textIt = translations.it;
+      updateData.text = text
+      const translations = await translateText(text)
+      updateData.textEs = translations.es
+      updateData.textFr = translations.fr
+      updateData.textDe = translations.de
+      updateData.textRu = translations.ru
+      updateData.textZh = translations.zh
+      updateData.textJa = translations.ja
+      updateData.textPt = translations.pt
+      updateData.textAr = translations.ar
+      updateData.textKo = translations.ko
+      updateData.textIt = translations.it
     }
-    if (isActive !== undefined) updateData.isActive = isActive;
-    if (isGlobal !== undefined) updateData.isGlobal = isGlobal;
-    if (showCardNotification !== undefined) updateData.showCardNotification = showCardNotification;
+    if (isActive !== undefined) updateData.isActive = isActive
+    if (isGlobal !== undefined) updateData.isGlobal = isGlobal
+    if (showCardNotification !== undefined) updateData.showCardNotification = showCardNotification
     if (showCardNotification !== undefined) {
       if (showCardNotification) {
-        if (delay !== undefined) updateData.delay = delay;
-        if (cardDisplayDuration !== undefined) updateData.cardDisplayDuration = cardDisplayDuration;
+        if (delay !== undefined) updateData.delay = delay
+        if (cardDisplayDuration !== undefined) updateData.cardDisplayDuration = cardDisplayDuration
       } else {
-        updateData.delay = 0;
-        updateData.cardDisplayDuration = null;
+        updateData.delay = 0
+        updateData.cardDisplayDuration = null
       }
     } else {
-      if (delay !== undefined) updateData.delay = delay;
-      if (cardDisplayDuration !== undefined) updateData.cardDisplayDuration = cardDisplayDuration;
+      if (delay !== undefined) updateData.delay = delay
+      if (cardDisplayDuration !== undefined) updateData.cardDisplayDuration = cardDisplayDuration
     }
 
     const announcement = await prisma.$transaction(async (tx) => {
-      const updated = await tx.announcement.update({ where: { id }, data: updateData, include: { serverAssignments: true } });
+      const updated = await tx.announcement.update({ where: { id }, data: updateData, include: { serverAssignments: true } })
       if (serverIds !== undefined || isGlobal !== undefined) {
-        await tx.announcementServer.deleteMany({ where: { announcementId: id } });
+        await tx.announcementServer.deleteMany({ where: { announcementId: id } })
         if (!updated.isGlobal && serverIds && serverIds.length > 0) {
-          await tx.announcementServer.createMany({ data: serverIds.map((serverId: string) => ({ announcementId: id, serverId })) });
+          await tx.announcementServer.createMany({ data: serverIds.map((serverId: string) => ({ announcementId: id, serverId })) })
         }
       }
-      return await tx.announcement.findUnique({ where: { id }, include: { serverAssignments: true } });
-    });
+      return await tx.announcement.findUnique({ where: { id }, include: { serverAssignments: true } })
+    })
 
     if (!announcement) {
-      return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
     }
-    return NextResponse.json({ announcement: serializeAnnouncement(announcement) });
+
+    // SECURITY: Audit logged
+    await auditUpdate(
+      "announcement",
+      String(id),
+      authResult.context,
+      { text: oldAnnouncement.text, isGlobal: oldAnnouncement.isGlobal, isActive: oldAnnouncement.isActive },
+      updateData,
+      request
+    )
+
+    return NextResponse.json({ announcement: serializeAnnouncement(announcement) })
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === "P2025") {
-      return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2025") {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
     }
-    console.error("Error updating announcement:", error);
-    return NextResponse.json({ error: "Failed to update announcement" }, { status: 500 });
+    logger.admin.error("Error updating announcement", error as Error)
+    return NextResponse.json({ error: "Failed to update announcement" }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, "announcements:write")
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const { searchParams } = new URL(request.url)
 
-    if (!id || !Number.isInteger(parseInt(id))) {
-      return NextResponse.json({ error: "Valid announcement ID is required" }, { status: 400 });
+    // SECURITY: Zod validated
+    const parsed = deleteSchema.safeParse({ id: searchParams.get("id") })
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Valid announcement ID is required" }, { status: 400 })
     }
 
-    await prisma.announcement.delete({ where: { id: parseInt(id) } });
-    return NextResponse.json({ success: true });
+    const { id } = parsed.data
+
+    // Fetch old values for audit log
+    const oldAnnouncement = await prisma.announcement.findUnique({ where: { id } })
+    if (!oldAnnouncement) {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
+    }
+
+    await prisma.announcement.delete({ where: { id } })
+
+    // SECURITY: Audit logged
+    await auditDelete(
+      "announcement",
+      String(id),
+      authResult.context,
+      { text: oldAnnouncement.text, isGlobal: oldAnnouncement.isGlobal },
+      request
+    )
+
+    return NextResponse.json({ success: true })
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === "P2025") {
-      return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2025") {
+      return NextResponse.json({ error: "Announcement not found" }, { status: 404 })
     }
-    console.error("Error deleting announcement:", error);
-    return NextResponse.json({ error: "Failed to delete announcement" }, { status: 500 });
+    logger.admin.error("Error deleting announcement", error as Error)
+    return NextResponse.json({ error: "Failed to delete announcement" }, { status: 500 })
   }
 }

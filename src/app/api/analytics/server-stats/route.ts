@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { clickhouse } from "@/lib/clickhouse";
+import { authenticateWithScope } from "@/services/api-auth";
+import { logger } from "@/lib/logger";
 
 type GroupBy = "minute" | "hour" | "day" | "week";
+
+// SECURITY: Zod validated
+const VALID_GROUP_BY = ["minute", "hour", "day", "week"] as const;
+const VALID_TYPES = ["timeseries", "servers", "current", "aggregate", "totals", "heatmap", "peaks"] as const;
+
+const querySchema = z.object({
+  server: z.string().max(500).optional(),
+  from: z.string().max(50).optional(),
+  to: z.string().max(50).optional(),
+  groupBy: z.enum(VALID_GROUP_BY).optional().default("hour"),
+  type: z.enum(VALID_TYPES).optional().default("timeseries"),
+  timezone: z.string().max(50).optional().default("UTC"),
+});
 
 // SECURITY: Whitelist valid IANA timezones to prevent SQL injection
 const VALID_TIMEZONES = new Set([
@@ -30,13 +46,29 @@ function getGroupByFormat(groupBy: GroupBy, timezone: string = 'UTC'): string {
 }
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, "analytics:read");
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   const { searchParams } = request.nextUrl;
-  const server = searchParams.get("server");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const groupBy = (searchParams.get("groupBy") || "hour") as GroupBy;
-  const type = searchParams.get("type") || "timeseries";
-  const timezone = searchParams.get("timezone") || "UTC";
+
+  // SECURITY: Zod validated
+  const parsed = querySchema.safeParse({
+    server: searchParams.get("server") || undefined,
+    from: searchParams.get("from") || undefined,
+    to: searchParams.get("to") || undefined,
+    groupBy: searchParams.get("groupBy") || undefined,
+    type: searchParams.get("type") || undefined,
+    timezone: searchParams.get("timezone") || undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid query parameters", details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { server, from, to, groupBy, type, timezone } = parsed.data;
 
   try {
     let whereClause = "WHERE 1=1";
@@ -181,8 +213,8 @@ export async function GET(request: NextRequest) {
             ROUND(SUM(avg_players)) as avg_players
           FROM (
             SELECT
-              toDayOfWeek(timestamp, '${timezone}') as day_of_week,
-              toHour(timestamp, '${timezone}') as hour,
+              toDayOfWeek(timestamp, '${validateTimezone(timezone)}') as day_of_week,
+              toHour(timestamp, '${validateTimezone(timezone)}') as hour,
               server_id,
               AVG(players) as avg_players
             FROM server_population_stats
@@ -223,7 +255,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid type parameter" }, { status: 400 });
   } catch (error) {
-    console.error("Analytics error:", error);
+    logger.admin.error("Analytics error", error as Error);
     return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
   }
 }
