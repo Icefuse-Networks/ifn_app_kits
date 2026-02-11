@@ -181,8 +181,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Build row for ClickHouse - participants as array of tuples
+    // Note: Pass steam_ids as strings, ClickHouse will convert to UInt64
     const participantsTuples = data.participants.map(p => [
-      BigInt(p.steam_id),
+      p.steam_id,
       p.name,
       p.kills,
       p.deaths,
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
     const row = {
       server_id: data.server_id,
       event_type: data.event_type,
-      winner_steam_id: BigInt(data.winner_steam_id),
+      winner_steam_id: data.winner_steam_id,
       winner_name: data.winner_name,
       winner_clan_tag: data.winner_clan_tag ?? null,
       winner_kills: data.winner_kills,
