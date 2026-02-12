@@ -742,20 +742,6 @@ model AnnouncementServer {
   @@map("announcement_servers")
 }
 
-model Mute {
-  id          BigInt   @id @default(autoincrement())
-  start       DateTime @default(now())
-  end         DateTime
-  playerSid64 BigInt   @map("player_sid64")
-  adminSid64  BigInt   @map("admin_sid64")
-  reason      String   @db.VarChar(32)
-
-  @@index([playerSid64, end, reason])
-  @@index([end, reason])
-  @@index([start, end, reason])
-  @@map("mutes")
-}
-
 model Staff {
   id          BigInt   @id @default(autoincrement())
   when        DateTime @default(now())

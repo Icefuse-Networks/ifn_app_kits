@@ -20,17 +20,17 @@ import type { ApiScope, ApiTokenCreateResponse } from '@/types/api'
  * List all API tokens
  */
 export async function GET(request: NextRequest) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
+
     const tokens = await listApiTokens()
 
     return NextResponse.json({ success: true, data: tokens })
@@ -49,24 +49,28 @@ export async function GET(request: NextRequest) {
  * IMPORTANT: The full token is only returned once in this response!
  */
 export async function POST(request: NextRequest) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
+
     const body = await request.json()
 
     // SECURITY: Zod validated
     const parsed = createApiTokenSchema.safeParse(body)
     if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors
+      const errorMessages = Object.entries(fieldErrors)
+        .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+        .join('; ')
       return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details: parsed.error.flatten() } },
+        { success: false, error: { code: 'VALIDATION_ERROR', message: errorMessages || 'Validation failed', details: parsed.error.flatten() } },
         { status: 400 }
       )
     }

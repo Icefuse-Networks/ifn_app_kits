@@ -22,17 +22,17 @@ type RouteContext = { params: Promise<{ id: string }> }
  * Get token info (without the actual token value)
  */
 export async function GET(request: NextRequest, context: RouteContext) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
+
     const params = await context.params
     const parsed = tokenIdSchema.safeParse({ id: params.id })
 
@@ -67,17 +67,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
  * Update token name, scopes, or category
  */
 export async function PUT(request: NextRequest, context: RouteContext) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
+
     const params = await context.params
     const idParsed = tokenIdSchema.safeParse({ id: params.id })
 
@@ -142,17 +142,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
  * Delete a token permanently
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
+
     const params = await context.params
     const parsed = tokenIdSchema.safeParse({ id: params.id })
 

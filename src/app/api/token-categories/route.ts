@@ -29,17 +29,16 @@ const createCategorySchema = z.object({
  * List all token categories with token counts
  */
 export async function GET(request: NextRequest) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
     // PERF: Select only needed fields with count
     const categories = await prisma.tokenCategory.findMany({
       select: {
@@ -72,17 +71,16 @@ export async function GET(request: NextRequest) {
  * Create a new token category
  */
 export async function POST(request: NextRequest) {
-  // SECURITY: Session auth only
-  const authResult = await requireSession(request)
-
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
+    // SECURITY: Session auth only
+    const authResult = await requireSession(request)
+
+    if (!authResult.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+        { status: authResult.status }
+      )
+    }
     const body = await request.json()
 
     // SECURITY: Zod validated

@@ -125,7 +125,13 @@ export default function TokensPage() {
 
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error?.message || 'Failed to create token')
+        const details = err.error?.details?.fieldErrors
+        const detailMsg = details
+          ? Object.entries(details)
+              .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+              .join('; ')
+          : null
+        throw new Error(detailMsg || err.error?.message || 'Failed to create token')
       }
 
       const json = await res.json()
