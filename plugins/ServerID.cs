@@ -11,8 +11,8 @@ namespace Oxide.Plugins
     public class ServerID : RustPlugin
     {
         private const string ApiToken = "ifn_kit_2332cee8bbf922c98d547a901d725460";
-        private const string ApiUrl = "https://kits.icefuse.com/api/identifiers/register";
-        private const string PlayersApiUrl = "https://kits.icefuse.com/api/identifiers/players";
+        private const string ApiUrl = "https://rust.icefuse.com/api/identifiers/register";
+        private const string PlayersApiUrl = "https://rust.icefuse.com/api/identifiers/players";
         private const int MaxRetries = 3;
         private const float RetryDelay = 5f;
         private const float PlayerPollInterval = 60f;

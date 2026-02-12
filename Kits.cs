@@ -24,7 +24,7 @@ namespace Oxide.Plugins
         private const bool SHOW_PERMISSION_KITS = false;
 
         // API Configuration
-        private const string API_URL = "https://kits.icefuse.com/api/servers/kits";
+        private const string API_URL = "https://rust.icefuse.com/api/servers/kits";
         private const string CONFIG_ID = "category_9dd76b86-2f21-4efe-a18b-7f2757045e7c"; // Category ID from Kit Manager (prefixed CUID)
 
         // FULL API TOKEN ifn_kit_bded2aacb1e3ab09ec07db11aceb6e0f
