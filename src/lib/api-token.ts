@@ -14,7 +14,7 @@ import type { ApiScope, ApiTokenInfo, ApiTokenRecord } from '@/types/api'
 // =============================================================================
 
 /** Token prefix for identification */
-const TOKEN_PREFIX = 'ifn_kit_'
+const TOKEN_PREFIX = 'ifn_rust_'
 
 /** Token random part length (32 chars = 128 bits of entropy) */
 const TOKEN_RANDOM_LENGTH = 32
@@ -28,7 +28,7 @@ const STORED_PREFIX_LENGTH = 8
 
 /**
  * Generate a new API token
- * Format: ifn_kit_<32 random hex chars>
+ * Format: ifn_rust_<32 random hex chars>
  *
  * @returns The full token (only shown once!)
  */

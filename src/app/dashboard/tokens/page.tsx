@@ -933,7 +933,7 @@ function TokenCard({
           </div>
 
           <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
-            <span className="font-mono">ifn_kit_{token.tokenPrefix}...</span>
+            <span className="font-mono">ifn_rust_{token.tokenPrefix}...</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Created {formatDate(token.createdAt)}
