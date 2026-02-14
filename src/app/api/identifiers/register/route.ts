@@ -18,6 +18,7 @@ const registerServerSchema = z.object({
   port: z.number().int().min(1).max(65535),
   connectEndpoint: z.string().max(100).nullable().optional(),
   categoryId: z.string().max(60).nullable().optional(),
+  serverId: z.string().max(60).nullable().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -41,22 +42,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { serverName, ip, port, connectEndpoint, categoryId } = parsed.data
+    const { serverName, ip, port, connectEndpoint, categoryId, serverId } = parsed.data
 
-    const existing = await prisma.serverIdentifier.findFirst({
-      where: { ip, port },
-      select: { id: true, hashedId: true, name: true, ip: true, port: true, connectEndpoint: true },
-    })
+    // Priority: look up by serverId (hashedId) first, fall back to ip+port for first-time registration
+    let existing = serverId
+      ? await prisma.serverIdentifier.findUnique({
+          where: { hashedId: serverId },
+          select: { id: true, hashedId: true, name: true, ip: true, port: true, connectEndpoint: true },
+        })
+      : null
+
+    if (!existing) {
+      existing = await prisma.serverIdentifier.findFirst({
+        where: { ip, port },
+        select: { id: true, hashedId: true, name: true, ip: true, port: true, connectEndpoint: true },
+      })
+    }
 
     if (existing) {
-      const needsUpdate = existing.name !== serverName || existing.connectEndpoint !== connectEndpoint
+      const needsUpdate = existing.name !== serverName || existing.connectEndpoint !== connectEndpoint || existing.ip !== ip || existing.port !== port
 
       if (needsUpdate) {
-        const oldValues = { name: existing.name, connectEndpoint: existing.connectEndpoint }
+        const oldValues = { name: existing.name, ip: existing.ip, port: existing.port, connectEndpoint: existing.connectEndpoint }
 
         await prisma.serverIdentifier.update({
           where: { id: existing.id },
-          data: { name: serverName, connectEndpoint: connectEndpoint || null },
+          data: { name: serverName, ip, port, connectEndpoint: connectEndpoint || null },
         })
 
         await auditUpdate(
@@ -64,7 +75,7 @@ export async function POST(request: NextRequest) {
           existing.id,
           authResult.context,
           oldValues,
-          { name: serverName, connectEndpoint },
+          { name: serverName, ip, port, connectEndpoint },
           request
         )
 
