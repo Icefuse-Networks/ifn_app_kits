@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Server, Users, Activity, TrendingUp, Clock, Zap } from "lucide-react";
+import { StatCard } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Loading';
 
 interface ServerStats {
   totalServers: number;
@@ -43,10 +45,10 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { label: "Total Servers", value: stats.totalServers, icon: Server, color: "from-purple-500 to-pink-500" },
-    { label: "Active Servers", value: stats.activeServers, icon: Activity, color: "from-green-500 to-emerald-500" },
-    { label: "Total Players", value: stats.totalPlayers, icon: Users, color: "from-blue-500 to-cyan-500" },
-    { label: "Avg Players/Server", value: stats.avgPlayers.toFixed(1), icon: TrendingUp, color: "from-orange-500 to-yellow-500" },
+    { label: "Total Servers", value: stats.totalServers.toString(), icon: Server },
+    { label: "Active Servers", value: stats.activeServers.toString(), icon: Activity },
+    { label: "Total Players", value: stats.totalPlayers.toString(), icon: Users },
+    { label: "Avg Players/Server", value: stats.avgPlayers.toFixed(1), icon: TrendingUp },
   ];
 
   return (
@@ -69,21 +71,13 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="rounded-xl p-6 bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all group"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${card.color} bg-opacity-20`}>
-                  <card.icon className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xs text-zinc-500 uppercase tracking-wider">{card.label}</span>
-              </div>
-              <div className="text-3xl font-bold text-white group-hover:text-purple-400 transition-colors">
-                {loading ? (
-                  <div className="h-9 w-20 bg-white/5 rounded animate-pulse" />
-                ) : (
-                  card.value
-                )}
-              </div>
+              <StatCard
+                icon={<card.icon className="h-5 w-5" />}
+                label={card.label}
+                value={card.value}
+                loading={loading}
+              />
             </motion.div>
           ))}
         </div>
@@ -102,7 +96,7 @@ export default function DashboardPage() {
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />
+                  <Skeleton key={i} height="4rem" variant="rectangular" />
                 ))}
               </div>
             ) : activities.length > 0 ? (

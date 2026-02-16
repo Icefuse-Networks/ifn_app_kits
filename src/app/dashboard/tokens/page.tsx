@@ -19,7 +19,6 @@ import {
   AlertTriangle,
   Clock,
   Shield,
-  X,
   ArrowLeft,
   Edit,
   FolderOpen,
@@ -27,7 +26,17 @@ import {
 } from 'lucide-react'
 import type { ApiTokenInfo, ApiScope, ApiTokenCreateResponse, TokenCategory } from '@/types/api'
 import { API_SCOPES, SCOPE_DESCRIPTIONS, DEFAULT_SCOPES } from '@/types/api'
-import { SelectDropdown } from '@/components/kit-manager/SelectDropdown'
+import {
+  Modal,
+  Input,
+  Button,
+  IconButton,
+  Loading,
+  EmptyState,
+  Alert,
+  Dropdown
+} from "@/components/ui"
+import { CheckboxSwitch } from "@/components/ui/Switch"
 
 export default function TokensPage() {
   const router = useRouter()
@@ -316,21 +325,20 @@ export default function TokensPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setShowCategoryModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+            leftIcon={<FolderOpen className="w-4 h-4" />}
           >
-            <FolderOpen className="w-4 h-4" />
             New Category
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white rounded-lg transition-colors"
+            leftIcon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" />
             Create Token
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -373,448 +381,250 @@ export default function TokensPage() {
 
       {/* Error message */}
       {error && (
-        <div className="mb-6 p-4 bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 rounded-lg flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-[var(--status-error)]" />
-          <span className="text-[var(--status-error)]">{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="ml-auto text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          >
-            Dismiss
-          </button>
-        </div>
+        <Alert variant="error" dismissible onDismiss={() => setError(null)} className="mb-6">
+          {error}
+        </Alert>
       )}
 
       {/* New token display modal */}
-      {newToken && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setNewToken(null)}
-        >
-          <div
-            className="rounded-xl max-w-lg w-full mx-4 shadow-xl"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--glass-border)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-[var(--status-success)]/20 rounded-full">
-                  <Check className="w-5 h-5 text-[var(--status-success)]" />
-                </div>
-                <h2 className="text-xl font-semibold text-[var(--text-primary)]">Token Created</h2>
+      <Modal
+        isOpen={!!newToken}
+        onClose={() => setNewToken(null)}
+        title="Token Created"
+        icon={<Check className="w-5 h-5 text-[var(--status-success)]" />}
+        size="lg"
+        footer={
+          <Button variant="secondary" onClick={() => setNewToken(null)} fullWidth>
+            Done
+          </Button>
+        }
+      >
+        {newToken && (
+          <>
+            <Alert variant="warning" className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  Copy this token now - it won&apos;t be shown again!
+                </span>
               </div>
-
-              <div className="p-4 bg-[var(--status-warning)]/10 border border-[var(--status-warning)]/30 rounded-lg mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-[var(--status-warning)]" />
-                  <span className="text-sm font-medium text-[var(--status-warning)]">
-                    Copy this token now - it won&apos;t be shown again!
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 p-3 bg-[var(--bg-input)] rounded-lg text-sm font-mono text-[var(--text-primary)] break-all">
-                    {newToken.token}
-                  </code>
-                  <button
-                    onClick={copyToken}
-                    className="p-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white rounded-lg transition-colors"
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 mt-3">
+                <code className="flex-1 p-3 bg-[var(--bg-input)] rounded-lg text-sm font-mono text-[var(--text-primary)] break-all">
+                  {newToken.token}
+                </code>
+                <IconButton
+                  icon={copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  onClick={copyToken}
+                  label="Copy token"
+                />
               </div>
+            </Alert>
 
-              <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm">
+              <p className="text-[var(--text-secondary)]">
+                <strong>Name:</strong> {newToken.name}
+              </p>
+              <p className="text-[var(--text-secondary)]">
+                <strong>Scopes:</strong> {newToken.scopes.join(', ')}
+              </p>
+              {newToken.expiresAt && (
                 <p className="text-[var(--text-secondary)]">
-                  <strong>Name:</strong> {newToken.name}
+                  <strong>Expires:</strong> {formatDate(newToken.expiresAt)}
                 </p>
-                <p className="text-[var(--text-secondary)]">
-                  <strong>Scopes:</strong> {newToken.scopes.join(', ')}
-                </p>
-                {newToken.expiresAt && (
-                  <p className="text-[var(--text-secondary)]">
-                    <strong>Expires:</strong> {formatDate(newToken.expiresAt)}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
-
-            <div className="p-4" style={{ borderTop: '1px solid var(--glass-border)' }}>
-              <button
-                onClick={() => setNewToken(null)}
-                className="w-full py-2 rounded-lg text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-                style={{
-                  background: 'var(--glass-bg)',
-                  border: '1px solid var(--glass-border)',
-                }}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Create token modal */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="rounded-xl w-full max-w-md mx-4"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--glass-border)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-              <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Key className="h-5 w-5 text-[var(--accent-primary)]" />
-                Create API Token
-              </h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create API Token"
+        icon={<Key className="h-5 w-5" />}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreate}
+              disabled={creating || !createName.trim() || createScopes.length === 0}
+              loading={creating}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Create Token
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Token Name"
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+            placeholder="e.g., Rust Plugin"
+          />
 
-            {/* Body */}
-            <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              {/* Token name */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Token Name
-                </label>
-                <input
-                  type="text"
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="e.g., Rust Plugin"
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+          {categories.length > 0 && (
+            <Dropdown
+              value={createCategoryId}
+              onChange={setCreateCategoryId}
+              options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
+              emptyOption="No category"
+              placeholder="Select category..."
+            />
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              Permissions
+            </label>
+            <div className="space-y-2">
+              {API_SCOPES.map((scope) => (
+                <CheckboxSwitch
+                  key={scope}
+                  checked={createScopes.includes(scope)}
+                  onChange={() => toggleCreateScope(scope)}
+                  label={scope}
+                  description={SCOPE_DESCRIPTIONS[scope]}
                 />
-              </div>
-
-              {/* Category */}
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Category (Optional)
-                  </label>
-                  <SelectDropdown
-                    value={createCategoryId}
-                    onChange={(value) => setCreateCategoryId(value)}
-                    options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
-                    emptyOption="No category"
-                    placeholder="Select category..."
-                  />
-                </div>
-              )}
-
-              {/* Scopes */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Permissions
-                </label>
-                <div className="space-y-2">
-                  {API_SCOPES.map((scope) => (
-                    <label
-                      key={scope}
-                      className="flex items-center gap-3 p-3 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg cursor-pointer hover:bg-[var(--glass-bg-prominent)] transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={createScopes.includes(scope)}
-                        onChange={() => toggleCreateScope(scope)}
-                        className="w-4 h-4 accent-[var(--accent-primary)]"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text-primary)]">{scope}</div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {SCOPE_DESCRIPTIONS[scope]}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Expiry */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Expiration (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={createExpiry}
-                  onChange={(e) => setCreateExpiry(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 flex gap-3" style={{ borderTop: '1px solid var(--glass-border)' }}>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-                style={{
-                  background: 'var(--glass-bg)',
-                  border: '1px solid var(--glass-border)',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={creating || !createName.trim() || createScopes.length === 0}
-                className="flex-1 px-4 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{ background: 'var(--accent-primary)' }}
-              >
-                {creating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    Create Token
-                  </>
-                )}
-              </button>
+              ))}
             </div>
           </div>
+
+          <Input
+            label="Expiration (Optional)"
+            type="datetime-local"
+            value={createExpiry}
+            onChange={(e) => setCreateExpiry(e.target.value)}
+          />
         </div>
-      )}
+      </Modal>
 
       {/* Edit token modal */}
-      {showEditModal && editToken && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setShowEditModal(false)}
-        >
-          <div
-            className="rounded-xl w-full max-w-md mx-4"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--glass-border)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-              <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Edit className="h-5 w-5 text-[var(--accent-primary)]" />
-                Edit Token
-              </h3>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={showEditModal && !!editToken}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Token"
+        icon={<Edit className="h-5 w-5" />}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleUpdate}
+              disabled={updating || !editName.trim() || editScopes.length === 0}
+              loading={updating}
+              leftIcon={<Check className="h-4 w-4" />}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        {editToken && (
+          <div className="space-y-4">
+            <Input
+              label="Token Name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="e.g., Rust Plugin"
+            />
 
-            {/* Body */}
-            <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              {/* Token name */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Token Name
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="e.g., Rust Plugin"
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
-                />
+            <Dropdown
+              value={editCategoryId}
+              onChange={setEditCategoryId}
+              options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
+              emptyOption="No category"
+              placeholder="Select category..."
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                Permissions
+              </label>
+              <div className="space-y-2">
+                {API_SCOPES.map((scope) => (
+                  <CheckboxSwitch
+                    key={scope}
+                    checked={editScopes.includes(scope)}
+                    onChange={() => toggleEditScope(scope)}
+                    label={scope}
+                    description={SCOPE_DESCRIPTIONS[scope]}
+                  />
+                ))}
               </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Category
-                </label>
-                <SelectDropdown
-                  value={editCategoryId}
-                  onChange={(value) => setEditCategoryId(value)}
-                  options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
-                  emptyOption="No category"
-                  placeholder="Select category..."
-                />
-              </div>
-
-              {/* Scopes */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Permissions
-                </label>
-                <div className="space-y-2">
-                  {API_SCOPES.map((scope) => (
-                    <label
-                      key={scope}
-                      className="flex items-center gap-3 p-3 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg cursor-pointer hover:bg-[var(--glass-bg-prominent)] transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={editScopes.includes(scope)}
-                        onChange={() => toggleEditScope(scope)}
-                        className="w-4 h-4 accent-[var(--accent-primary)]"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-[var(--text-primary)]">{scope}</div>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          {SCOPE_DESCRIPTIONS[scope]}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 flex gap-3" style={{ borderTop: '1px solid var(--glass-border)' }}>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-                style={{
-                  background: 'var(--glass-bg)',
-                  border: '1px solid var(--glass-border)',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdate}
-                disabled={updating || !editName.trim() || editScopes.length === 0}
-                className="flex-1 px-4 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{ background: 'var(--accent-primary)' }}
-              >
-                {updating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Create category modal */}
-      {showCategoryModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setShowCategoryModal(false)}
-        >
-          <div
-            className="rounded-xl w-full max-w-md mx-4 p-8"
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--glass-border)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6 flex items-center gap-2">
-              <FolderOpen className="h-5 w-5 text-[var(--accent-primary)]" />
-              Create Category
-            </h3>
+      <Modal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        title="Create Category"
+        icon={<FolderOpen className="h-5 w-5" />}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowCategoryModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateCategory}
+              disabled={!categoryName.trim() || creatingCategory}
+              loading={creatingCategory}
+              loadingText="Creating..."
+            >
+              Create
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-5">
+          <Input
+            label="Name"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            placeholder="e.g., Kits Plugin"
+          />
 
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  placeholder="e.g., Kits Plugin"
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
-                />
-              </div>
+          <Input
+            label="Description (Optional)"
+            value={categoryDescription}
+            onChange={(e) => setCategoryDescription(e.target.value)}
+            placeholder="e.g., Tokens for kit management plugin"
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Description (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={categoryDescription}
-                  onChange={(e) => setCategoryDescription(e.target.value)}
-                  placeholder="e.g., Tokens for kit management plugin"
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Color (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={categoryColor}
-                  onChange={(e) => setCategoryColor(e.target.value)}
-                  placeholder="e.g., #3b82f6"
-                  className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-secondary)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
-              <button
-                onClick={() => setShowCategoryModal(false)}
-                className="px-5 py-2.5 rounded-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateCategory}
-                disabled={!categoryName.trim() || creatingCategory}
-                className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{
-                  background: 'var(--accent-primary)',
-                  color: 'var(--bg-root)',
-                }}
-              >
-                {creatingCategory ? 'Creating...' : 'Create'}
-              </button>
-            </div>
-          </div>
+          <Input
+            label="Color (Optional)"
+            value={categoryColor}
+            onChange={(e) => setCategoryColor(e.target.value)}
+            placeholder="e.g., #3b82f6"
+          />
         </div>
-      )}
+      </Modal>
 
       {/* Tokens list */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="mt-4 text-[var(--text-muted)]">Loading tokens...</p>
-        </div>
+        <Loading text="Loading tokens..." />
       ) : tokens.length === 0 ? (
-        <div className="text-center py-12 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl">
-          <Key className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-4" />
-          <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No API Tokens</h3>
-          <p className="text-[var(--text-muted)] mb-4">
-            Create your first token to enable programmatic access.
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create Token
-          </button>
-        </div>
+        <EmptyState
+          icon={<Key className="w-12 h-12" />}
+          title="No API Tokens"
+          description="Create your first token to enable programmatic access."
+          action={{
+            label: "Create Token",
+            onClick: () => setShowCreateModal(true),
+            icon: <Plus className="w-4 h-4" />
+          }}
+        />
       ) : (
         <div className="space-y-6">
           {/* Uncategorized tokens */}

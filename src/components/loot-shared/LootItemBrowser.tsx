@@ -1,7 +1,11 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Search, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { RustItem, fetchRustItems, getItemImageUrl, ITEM_CATEGORIES, searchItems, ItemCategory } from "@/lib/rust-items";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { IconButton } from "@/components/ui/Button";
+import { Loading } from "@/components/ui/Loading";
 
 interface LootItemBrowserProps {
   isOpen: boolean;
@@ -26,50 +30,44 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
     return items.slice(0, 100);
   }, [rustItems, searchTerm, category]);
 
+  const categoryOptions: DropdownOption[] = [
+    { value: "All", label: "All Categories" },
+    ...ITEM_CATEGORIES.map(cat => ({ value: cat, label: cat }))
+  ];
+
   const hoverBorder = `hover:border-${accentColor}-500/50`;
   const hoverBg = `hover:bg-${accentColor}-500/10`;
   const iconColor = `text-${accentColor}-400`;
 
   return (
     <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${isOpen ? "w-72" : "w-10"}`}>
-      <button
+      <IconButton
+        icon={<ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
         onClick={onToggle}
+        label={isOpen ? "Hide item browser" : "Show item browser"}
         className="p-2 text-zinc-500 hover:text-white border-b border-white/5 flex items-center justify-center"
-        title={isOpen ? "Hide item browser" : "Show item browser"}
-      >
-        <ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
+      />
       {isOpen && (
         <>
           <div className="p-3 border-b border-white/5">
             <h3 className="text-sm font-semibold text-white mb-2">Item Browser</h3>
-            <div className="relative mb-2">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search items..."
-                className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none"
-              />
-            </div>
-            <select
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search items..."
+              size="sm"
+              className="mb-2"
+            />
+            <Dropdown
               value={category}
-              onChange={(e) => setCategory(e.target.value as ItemCategory | "All")}
-              className="w-full rounded-lg px-2 py-1.5 text-xs text-white bg-white/5 border border-white/5 focus:outline-none"
-            >
-              <option value="All">All Categories</option>
-              {ITEM_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+              options={categoryOptions}
+              onChange={(value) => setCategory((value as ItemCategory | "All") || "All")}
+              placeholder="Select category..."
+            />
           </div>
           <div className="flex-1 overflow-y-auto p-2">
             {rustItems.length === 0 ? (
-              <div className="text-center py-8 text-zinc-600">
-                <div className={`w-6 h-6 border-2 border-${accentColor}-400 border-t-transparent rounded-full animate-spin mx-auto mb-2`} />
-                <p className="text-xs">Loading items...</p>
-              </div>
+              <Loading text="Loading items..." size="sm" className="py-8" />
             ) : filteredItems.length === 0 ? (
               <div className="text-center py-8 text-zinc-600">
                 <p className="text-xs">No items found</p>

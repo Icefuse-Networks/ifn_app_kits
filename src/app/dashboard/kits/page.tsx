@@ -47,6 +47,7 @@ import {
   CategoryRenameModal,
   UnsavedChangesModal,
 } from '@/components/kit-manager/modals'
+import { Switch } from '@/components/ui/Switch'
 import type { Kit, KitItem, KitsData } from '@/types/kit'
 import {
   createEmptyKit,
@@ -2191,30 +2192,13 @@ export default function KitsPage() {
           <div className="flex-1" />
 
           {/* Skins toggle */}
-          <label
-            className={`cursor-pointer select-none rounded-full px-3 py-1 text-xs font-medium transition shrink-0 flex items-center gap-1.5 ${
-              showSkins
-                ? 'text-[var(--accent-primary)]'
-                : 'text-[var(--text-muted)]'
-            }`}
-            style={{
-              background: showSkins
-                ? 'rgba(var(--accent-primary-rgb), 0.15)'
-                : 'var(--glass-bg)',
-              border: showSkins
-                ? '1px solid var(--accent-primary)'
-                : '1px solid var(--glass-border)',
-            }}
-          >
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={showSkins}
-              onChange={() => setShowSkins(!showSkins)}
-            />
-            <Paintbrush className="w-3 h-3" />
-            Skins
-          </label>
+          <Switch
+            checked={showSkins}
+            onChange={setShowSkins}
+            label="Skins"
+            icon={<Paintbrush className="w-3 h-3" />}
+            size="sm"
+          />
         </div>
 
         {/* Inventory Grid */}

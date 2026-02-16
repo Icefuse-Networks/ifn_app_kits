@@ -1,10 +1,18 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  X, Save, MessageSquare, Plus, Trash2, Edit2, Globe, Server, Bell, BellOff, ChevronDown, Check,
+  Save, MessageSquare, Plus, Trash2, Edit2, Globe, Server, Bell, BellOff,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { Textarea, NumberInput } from "@/components/ui/Input";
+import { Button, IconButton } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
+import { Skeleton } from "@/components/ui/Loading";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Badge } from "@/components/ui/Badge";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/MultiSelect";
 
 interface AnnouncementServer {
   id: number;
@@ -32,67 +40,6 @@ interface ServerInfo {
   port: number | null;
 }
 
-const MultiSelectDropdown = ({ servers, selectedServerIds, onSelectionChange, disabled }: { servers: ServerInfo[]; selectedServerIds: string[]; onSelectionChange: (serverIds: string[]) => void; disabled?: boolean }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsOpen(false);
-    };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const toggleServer = (serverId: string) => {
-    if (selectedServerIds.includes(serverId)) onSelectionChange(selectedServerIds.filter((id) => id !== serverId));
-    else onSelectionChange([...selectedServerIds, serverId]);
-  };
-
-  const getDisplayText = () => {
-    if (selectedServerIds.length === 0) return "Select servers...";
-    if (selectedServerIds.length === 1) {
-      const server = servers.find((s) => s.id === selectedServerIds[0]);
-      return server ? server.name : "1 server selected";
-    }
-    return `${selectedServerIds.length} servers selected`;
-  };
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full rounded-lg px-4 py-3 text-white focus:outline-none transition-all flex items-center justify-between bg-white/[0.02] border border-white/5 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-      >
-        <span className={selectedServerIds.length === 0 ? "text-zinc-500" : "text-white"}>{getDisplayText()}</span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-      {isOpen && !disabled && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg shadow-lg max-h-60 overflow-auto bg-zinc-900 border border-white/10" onClick={(e) => e.stopPropagation()}>
-          <div className="p-2 border-b border-white/5">
-            <button type="button" onClick={(e) => { e.stopPropagation(); onSelectionChange([]); }} className="w-full text-left px-3 py-2 text-sm text-zinc-500 hover:text-white rounded transition-colors">Clear all</button>
-            <button type="button" onClick={(e) => { e.stopPropagation(); onSelectionChange(servers.map((s) => s.id)); }} className="w-full text-left px-3 py-2 text-sm text-zinc-500 hover:text-white rounded transition-colors">Select all</button>
-          </div>
-          <div className="py-1">
-            {servers.map((server) => (
-              <button key={server.id} type="button" onClick={(e) => { e.stopPropagation(); toggleServer(server.id); }} className="w-full text-left px-4 py-3 transition-colors flex items-center justify-between hover:bg-white/5">
-                <div>
-                  <div className="text-white font-medium">{server.name}</div>
-                  {server.ip && server.port && <div className="text-xs text-zinc-500">{server.ip}:{server.port}</div>}
-                </div>
-                {selectedServerIds.includes(server.id) && <Check className="h-4 w-4 text-purple-400" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announcement: Announcement; servers: ServerInfo[]; onEdit: (announcement: Announcement) => void; onDelete: (id: number) => void }) => {
   const isGlobal = announcement.isGlobal;
@@ -109,30 +56,28 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
             <h4 className="text-white font-semibold group-hover:text-purple-400 transition-colors">{isGlobal ? "Global Announcement" : `${assignedServers.length} Server${assignedServers.length !== 1 ? "s" : ""}`}</h4>
             <div className="flex items-center space-x-2 mt-1">
               {announcement.showCardNotification ? (
-                <div className="flex items-center space-x-1 text-green-400 text-sm">
-                  <Bell className="h-4 w-4" />
-                  <span>Card: {announcement.delay}s delay, {announcement.cardDisplayDuration}s display</span>
-                </div>
+                <Badge variant="success" size="sm" icon={<Bell className="h-3 w-3" />}>
+                  Card: {announcement.delay}s delay, {announcement.cardDisplayDuration}s display
+                </Badge>
               ) : (
-                <div className="flex items-center space-x-1 text-zinc-500 text-sm">
-                  <BellOff className="h-4 w-4" />
-                  <span>Text only</span>
-                </div>
+                <Badge variant="secondary" size="sm" icon={<BellOff className="h-3 w-3" />}>
+                  Text only
+                </Badge>
               )}
             </div>
             {!isGlobal && assignedServers.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {assignedServers.slice(0, 3).map((server) => (
-                  <span key={server.id} className="text-xs px-2 py-1 rounded bg-white/5">{server.name}</span>
+                  <Badge key={server.id} variant="secondary" size="sm">{server.name}</Badge>
                 ))}
-                {assignedServers.length > 3 && <span className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">+{assignedServers.length - 3} more</span>}
+                {assignedServers.length > 3 && <Badge variant="primary" size="sm">+{assignedServers.length - 3} more</Badge>}
               </div>
             )}
           </div>
         </div>
         <div className="flex space-x-2">
-          <button onClick={() => onEdit(announcement)} className="text-purple-400 hover:text-purple-300 transition-colors p-1"><Edit2 className="h-4 w-4" /></button>
-          <button onClick={() => onDelete(announcement.id)} className="text-red-400 hover:text-red-300 transition-colors p-1"><Trash2 className="h-4 w-4" /></button>
+          <IconButton icon={<Edit2 className="h-4 w-4" />} onClick={() => onEdit(announcement)} label="Edit" size="sm" />
+          <IconButton icon={<Trash2 className="h-4 w-4" />} onClick={() => onDelete(announcement.id)} label="Delete" size="sm" />
         </div>
       </div>
       <div className="rounded-lg p-3 bg-purple-500/10 border-l-4 border-purple-500">
@@ -183,84 +128,106 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
     }
   };
 
-  if (!isOpen) return null;
+  const serverOptions: MultiSelectOption[] = servers.map((s) => ({
+    value: s.id,
+    label: s.name,
+    description: s.ip && s.port ? `${s.ip}:${s.port}` : undefined,
+    icon: <Server className="h-4 w-4" />,
+  }));
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="rounded-xl p-6 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-zinc-900 border border-white/10">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white">{announcement ? "Edit Announcement" : "Create Announcement"}</h3>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={announcement ? "Edit Announcement" : "Create Announcement"}
+      size="xl"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={!text.trim() || (!isGlobal && selectedServerIds.length === 0) || (showCardNotification && cardDisplayDuration <= 0)}
+            leftIcon={<Save className="h-4 w-4" />}
+          >
+            {announcement ? "Update" : "Create"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-zinc-400 text-sm font-medium mb-2">Announcement Scope</label>
+          <div className="space-y-3">
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="announcementScope" checked={isGlobal} onChange={() => { setIsGlobal(true); setSelectedServerIds([]); }} className="text-green-500" />
+              <div className="flex items-center space-x-2">
+                <Globe className="h-4 w-4 text-green-400" />
+                <span className="text-white">Global (All Servers)</span>
+              </div>
+            </label>
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="announcementScope" checked={!isGlobal} onChange={() => setIsGlobal(false)} className="text-purple-500" />
+              <div className="flex items-center space-x-2">
+                <Server className="h-4 w-4 text-purple-400" />
+                <span className="text-white">Specific Servers</span>
+              </div>
+            </label>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        {!isGlobal && (
           <div>
-            <label className="block text-zinc-400 text-sm font-medium mb-2">Announcement Scope</label>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input type="radio" name="announcementScope" checked={isGlobal} onChange={() => { setIsGlobal(true); setSelectedServerIds([]); }} className="text-green-500" />
-                <div className="flex items-center space-x-2">
-                  <Globe className="h-4 w-4 text-green-400" />
-                  <span className="text-white">Global (All Servers)</span>
-                </div>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input type="radio" name="announcementScope" checked={!isGlobal} onChange={() => setIsGlobal(false)} className="text-purple-500" />
-                <div className="flex items-center space-x-2">
-                  <Server className="h-4 w-4 text-purple-400" />
-                  <span className="text-white">Specific Servers</span>
-                </div>
-              </label>
-            </div>
+            <label className="block text-zinc-400 text-sm font-medium mb-2">Select Servers</label>
+            <MultiSelect
+              value={selectedServerIds}
+              options={serverOptions}
+              onChange={setSelectedServerIds}
+              placeholder="Select servers..."
+              showSelectAll
+            />
+            <p className="text-xs text-zinc-500 mt-1">Choose which servers should display this announcement</p>
           </div>
+        )}
 
-          {!isGlobal && (
-            <div>
-              <label className="block text-zinc-400 text-sm font-medium mb-2">Select Servers</label>
-              <MultiSelectDropdown servers={servers} selectedServerIds={selectedServerIds} onSelectionChange={setSelectedServerIds} />
-              <p className="text-xs text-zinc-500 mt-1">Choose which servers should display this announcement</p>
+        <Textarea
+          label="Announcement Text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter your announcement message..."
+          rows={6}
+          resize
+        />
+
+        <div className="rounded-lg p-4 bg-white/[0.02] border border-white/5">
+          <Switch
+            checked={showCardNotification}
+            onChange={setShowCardNotification}
+            label="Card Notification"
+            description={showCardNotification ? "Show as a popup card with timing controls" : "Show as text message only"}
+            icon={showCardNotification ? <Bell className="h-4 w-4 text-green-400" /> : <BellOff className="h-4 w-4" />}
+          />
+          {showCardNotification && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <NumberInput
+                label="Delay Before Showing (seconds)"
+                value={delay}
+                onChange={setDelay}
+                min={0}
+                showControls={false}
+              />
+              <NumberInput
+                label="Display Duration (seconds)"
+                value={cardDisplayDuration}
+                onChange={setCardDisplayDuration}
+                min={1}
+                showControls={false}
+              />
             </div>
           )}
-
-          <div>
-            <label className="block text-zinc-400 text-sm font-medium mb-2">Announcement Text</label>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter your announcement message..." rows={6} className="w-full rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none transition-all resize-vertical bg-white/[0.02] border border-white/5" />
-          </div>
-
-          <div className="rounded-lg p-4 bg-white/[0.02] border border-white/5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="text-white font-medium flex items-center">{showCardNotification ? <Bell className="h-4 w-4 mr-2 text-green-400" /> : <BellOff className="h-4 w-4 mr-2 text-zinc-500" />}Card Notification</h4>
-                <p className="text-xs text-zinc-500 mt-1">{showCardNotification ? "Show as a popup card with timing controls" : "Show as text message only"}</p>
-              </div>
-              <button onClick={() => setShowCardNotification(!showCardNotification)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors" style={{ background: showCardNotification ? "linear-gradient(135deg, #a855f7, #ec4899)" : "rgba(255,255,255,0.1)" }}>
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showCardNotification ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
-            {showCardNotification && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-zinc-400 text-sm font-medium mb-2">Delay Before Showing (seconds)</label>
-                  <input type="number" value={delay} min={0} onChange={(e) => setDelay(parseInt(e.target.value) || 0)} className="w-full rounded-lg px-4 py-3 text-white focus:outline-none transition-all bg-white/[0.02] border border-white/5" />
-                </div>
-                <div>
-                  <label className="block text-zinc-400 text-sm font-medium mb-2">Display Duration (seconds)</label>
-                  <input type="number" value={cardDisplayDuration} min={1} onChange={(e) => setCardDisplayDuration(parseInt(e.target.value) || 1)} className="w-full rounded-lg px-4 py-3 text-white focus:outline-none transition-all bg-white/[0.02] border border-white/5" />
-                </div>
-              </div>
-            )}
-          </div>
         </div>
-
-        <div className="flex justify-end space-x-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-white rounded-lg transition-colors bg-white/5 border border-white/10">Cancel</button>
-          <button onClick={handleSave} disabled={!text.trim() || (!isGlobal && selectedServerIds.length === 0) || (showCardNotification && cardDisplayDuration <= 0)} className="disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500">
-            <Save className="h-4 w-4" />
-            <span>{announcement ? "Update" : "Create"}</span>
-          </button>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   );
 };
 
@@ -360,15 +327,21 @@ export default function AnnouncementsPage() {
             </h1>
             <p className="text-zinc-500 mt-2">Manage announcements for individual servers, multiple servers, or all servers globally</p>
           </div>
-          <motion.button className="text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openCreateModal}>
-            <Plus className="h-4 w-4" />
-            <span>Add Announcement</span>
-          </motion.button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="primary"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={openCreateModal}
+              size="lg"
+            >
+              Add Announcement
+            </Button>
+          </motion.div>
         </div>
 
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (<div key={i} className="h-40 rounded-xl bg-white/5 animate-pulse" />))}
+            {[1, 2, 3, 4].map((i) => (<Skeleton key={i} height="10rem" variant="rectangular" />))}
           </div>
         ) : (
           <div className="space-y-8">
@@ -393,15 +366,16 @@ export default function AnnouncementsPage() {
               </div>
             )}
             {announcements.length === 0 && (
-              <div className="text-center py-12">
-                <MessageSquare className="h-16 w-16 text-zinc-600 mx-auto mb-4 opacity-30" />
-                <h3 className="text-xl font-medium text-zinc-500 mb-2">No announcements configured</h3>
-                <p className="text-zinc-600 mb-6">Create your first announcement to get started</p>
-                <button onClick={openCreateModal} className="text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 mx-auto bg-gradient-to-r from-purple-500 to-pink-500">
-                  <Plus className="h-4 w-4" />
-                  <span>Create Announcement</span>
-                </button>
-              </div>
+              <EmptyState
+                icon={<MessageSquare className="h-16 w-16" />}
+                title="No announcements configured"
+                description="Create your first announcement to get started"
+                action={{
+                  label: "Create Announcement",
+                  onClick: openCreateModal,
+                  icon: <Plus className="h-4 w-4" />,
+                }}
+              />
             )}
           </div>
         )}

@@ -3,10 +3,21 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Server, Users, ChevronRight, Wifi, WifiOff, Search, Plus,
-  AlertCircle, Folder, ChevronDown, Activity
+  ArrowLeft, Server, Users, ChevronRight, Wifi, WifiOff, Plus,
+  Folder, ChevronDown, Activity
 } from 'lucide-react'
 import Link from 'next/link'
+import {
+  Modal,
+  Input,
+  Button,
+  IconButton,
+  SearchInput,
+  Loading,
+  EmptyState,
+  Alert,
+  Dropdown
+} from "@/components/ui"
 
 interface IdentifierCategory {
   id: string
@@ -146,8 +157,8 @@ export default function ServersPage() {
     <div className="max-w-7xl mx-auto px-6 py-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2.5 rounded-xl transition-all hover:scale-105 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]">
-            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          <Link href="/dashboard">
+            <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -166,10 +177,13 @@ export default function ServersPage() {
               </span>
               <span className="text-xs font-medium text-emerald-400">Live</span>
             </div>
-            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-[var(--accent-primary)] text-white">
-              <Plus className="w-4 h-4" />
-              <span>New Server</span>
-            </button>
+            <Button
+              variant="primary"
+              onClick={() => setShowCreateForm(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              New Server
+            </Button>
           </div>
         </div>
 
@@ -191,39 +205,28 @@ export default function ServersPage() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input type="text" placeholder="Search by name, IP, or ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors" />
-          </div>
+          <SearchInput
+            placeholder="Search by name, IP, or ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </motion.div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 bg-red-500/10 border border-red-500/30">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-red-400 flex-1">{error}</p>
-            <button onClick={() => setError(null)} className="text-red-400 hover:opacity-70 text-sm">Dismiss</button>
-          </div>
+          <Alert variant="error" dismissible onDismiss={() => setError(null)} className="mb-6">
+            {error}
+          </Alert>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Loading text="Loading servers..." />
         ) : filteredServers.length === 0 ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-2xl p-12 text-center bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-            {search ? (
-              <>
-                <Search className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No Results</h3>
-                <p className="text-[var(--text-secondary)]">No servers match &quot;{search}&quot;</p>
-              </>
-            ) : (
-              <>
-                <Server className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No Live Servers</h3>
-                <p className="text-[var(--text-secondary)]">Servers will appear here once they connect via the ServerID plugin.</p>
-              </>
-            )}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+            <EmptyState
+              icon={<Server className="w-12 h-12" />}
+              title={search ? "No Results" : "No Live Servers"}
+              description={search ? `No servers match "${search}"` : "Servers will appear here once they connect via the ServerID plugin."}
+            />
           </motion.div>
         ) : (
           <div className="space-y-8">
@@ -288,30 +291,44 @@ export default function ServersPage() {
           </div>
         )}
 
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setShowCreateForm(false)}>
-            <div className="w-full max-w-md rounded-2xl p-8 bg-[var(--bg-secondary)] border border-[var(--glass-border)]" onClick={e => e.stopPropagation()}>
-              <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Create Server</h2>
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Name</label>
-                  <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g., US Main 1" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category (optional)</label>
-                  <select value={newCategoryId || ''} onChange={e => setNewCategoryId(e.target.value || null)} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]">
-                    <option value="">No category</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--glass-border)]">
-                <button onClick={() => setShowCreateForm(false)} className="px-5 py-2.5 rounded-xl font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
-                <button onClick={createServer} disabled={!newName.trim() || creating} className="px-5 py-2.5 rounded-xl font-medium bg-[var(--accent-primary)] text-white disabled:opacity-50">{creating ? 'Creating...' : 'Create'}</button>
-              </div>
-            </div>
+        <Modal
+          isOpen={showCreateForm}
+          onClose={() => setShowCreateForm(false)}
+          title="Create Server"
+          icon={<Server className="w-5 h-5" />}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={createServer}
+                disabled={!newName.trim() || creating}
+                loading={creating}
+                loadingText="Creating..."
+              >
+                Create
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-5">
+            <Input
+              label="Name"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="e.g., US Main 1"
+            />
+            <Dropdown
+              value={newCategoryId}
+              onChange={setNewCategoryId}
+              options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+              placeholder="Select category..."
+              emptyOption="No category"
+            />
           </div>
-        )}
+        </Modal>
       </motion.div>
     </div>
   )

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  Castle, RefreshCw, Loader2, ChevronLeft, ChevronRight, Clock,
+  Castle, RefreshCw, Clock,
   TrendingUp, BarChart3, Calendar, Users, Target, Skull, ChevronDown, ChevronUp,
   Shield, Hammer, Box, CheckCircle2
 } from "lucide-react";
@@ -18,6 +18,13 @@ import {
   RankBadge,
   Column,
 } from "@/components/analytics";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Tabs, Tab } from "@/components/ui/Tabs";
+import { SimplePagination } from "@/components/ui/Pagination";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Loading } from "@/components/ui/Loading";
 
 interface RaidEvent {
   timestamp_str: string;
@@ -278,48 +285,63 @@ export default function BasesAnalyticsPage() {
               <p className="text-zinc-500 mt-2">IcefuseBases raid statistics and leaderboards</p>
             </div>
             <div className="flex gap-3 flex-wrap">
-              <div className="flex rounded-lg overflow-hidden border border-white/10">
-                <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'analytics' ? 'bg-red-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <BarChart3 className="h-4 w-4 inline mr-2" />Analytics
-                </button>
-                <button onClick={() => setActiveTab('raids')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'raids' ? 'bg-red-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <Hammer className="h-4 w-4 inline mr-2" />Raids
-                </button>
-              </div>
-              <select value={`${timeFilter.type}:${timeFilter.value}`} onChange={e => { const [type, val] = e.target.value.split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(val) }); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="hours:1">Last hour</option>
-                <option value="hours:6">Last 6 hours</option>
-                <option value="hours:24">Last 24 hours</option>
-                <option value="days:7">Last 7 days</option>
-                <option value="days:14">Last 14 days</option>
-                <option value="days:30">Last 30 days</option>
-                <option value="days:60">Last 60 days</option>
-                <option value="days:90">Last 90 days</option>
-              </select>
-              <select value={baseTypeFilter} onChange={e => { setBaseTypeFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="">All Types</option>
-                <option value="Small">Small</option>
-                <option value="Medium">Medium</option>
-                <option value="Large">Large</option>
-              </select>
-              <select value={serverFilter} onChange={e => { setServerFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="">All Servers</option>
-                {servers.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <motion.button onClick={() => { fetchRaids(); fetchAnalytics(); }} disabled={loading || analyticsLoading} className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 bg-gradient-to-r from-red-500 to-orange-500" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                {(loading || analyticsLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                <span>Refresh</span>
-              </motion.button>
+              <Tabs
+                tabs={[
+                  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+                  { id: 'raids', label: 'Raids', icon: <Hammer className="h-4 w-4" /> }
+                ]}
+                activeTab={activeTab}
+                onChange={(tab) => setActiveTab(tab as 'analytics' | 'raids')}
+                variant="pills"
+              />
+              <Dropdown
+                value={`${timeFilter.type}:${timeFilter.value}`}
+                options={[
+                  { value: 'hours:1', label: 'Last hour' },
+                  { value: 'hours:6', label: 'Last 6 hours' },
+                  { value: 'hours:24', label: 'Last 24 hours' },
+                  { value: 'days:7', label: 'Last 7 days' },
+                  { value: 'days:14', label: 'Last 14 days' },
+                  { value: 'days:30', label: 'Last 30 days' },
+                  { value: 'days:60', label: 'Last 60 days' },
+                  { value: 'days:90', label: 'Last 90 days' }
+                ]}
+                onChange={(val) => { const [type, value] = (val || '').split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(value) }); setCurrentPage(1); }}
+              />
+              <Dropdown
+                value={baseTypeFilter}
+                options={[
+                  { value: '', label: 'All Types' },
+                  { value: 'Small', label: 'Small' },
+                  { value: 'Medium', label: 'Medium' },
+                  { value: 'Large', label: 'Large' }
+                ]}
+                onChange={(val) => { setBaseTypeFilter(val || ''); setCurrentPage(1); }}
+              />
+              <Dropdown
+                value={serverFilter}
+                options={[
+                  { value: '', label: 'All Servers' },
+                  ...servers.map(s => ({ value: s, label: s }))
+                ]}
+                onChange={(val) => { setServerFilter(val || ''); setCurrentPage(1); }}
+              />
+              <Button
+                onClick={() => { fetchRaids(); fetchAnalytics(); }}
+                disabled={loading || analyticsLoading}
+                loading={loading || analyticsLoading}
+                leftIcon={<RefreshCw className="h-4 w-4" />}
+                variant="primary"
+              >
+                Refresh
+              </Button>
             </div>
           </div>
 
           {activeTab === 'analytics' && (
             <>
               {analyticsLoading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-red-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading analytics...</p>
-                </div>
+                <Loading size="lg" text="Loading analytics..." />
               ) : analytics ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
@@ -385,10 +407,10 @@ export default function BasesAnalyticsPage() {
                   </ChartCard>
                 </>
               ) : (
-                <div className="text-center py-20 text-zinc-600">
-                  <Castle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No raid data available</p>
-                </div>
+                <EmptyState
+                  icon={<Castle className="h-12 w-12" />}
+                  title="No raid data available"
+                />
               )}
             </>
           )}
@@ -402,10 +424,7 @@ export default function BasesAnalyticsPage() {
               )}
 
               {loading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-red-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading raids...</p>
-                </div>
+                <Loading size="lg" text="Loading raids..." />
               ) : (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                   {raids.map((raid, idx) => {
@@ -429,11 +448,11 @@ export default function BasesAnalyticsPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold ${raid.was_completed ? 'text-green-400' : 'text-red-400'}`}>
+                                <Badge variant={raid.was_completed ? 'success' : 'error'} size="sm">
                                   {raid.was_completed ? 'COMPLETED' : 'ABANDONED'}
-                                </span>
-                                <span className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-zinc-400">{raid.base_type}</span>
-                                <span className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-zinc-400">{raid.building_grade}</span>
+                                </Badge>
+                                <Badge variant="secondary" size="sm">{raid.base_type}</Badge>
+                                <Badge variant="secondary" size="sm">{raid.building_grade}</Badge>
                                 <span className="text-xs text-zinc-500">{raid.building_name}</span>
                               </div>
                               <div className="text-xs text-zinc-500 mt-1">
@@ -506,17 +525,19 @@ export default function BasesAnalyticsPage() {
                   })}
 
                   {raids.length === 0 && (
-                    <div className="text-center py-16 text-zinc-600">
-                      <Castle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No raids found</p>
-                    </div>
+                    <EmptyState
+                      icon={<Castle className="h-12 w-12" />}
+                      title="No raids found"
+                    />
                   )}
 
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 pt-4">
-                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-white/5 hover:bg-red-500 disabled:opacity-50 transition-colors"><ChevronLeft className="h-5 w-5" /></button>
-                      <span className="px-4 py-2 text-sm text-zinc-400">Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} raids)</span>
-                      <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-white/5 hover:bg-red-500 disabled:opacity-50 transition-colors"><ChevronRight className="h-5 w-5" /></button>
+                    <div className="flex justify-center pt-4">
+                      <SimplePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
                     </div>
                   )}
                 </motion.div>

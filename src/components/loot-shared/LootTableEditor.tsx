@@ -1,8 +1,12 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Search, Grid, List, Trash2, Plus } from "lucide-react";
+import { Grid, List, Trash2, Plus } from "lucide-react";
 import { getItemImageUrl } from "@/lib/rust-items";
 import type { GenericLootItem, ExtraFieldDef } from "./types";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Button, IconButton, ButtonGroup } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { CheckboxSwitch } from "@/components/ui/Switch";
 
 interface LootTableEditorProps {
   tableName: string;
@@ -53,55 +57,57 @@ export default function LootTableEditor({
           <span className="text-xs text-zinc-500">{items.length} items</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search items..."
-              className="rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none w-48"
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search items..."
+            size="sm"
+            className="w-48"
+          />
+          <ButtonGroup>
+            <IconButton
+              icon={<Grid className="h-3.5 w-3.5" />}
+              onClick={() => onViewModeChange("grid")}
+              className={viewMode === "grid" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}
             />
-          </div>
-          <div className="flex rounded-lg bg-white/5 border border-white/5 overflow-hidden">
-            <button onClick={() => onViewModeChange("grid")} className={`p-1.5 ${viewMode === "grid" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}`}>
-              <Grid className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={() => onViewModeChange("list")} className={`p-1.5 ${viewMode === "list" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}`}>
-              <List className="h-3.5 w-3.5" />
-            </button>
-          </div>
+            <IconButton
+              icon={<List className="h-3.5 w-3.5" />}
+              onClick={() => onViewModeChange("list")}
+              className={viewMode === "list" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}
+            />
+          </ButtonGroup>
         </div>
       </div>
 
       {/* Table settings */}
       <div className="shrink-0 flex items-center gap-4 px-4 py-2 border-b border-white/5 bg-white/[0.01]">
-        <label className="flex items-center gap-2 text-xs text-zinc-400">
-          Min Items
-          <input
-            type="number"
-            value={minItems}
-            onChange={(e) => onUpdateTableSettings({ minItems: parseInt(e.target.value) || 1 })}
-            min={1}
-            className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-xs text-zinc-400">
-          Max Items
-          <input
-            type="number"
-            value={maxItems}
-            onChange={(e) => onUpdateTableSettings({ maxItems: parseInt(e.target.value) || 1 })}
-            min={1}
-            className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none"
-          />
-        </label>
-        <button
+        <Input
+          label="Min Items"
+          type="number"
+          value={minItems}
+          onChange={(e) => onUpdateTableSettings({ minItems: parseInt(e.target.value) || 1 })}
+          min={1}
+          size="sm"
+          className="w-28"
+        />
+        <Input
+          label="Max Items"
+          type="number"
+          value={maxItems}
+          onChange={(e) => onUpdateTableSettings({ maxItems: parseInt(e.target.value) || 1 })}
+          min={1}
+          size="sm"
+          className="w-28"
+        />
+        <Button
           onClick={() => setShowAddItem(true)}
-          className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 rounded-lg hover:bg-${accentColor}-500/20 transition-colors`}
+          variant="primary"
+          size="sm"
+          leftIcon={<Plus className="h-3 w-3" />}
+          className={`ml-auto text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 hover:bg-${accentColor}-500/20`}
         >
-          <Plus className="h-3 w-3" /> Add Item
-        </button>
+          Add Item
+        </Button>
       </div>
 
       {/* Items */}
@@ -155,7 +161,7 @@ export default function LootTableEditor({
       {showAddItem && (
         <div className="shrink-0 border-t border-white/5 p-3 bg-white/[0.02]">
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="text"
               value={addItemSearch}
               onChange={(e) => setAddItemSearch(e.target.value)}
@@ -168,10 +174,11 @@ export default function LootTableEditor({
                 if (e.key === "Escape") setShowAddItem(false);
               }}
               placeholder="Enter item shortname..."
-              className="flex-1 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none"
+              size="sm"
+              className="flex-1"
               autoFocus
             />
-            <button
+            <Button
               onClick={() => {
                 if (addItemSearch.trim()) {
                   onAddItem(addItemSearch.trim());
@@ -179,13 +186,18 @@ export default function LootTableEditor({
                   setShowAddItem(false);
                 }
               }}
-              className={`px-3 py-2 text-xs font-medium text-white bg-${accentColor}-500 rounded-lg`}
+              variant="primary"
+              size="sm"
             >
               Add
-            </button>
-            <button onClick={() => setShowAddItem(false)} className="px-3 py-2 text-xs text-zinc-400 bg-white/5 rounded-lg">
+            </Button>
+            <Button
+              onClick={() => setShowAddItem(false)}
+              variant="secondary"
+              size="sm"
+            >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -220,45 +232,62 @@ function ItemCard({
           <p className="text-sm font-medium text-white truncate">{item.shortname}</p>
           <p className="text-xs text-zinc-500">Chance: {item.spawnChance}%</p>
         </div>
-        <button onClick={() => onRemove(index)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <IconButton
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          onClick={() => onRemove(index)}
+          label="Remove item"
+          className="text-zinc-600 hover:text-red-400"
+          size="sm"
+        />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-zinc-500">
-          Min
-          <input type="number" value={item.minAmount} onChange={(e) => onUpdate(index, { minAmount: parseInt(e.target.value) || 1 })} min={1} className="w-full mt-0.5 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none" />
-        </label>
-        <label className="text-xs text-zinc-500">
-          Max
-          <input type="number" value={item.maxAmount} onChange={(e) => onUpdate(index, { maxAmount: parseInt(e.target.value) || 1 })} min={1} className="w-full mt-0.5 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none" />
-        </label>
-        <label className="text-xs text-zinc-500 col-span-2">
-          Spawn Chance
-          <input type="number" value={item.spawnChance} onChange={(e) => onUpdate(index, { spawnChance: parseFloat(e.target.value) || 0 })} min={0} step={0.1} className="w-full mt-0.5 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none" />
-        </label>
+        <Input
+          label="Min"
+          type="number"
+          value={item.minAmount}
+          onChange={(e) => onUpdate(index, { minAmount: parseInt(e.target.value) || 1 })}
+          min={1}
+          size="sm"
+        />
+        <Input
+          label="Max"
+          type="number"
+          value={item.maxAmount}
+          onChange={(e) => onUpdate(index, { maxAmount: parseInt(e.target.value) || 1 })}
+          min={1}
+          size="sm"
+        />
+        <Input
+          label="Spawn Chance"
+          type="number"
+          value={item.spawnChance}
+          onChange={(e) => onUpdate(index, { spawnChance: parseFloat(e.target.value) || 0 })}
+          min={0}
+          step={0.1}
+          size="sm"
+          className="col-span-2"
+        />
         {extraFields.map((field) => (
-          <label key={field.key} className="text-xs text-zinc-500">
-            {field.label}
+          <div key={field.key}>
             {field.type === "number" ? (
-              <input
+              <Input
+                label={field.label}
                 type="number"
                 value={(item[field.key] as number) ?? field.default}
                 onChange={(e) => onUpdate(index, { [field.key]: parseFloat(e.target.value) || 0 })}
                 min={field.min}
                 max={field.max}
                 step={field.step}
-                className="w-full mt-0.5 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none"
+                size="sm"
               />
             ) : (
-              <input
-                type="checkbox"
+              <CheckboxSwitch
+                label={field.label}
                 checked={!!item[field.key]}
-                onChange={(e) => onUpdate(index, { [field.key]: e.target.checked })}
-                className="mt-1 ml-1"
+                onChange={(checked) => onUpdate(index, { [field.key]: checked })}
               />
             )}
-          </label>
+          </div>
         ))}
       </div>
     </div>
@@ -298,12 +327,16 @@ function ItemListRow({
         field.type === "number" ? (
           <input key={field.key} type="number" value={(item[field.key] as number) ?? field.default} onChange={(e) => onUpdate(index, { [field.key]: parseFloat(e.target.value) || 0 })} min={field.min} max={field.max} step={field.step} className="w-14 rounded bg-white/5 border border-white/5 px-1.5 py-0.5 text-xs text-white text-center focus:outline-none" />
         ) : (
-          <input key={field.key} type="checkbox" checked={!!item[field.key]} onChange={(e) => onUpdate(index, { [field.key]: e.target.checked })} className="w-4 h-4" />
+          <CheckboxSwitch key={field.key} checked={!!item[field.key]} onChange={(checked) => onUpdate(index, { [field.key]: checked })} label="" />
         )
       ))}
-      <button onClick={() => onRemove(index)} className="p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      <IconButton
+        icon={<Trash2 className="h-3.5 w-3.5" />}
+        onClick={() => onRemove(index)}
+        label="Remove item"
+        className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
+        size="sm"
+      />
     </div>
   );
 }

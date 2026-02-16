@@ -3,10 +3,20 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRightLeft, Settings, Activity, RefreshCw, Save,
-  Users, Clock, TrendingUp, AlertTriangle,
-  ChevronLeft, ChevronRight, Search, X, Shield, Server, Zap,
+  Users, Clock, AlertTriangle,
+  Search, Shield, Server, Zap,
   Calendar
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Input, NumberInput } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Tabs, Tab } from "@/components/ui/Tabs";
+import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Loading";
+import { SimplePagination } from "@/components/ui/Pagination";
 
 interface RedirectConfig {
   id?: string;
@@ -82,14 +92,15 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 ${
-        type === "success" ? "bg-green-500/90" : "bg-red-500/90"
-      } text-white`}
+      className="fixed bottom-4 right-4 z-[10000]"
     >
-      {message}
-      <button onClick={onClose} className="ml-2 hover:opacity-75">
-        <X className="h-4 w-4" />
-      </button>
+      <Alert
+        variant={type === "success" ? "success" : "error"}
+        dismissible
+        onDismiss={onClose}
+      >
+        {message}
+      </Alert>
     </motion.div>
   );
 }
@@ -153,27 +164,27 @@ function ListManager({ label, description, items, onChange, placeholder }: {
         {description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>}
       </div>
       <div className="flex gap-2">
-        <input
+        <Input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addItem())}
           placeholder={placeholder}
-          className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500"
+          className="flex-1"
         />
-        <button onClick={addItem} className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors text-sm">
+        <Button onClick={addItem} variant="primary" size="md">
           Add
-        </button>
+        </Button>
       </div>
       {items.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {items.map((item, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/10 text-sm text-white">
+            <Badge key={idx} variant="secondary" size="sm">
               {item}
-              <button onClick={() => removeItem(item)} className="hover:text-red-400">
-                <X className="h-3 w-3" />
+              <button onClick={() => removeItem(item)} className="ml-1 hover:text-red-400">
+                ×
               </button>
-            </span>
+            </Badge>
           ))}
         </div>
       )}
@@ -190,17 +201,14 @@ function SettingInput({ label, description, value, onChange, type = "number", st
   step?: string;
 }) {
   return (
-    <div>
-      <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
-      {description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{description}</p>}
-      <input
-        type={type}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(type === "number" ? (parseFloat(e.target.value) || 0) : parseInt(e.target.value) || 0)}
-        className="w-full mt-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-      />
-    </div>
+    <NumberInput
+      label={label}
+      helperText={description}
+      value={value}
+      onChange={onChange}
+      step={step ? parseFloat(step) : 1}
+      showControls={false}
+    />
   );
 }
 
@@ -341,40 +349,25 @@ export default function RedirectionPage() {
             <p className="text-zinc-500 mt-2">Configure staff AFK redirects and wipe redirects</p>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => activeTab === "settings" ? fetchConfig() : fetchLogs()}
-              className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white transition-colors"
-            >
-              <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-            </button>
-          </div>
+          <Button
+            onClick={() => activeTab === "settings" ? fetchConfig() : fetchLogs()}
+            variant="secondary"
+            size="md"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeTab === "settings"
-                ? "bg-purple-500 text-white"
-                : "bg-white/5 text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </button>
-          <button
-            onClick={() => setActiveTab("logs")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeTab === "logs"
-                ? "bg-purple-500 text-white"
-                : "bg-white/5 text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Activity className="h-4 w-4" />
-            Logs
-          </button>
-        </div>
+        <Tabs
+          tabs={[
+            { id: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
+            { id: "logs", label: "Logs", icon: <Activity className="h-4 w-4" /> },
+          ]}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab as TabType)}
+          variant="pills"
+          className="mb-6"
+        />
 
         <AnimatePresence mode="wait">
           {activeTab === "settings" ? (
@@ -394,17 +387,13 @@ export default function RedirectionPage() {
                 <p className="text-sm text-zinc-500 mb-4">Monitors staff members and redirects them to empty servers when AFK</p>
 
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <button
-                      onClick={() => setConfig({ ...config, enableAFKRedirect: !config.enableAFKRedirect })}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${config.enableAFKRedirect ? "bg-purple-500" : "bg-zinc-600"}`}
-                    >
-                      <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${config.enableAFKRedirect ? "translate-x-6" : ""}`} />
-                    </button>
-                    <div>
-                      <span className="text-sm font-medium text-white">Enable Staff AFK Redirect</span>
-                      <p className="text-xs text-zinc-500">When enabled, monitors staff for AFK and redirects them</p>
-                    </div>
+                  <div className="p-3 rounded-lg bg-white/5">
+                    <Switch
+                      checked={config.enableAFKRedirect}
+                      onChange={(checked) => setConfig({ ...config, enableAFKRedirect: checked })}
+                      label="Enable Staff AFK Redirect"
+                      description="When enabled, monitors staff for AFK and redirects them"
+                    />
                   </div>
 
                   <div className="bg-white/5 rounded-lg p-4">
@@ -472,17 +461,13 @@ export default function RedirectionPage() {
                 <p className="text-sm text-zinc-500 mb-4">Redirect players before server wipes. Configure schedules on each server.</p>
 
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                    <button
-                      onClick={() => setConfig({ ...config, enableWipeRedirect: !config.enableWipeRedirect })}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${config.enableWipeRedirect ? "bg-purple-500" : "bg-zinc-600"}`}
-                    >
-                      <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${config.enableWipeRedirect ? "translate-x-6" : ""}`} />
-                    </button>
-                    <div>
-                      <span className="text-sm font-medium text-white">Enable Wipe Redirect</span>
-                      <p className="text-xs text-zinc-500">Redirects all players before scheduled wipes</p>
-                    </div>
+                  <div className="p-3 rounded-lg bg-white/5">
+                    <Switch
+                      checked={config.enableWipeRedirect}
+                      onChange={(checked) => setConfig({ ...config, enableWipeRedirect: checked })}
+                      label="Enable Wipe Redirect"
+                      description="Redirects all players before scheduled wipes"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -505,18 +490,22 @@ export default function RedirectionPage() {
 
                 <div className="space-y-6">
                   <div className="bg-white/5 rounded-lg p-4">
-                    <label className="text-sm font-medium text-[var(--text-primary)]">Override Redirect Server</label>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-2">Forces all redirects (AFK and wipe) to this server, bypassing population checks</p>
-                    <select
-                      value={config.overrideRedirectServer || ""}
-                      onChange={(e) => setConfig({ ...config, overrideRedirectServer: e.target.value || null })}
-                      className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500"
-                    >
-                      <option value="">None (use population-based selection)</option>
-                      {servers.map((s) => (
-                        <option key={s.id} value={s.hashedId}>{s.name}</option>
-                      ))}
-                    </select>
+                    <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">Override Redirect Server</label>
+                    <p className="text-xs text-[var(--text-muted)] mb-2">Forces all redirects (AFK and wipe) to this server, bypassing population checks</p>
+                    <Dropdown
+                      value={config.overrideRedirectServer}
+                      options={[
+                        ...servers.map((s): DropdownOption => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        })),
+                      ]}
+                      onChange={(val) => setConfig({ ...config, overrideRedirectServer: val })}
+                      placeholder="None (use population-based selection)"
+                      emptyOption="None (use population-based selection)"
+                      clearable
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -561,14 +550,17 @@ export default function RedirectionPage() {
               </div>
 
               <div className="flex justify-end">
-                <button
+                <Button
                   onClick={saveConfig}
                   disabled={saving}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white font-medium transition-colors disabled:opacity-50"
+                  variant="primary"
+                  size="lg"
+                  loading={saving}
+                  loadingText="Saving..."
+                  leftIcon={<Save className="h-4 w-4" />}
                 >
-                  <Save className="h-4 w-4" />
-                  {saving ? "Saving..." : "Save Configuration"}
-                </button>
+                  Save Configuration
+                </Button>
               </div>
             </motion.div>
           ) : (
@@ -594,16 +586,15 @@ export default function RedirectionPage() {
                     Redirect Logs
                   </h2>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
-                      <Search className="h-4 w-4 text-zinc-400" />
-                      <input
-                        type="text"
-                        value={searchSteamId}
-                        onChange={(e) => { setSearchSteamId(e.target.value); setLogPage(1); }}
-                        placeholder="Search Steam ID..."
-                        className="bg-transparent text-white text-sm focus:outline-none w-40"
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      value={searchSteamId}
+                      onChange={(e) => { setSearchSteamId(e.target.value); setLogPage(1); }}
+                      placeholder="Search Steam ID..."
+                      leftIcon={<Search className="h-4 w-4" />}
+                      size="sm"
+                      className="w-48"
+                    />
                     <div className="flex rounded-lg overflow-hidden border border-white/10">
                       {(["all", "player", "wipe"] as const).map((type) => (
                         <button
@@ -622,13 +613,13 @@ export default function RedirectionPage() {
 
                 {loading ? (
                   <div className="space-y-3">
-                    {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/5 rounded-lg animate-pulse" />)}
+                    {[1, 2, 3].map((i) => <Skeleton key={i} height="4rem" variant="rectangular" />)}
                   </div>
                 ) : logs.length === 0 ? (
-                  <div className="text-center py-12 text-zinc-500">
-                    <ArrowRightLeft className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>No redirect logs found</p>
-                  </div>
+                  <EmptyState
+                    icon={<ArrowRightLeft className="h-12 w-12" />}
+                    title="No redirect logs found"
+                  />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -645,32 +636,33 @@ export default function RedirectionPage() {
                         {logs.map((log) => (
                           <tr key={log.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                             <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                log.logType === "player" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400"
-                              }`}>
+                              <Badge variant={log.logType === "player" ? "info" : "warning"} size="sm">
                                 {log.logType}
-                              </span>
+                              </Badge>
                             </td>
                             <td className="py-3 px-4">
                               {log.playerName ? (
                                 <div>
                                   <div className="text-white font-medium">{log.playerName}</div>
                                   <div className="text-xs text-zinc-500">{log.steamId}</div>
-                                  {log.rank && <div className="text-xs text-purple-400">{log.rank}</div>}
+                                  {log.rank && <Badge variant="primary" size="sm">{log.rank}</Badge>}
                                 </div>
                               ) : (
                                 <span className="text-zinc-500">{log.players} players</span>
                               )}
                             </td>
                             <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                log.redirectReason === "AFK_TIMEOUT" ? "bg-orange-500/20 text-orange-400" :
-                                log.redirectReason === "WIPE" || log.redirectReason === "WIPE_REDIRECT" ? "bg-red-500/20 text-red-400" :
-                                log.redirectReason === "PLAYER_RETURN" ? "bg-cyan-500/20 text-cyan-400" :
-                                "bg-green-500/20 text-green-400"
-                              }`}>
+                              <Badge
+                                variant={
+                                  log.redirectReason === "AFK_TIMEOUT" ? "warning" :
+                                  log.redirectReason === "WIPE" || log.redirectReason === "WIPE_REDIRECT" ? "error" :
+                                  log.redirectReason === "PLAYER_RETURN" ? "info" :
+                                  "success"
+                                }
+                                size="sm"
+                              >
                                 {log.redirectReason}
-                              </span>
+                              </Badge>
                               {log.afkTimeSeconds && (
                                 <div className="text-xs text-zinc-500 mt-1">{formatTime(log.afkTimeSeconds)}</div>
                               )}
@@ -701,25 +693,17 @@ export default function RedirectionPage() {
                 )}
 
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                    <span className="text-sm text-zinc-500">
-                      Page {logPage} of {totalPages} ({logTotal} total)
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setLogPage(p => Math.max(1, p - 1))}
-                        disabled={logPage === 1}
-                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setLogPage(p => Math.min(totalPages, p + 1))}
-                        disabled={logPage === totalPages}
-                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <SimplePagination
+                      currentPage={logPage}
+                      totalPages={totalPages}
+                      onPageChange={setLogPage}
+                      showPageInfo
+                    />
+                    <div className="text-center mt-2">
+                      <span className="text-sm text-zinc-500">
+                        {logTotal} total
+                      </span>
                     </div>
                   </div>
                 )}

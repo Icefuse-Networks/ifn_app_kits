@@ -7,7 +7,11 @@
 'use client'
 
 import { useState } from 'react'
-import { FolderOpen, Search, X, Trash2, Check } from 'lucide-react'
+import { FolderOpen, Trash2, Check } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { Button, IconButton } from '@/components/ui/Button'
+import { Loading } from '@/components/ui/Loading'
 
 interface SavedConfig {
   id: number
@@ -53,64 +57,31 @@ export function LoadModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-      onClick={onClose}
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Load Configuration"
+      icon={<FolderOpen className="h-5 w-5" />}
+      size="xl"
+      footer={
+        <Button variant="secondary" onClick={onClose} fullWidth>
+          Cancel
+        </Button>
+      }
     >
-      <div
-        className="rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
-        style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--glass-border)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div
-          className="p-4 flex items-center justify-between"
-          style={{ borderBottom: '1px solid var(--glass-border)' }}
-        >
-          <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-[var(--accent-primary)]" />
-            Load Configuration
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+      <div className="space-y-4">
         {/* Search */}
-        <div
-          className="p-4"
-          style={{ borderBottom: '1px solid var(--glass-border)' }}
-        >
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search saved configs..."
-              className="w-full rounded-lg pl-9 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
-              style={{
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border-secondary)',
-              }}
-              autoFocus
-            />
-          </div>
-        </div>
+        <SearchInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search saved configs..."
+          autoFocus
+        />
 
         {/* Config List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="min-h-[300px]">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-[var(--text-muted)]">Loading configs...</p>
-            </div>
+            <Loading text="Loading configs..." size="lg" />
           ) : filteredConfigs.length === 0 ? (
             <div className="text-center py-12 text-[var(--text-muted)]">
               <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -149,29 +120,25 @@ export function LoadModal({
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <button
+                      <IconButton
+                        icon={<Check className="h-4 w-4" />}
                         onClick={() => onLoad(config.id)}
-                        className="p-2 rounded-lg text-white transition-colors"
-                        style={{ background: 'var(--accent-primary)' }}
-                        title="Load"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button
+                        label="Load"
+                        className="!bg-[var(--accent-primary)] !text-white hover:!opacity-90"
+                      />
+                      <IconButton
+                        icon={
+                          deletingId === config.id ? (
+                            <div className="w-4 h-4 border-2 border-[var(--status-error)] border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )
+                        }
                         onClick={() => handleDelete(config.id)}
                         disabled={deletingId === config.id}
-                        className="p-2 rounded-lg text-[var(--status-error)] transition-colors disabled:opacity-50"
-                        style={{
-                          background: 'rgba(var(--status-error-rgb), 0.1)',
-                        }}
-                        title="Delete"
-                      >
-                        {deletingId === config.id ? (
-                          <div className="w-4 h-4 border-2 border-[var(--status-error)] border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
+                        label="Delete"
+                        className="!bg-[rgba(var(--status-error-rgb),0.1)] !text-[var(--status-error)]"
+                      />
                     </div>
                   </div>
                 </div>
@@ -179,25 +146,8 @@ export function LoadModal({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div
-          className="p-4"
-          style={{ borderTop: '1px solid var(--glass-border)' }}
-        >
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 rounded-lg text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-            style={{
-              background: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-            }}
-          >
-            Cancel
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

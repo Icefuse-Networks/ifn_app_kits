@@ -4,12 +4,13 @@ import { motion } from "framer-motion";
 import { Package, Zap, ChevronRight, Activity, TrendingUp, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { dashboardSections } from '@/config/navigation'
+import { StatCard } from '@/components/ui/Card'
 
 const quickStats = [
-  { label: 'Active Kits', value: '24', change: '+3', trend: 'up', icon: Package },
-  { label: 'Total Claims', value: '12.4K', change: '+18%', trend: 'up', icon: Activity },
-  { label: 'Active Servers', value: '8', change: '0', trend: 'neutral', icon: Layers },
-  { label: 'API Calls Today', value: '2.1K', change: '+5%', trend: 'up', icon: TrendingUp },
+  { label: 'Active Kits', value: '24', change: '+3', changeType: 'positive' as const, icon: Package },
+  { label: 'Total Claims', value: '12.4K', change: '+18%', changeType: 'positive' as const, icon: Activity },
+  { label: 'Active Servers', value: '8', change: '0', changeType: 'neutral' as const, icon: Layers },
+  { label: 'API Calls Today', value: '2.1K', change: '+5%', changeType: 'positive' as const, icon: TrendingUp },
 ]
 
 export default function DashboardPage() {
@@ -35,27 +36,14 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="relative group"
             >
-              <div className="p-5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)] transition-all duration-200">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 rounded-xl bg-blue-500/10">
-                    <stat.icon className="h-5 w-5 text-blue-400" />
-                  </div>
-                  {stat.trend === 'up' && (
-                    <span className="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full">
-                      {stat.change}
-                    </span>
-                  )}
-                  {stat.trend === 'neutral' && (
-                    <span className="text-xs font-medium text-slate-400 bg-slate-400/10 px-2 py-1 rounded-full">
-                      {stat.change}
-                    </span>
-                  )}
-                </div>
-                <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">{stat.value}</div>
-                <div className="text-sm text-[var(--text-muted)]">{stat.label}</div>
-              </div>
+              <StatCard
+                icon={<stat.icon className="h-5 w-5" />}
+                label={stat.label}
+                value={stat.value}
+                change={stat.change}
+                changeType={stat.changeType}
+              />
             </motion.div>
           ))}
         </div>

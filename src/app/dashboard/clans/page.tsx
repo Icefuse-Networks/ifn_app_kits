@@ -14,8 +14,6 @@ import {
   Users,
   Shield,
   Trash2,
-  AlertCircle,
-  Search,
   ChevronRight,
   Crown,
   Ban,
@@ -23,6 +21,15 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { getLevelFromXP, getPrestigeRank } from '@/types/clans'
+import { Modal } from '@/components/ui/Modal'
+import { Input, Textarea } from '@/components/ui/Input'
+import { Button, IconButton } from '@/components/ui/Button'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { Loading } from '@/components/ui/Loading'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SimplePagination } from '@/components/ui/Pagination'
+import { Badge } from '@/components/ui/Badge'
+import { Alert } from '@/components/ui/Alert'
 
 interface ClanListItem {
   id: string
@@ -197,14 +204,9 @@ export default function ClansPage() {
             Manage clans, banned names, and perks definitions.
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-          style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Clan</span>
-        </button>
+        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+          New Clan
+        </Button>
       </div>
 
       {/* Sub-navigation */}
@@ -237,166 +239,108 @@ export default function ClansPage() {
 
       {/* Search */}
       <form onSubmit={handleSearch} className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-          <input
-            type="text"
+        <div className="max-w-md">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search by tag or description..."
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
           />
         </div>
       </form>
 
       {/* Error Message */}
       {error && (
-        <div
-          className="mb-6 p-4 rounded-lg flex items-start gap-3"
-          style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-          }}
-        >
-          <AlertCircle className="w-5 h-5 text-[var(--status-error)] flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-[var(--status-error)] font-medium">{error}</p>
-          </div>
-          <button onClick={() => setError(null)} className="text-[var(--status-error)] hover:opacity-70">
-            Dismiss
-          </button>
-        </div>
+        <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+          {error}
+        </Alert>
       )}
 
       {/* Create Clan Modal */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl p-8"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Create Clan</h2>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Clan"
+        size="md"
+      >
+        <div className="space-y-5">
+          <Input
+            label="Tag"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            placeholder="e.g., IFN"
+            maxLength={10}
+            required
+            helperText="2-10 characters, alphanumeric and underscores"
+          />
 
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Tag *
-                </label>
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="e.g., IFN"
-                  maxLength={10}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-                <p className="text-xs text-[var(--text-muted)] mt-1">2-10 characters, alphanumeric and underscores</p>
-              </div>
+          <Input
+            label="Owner Steam ID"
+            value={newOwnerId}
+            onChange={(e) => setNewOwnerId(e.target.value)}
+            placeholder="e.g., 76561198012345678"
+            maxLength={17}
+            required
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Owner Steam ID *
-                </label>
-                <input
-                  type="text"
-                  value={newOwnerId}
-                  onChange={(e) => setNewOwnerId(e.target.value)}
-                  placeholder="e.g., 76561198012345678"
-                  maxLength={17}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
+          <Input
+            label="Description (optional)"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="Clan description"
+            maxLength={200}
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Description (optional)
-                </label>
-                <input
-                  type="text"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Clan description"
-                  maxLength={200}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Tag Color
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={newTagColor}
-                    onChange={(e) => setNewTagColor(e.target.value.replace('#', ''))}
-                    placeholder="5AF3F3"
-                    maxLength={6}
-                    className="flex-1 px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] font-mono"
-                  />
-                  <div
-                    className="w-12 h-12 rounded-lg border border-[var(--border-secondary)]"
-                    style={{ backgroundColor: `#${newTagColor}` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-5 py-2.5 rounded-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createClan}
-                disabled={!newTag.trim() || !newOwnerId.trim() || creating}
-                className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-              >
-                {creating ? 'Creating...' : 'Create'}
-              </button>
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              Tag Color
+            </label>
+            <div className="flex items-center gap-3">
+              <Input
+                value={newTagColor}
+                onChange={(e) => setNewTagColor(e.target.value.replace('#', ''))}
+                placeholder="5AF3F3"
+                maxLength={6}
+                className="flex-1 font-mono"
+              />
+              <div
+                className="w-12 h-12 rounded-lg border border-[var(--border-secondary)]"
+                style={{ backgroundColor: `#${newTagColor}` }}
+              />
             </div>
           </div>
         </div>
-      )}
+
+        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
+          <Button variant="ghost" onClick={() => setShowCreateModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={createClan}
+            disabled={!newTag.trim() || !newOwnerId.trim() || creating}
+            loading={creating}
+          >
+            Create
+          </Button>
+        </div>
+      </Modal>
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Loading />
       ) : clans.length === 0 ? (
         /* Empty State */
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-        >
-          <Shield className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-            {search ? 'No clans found' : 'No Clans Yet'}
-          </h3>
-          <p className="text-[var(--text-secondary)] mb-6">
-            {search
-              ? 'Try adjusting your search terms.'
-              : 'Create your first clan to get started.'}
-          </p>
-          {!search && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-              style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Clan</span>
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={<Shield />}
+          title={search ? 'No clans found' : 'No Clans Yet'}
+          description={search ? 'Try adjusting your search terms.' : 'Create your first clan to get started.'}
+          action={
+            !search ? (
+              <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+                Create Clan
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         /* Clans List */
         <div className="space-y-4">
@@ -431,28 +375,12 @@ export default function ClansPage() {
                       <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                         [{clan.tag}]
                       </h3>
-                      <span className="text-xs px-2 py-1 rounded-full bg-[var(--bg-input)] text-[var(--text-muted)]">
-                        Level {level}
-                      </span>
-                      <span
-                        className="text-xs px-2 py-1 rounded-full"
-                        style={{
-                          backgroundColor:
-                            prestigeRank === 'Immortal'
-                              ? 'rgba(255, 215, 0, 0.2)'
-                              : prestigeRank === 'Unranked'
-                                ? 'var(--bg-input)'
-                                : 'rgba(90, 243, 243, 0.2)',
-                          color:
-                            prestigeRank === 'Immortal'
-                              ? '#FFD700'
-                              : prestigeRank === 'Unranked'
-                                ? 'var(--text-muted)'
-                                : 'var(--accent-primary)',
-                        }}
+                      <Badge variant="neutral">Level {level}</Badge>
+                      <Badge
+                        variant={prestigeRank === 'Immortal' ? 'warning' : prestigeRank === 'Unranked' ? 'neutral' : 'primary'}
                       >
                         {prestigeRank}
-                      </span>
+                      </Badge>
                     </div>
 
                     {clan.description && (
@@ -473,38 +401,26 @@ export default function ClansPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link
-                      href={`/dashboard/clans/${clan.id}`}
-                      className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                      title="View details"
-                    >
-                      <ChevronRight className="w-5 h-5" />
+                    <Link href={`/dashboard/clans/${clan.id}`}>
+                      <IconButton icon={<ChevronRight />} title="View details" />
                     </Link>
 
                     {deleteConfirm === clan.id ? (
                       <>
-                        <button
-                          onClick={() => deleteClan(clan.id)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                          style={{ background: 'var(--status-error)', color: 'white' }}
-                        >
+                        <Button variant="danger" size="sm" onClick={() => deleteClan(clan.id)}>
                           Confirm
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm(null)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
                           Cancel
-                        </button>
+                        </Button>
                       </>
                     ) : (
-                      <button
+                      <IconButton
+                        icon={<Trash2 />}
                         onClick={() => setDeleteConfirm(clan.id)}
-                        className="p-2 rounded-lg hover:bg-[var(--status-error)]/10 text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
                         title="Disband clan"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                        variant="danger"
+                      />
                     )}
                   </div>
                 </div>
@@ -514,25 +430,12 @@ export default function ClansPage() {
 
           {/* Pagination */}
           {(page > 1 || hasMore) && (
-            <div className="flex items-center justify-center gap-4 pt-6">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-              >
-                Previous
-              </button>
-              <span className="text-[var(--text-secondary)]">Page {page}</span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!hasMore}
-                className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-              >
-                Next
-              </button>
-            </div>
+            <SimplePagination
+              currentPage={page}
+              onPageChange={setPage}
+              hasMore={hasMore}
+              className="pt-6"
+            />
           )}
         </div>
       )}

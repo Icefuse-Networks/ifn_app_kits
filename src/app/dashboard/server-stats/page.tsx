@@ -4,10 +4,17 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Server, Users, MapPin, Globe, Shield, ExternalLink, RefreshCw, AlertTriangle,
-  Search, ChevronLeft, ChevronRight, Filter as FilterIcon, X, TrendingUp,
+  Search, Filter as FilterIcon, X, TrendingUp,
   CalendarDays, Gamepad2, Axe, Gauge, Layers, KeySquare, Tag, Activity, BarChart3, Box
 } from "lucide-react"
 import { StatCard, ChartCard, BarChart } from "@/components/analytics"
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown"
+import { Button, IconButton } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { Loading } from "@/components/ui/Loading"
+import { AccordionItem } from "@/components/ui/Accordion"
+import { Pagination } from "@/components/ui/Pagination"
 
 interface RustRates { gather?: number; craft?: number; component?: number; scrap?: number }
 interface RustSettings { teamUILimit?: number; groupLimit?: number; rates?: RustRates; kits?: boolean; blueprints?: boolean }
@@ -146,34 +153,15 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }:
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
   return (
-    <div className="rounded-xl bg-white/[0.02] border border-white/5 mb-6">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left p-5 hover:bg-white/[0.01] rounded-t-xl transition-colors flex justify-between items-center"
+    <div className="mb-6">
+      <AccordionItem
+        title={title}
+        icon={<Icon className="h-5 w-5" />}
+        isOpen={isOpen}
+        onToggle={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-purple-500/20">
-            <Icon className="h-5 w-5 text-purple-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-        </div>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronLeft className="w-5 h-5 text-zinc-500 rotate-[-90deg]" />
-        </motion.div>
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="p-5 pt-0 border-t border-white/5">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {children}
+      </AccordionItem>
     </div>
   )
 }
@@ -201,18 +189,18 @@ function ServerCard({ server }: { server: ProcessedServer }) {
             {server.name}
           </h3>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold bg-black/40 text-white px-2 py-0.5 rounded">{server.region}</span>
+            <Badge variant="secondary" size="sm">{server.region}</Badge>
             <span className={`w-2.5 h-2.5 rounded-full ${server.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`} />
           </div>
         </div>
         <div className="flex flex-wrap gap-1 mb-3 text-xs">
-          <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Gamepad2 size={10} />{server.primaryGamemode}
-          </span>
-          {server.isOfficial && <span className="bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full">Official</span>}
-          {server.isPVE && <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">PVE</span>}
-          {server.hasKits && <span className="bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full">Kits</span>}
-          {!server.hasBlueprints && <span className="bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">No BPs</span>}
+          <Badge variant="primary" size="sm" icon={<Gamepad2 size={10} />}>
+            {server.primaryGamemode}
+          </Badge>
+          {server.isOfficial && <Badge variant="warning" size="sm">Official</Badge>}
+          {server.isPVE && <Badge variant="info" size="sm">PVE</Badge>}
+          {server.hasKits && <Badge variant="secondary" size="sm">Kits</Badge>}
+          {!server.hasBlueprints && <Badge variant="error" size="sm">No BPs</Badge>}
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-zinc-400 mb-3">
           <p className="flex items-center col-span-2">
@@ -253,44 +241,6 @@ function ServerCard({ server }: { server: ProcessedServer }) {
   )
 }
 
-function PaginationControls({ currentPage, totalPages, onPageChange }: {
-  currentPage: number; totalPages: number; onPageChange: (page: number) => void
-}) {
-  if (totalPages <= 1) return null
-  const pN = new Set<number>()
-  pN.add(1); pN.add(totalPages)
-  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) pN.add(i)
-  const spN = Array.from(pN).sort((a, b) => a - b)
-  return (
-    <div className="flex justify-center items-center space-x-2 my-8">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="p-2 rounded-lg bg-white/5 hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
-      >
-        <ChevronLeft size={18} />
-      </button>
-      {spN.map((p, idx, arr) => (
-        <span key={p}>
-          {idx > 0 && p - arr[idx - 1] > 1 && <span className="px-1 text-zinc-500">...</span>}
-          <button
-            onClick={() => onPageChange(p)}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${currentPage === p ? 'bg-purple-500 text-white' : 'bg-white/5 hover:bg-white/10 text-zinc-400'}`}
-          >
-            {p}
-          </button>
-        </span>
-      ))}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="p-2 rounded-lg bg-white/5 hover:bg-purple-500/20 disabled:opacity-50 transition-colors"
-      >
-        <ChevronRight size={18} />
-      </button>
-    </div>
-  )
-}
 
 const ITEMS_PER_PAGE = 24
 
@@ -492,21 +442,22 @@ export default function ServerStatsPage() {
             <p className="text-zinc-500 mt-2">Real-time server statistics from BattleMetrics (Top 1000)</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            <Button
               onClick={() => setShowFilters(p => !p)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:border-purple-500/50 transition-colors"
+              variant="secondary"
+              leftIcon={<FilterIcon className="h-4 w-4" />}
             >
-              <FilterIcon className="h-4 w-4" />
               Filters
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={fetchServers}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm transition-colors disabled:opacity-50"
+              loading={loading}
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              variant="primary"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -534,70 +485,66 @@ export default function ServerStatsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-2">Region</label>
-                  <select
+                  <Dropdown
                     value={selectedRegion}
-                    onChange={e => setSelectedRegion(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-                  >
-                    {regionOptions.map(c => <option key={c || 'all'} value={c}>{c || "All Regions"}</option>)}
-                  </select>
+                    options={regionOptions.map(c => ({ value: c, label: c || "All Regions" }))}
+                    onChange={(val) => setSelectedRegion(val || '')}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-2">Gamemode</label>
-                  <select
+                  <Dropdown
                     value={selectedGamemode}
-                    onChange={e => setSelectedGamemode(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-                  >
-                    {gamemodeOptions.map(c => <option key={c || 'all'} value={c}>{c || "All Gamemodes"}</option>)}
-                  </select>
+                    options={gamemodeOptions.map(c => ({ value: c, label: c || "All Gamemodes" }))}
+                    onChange={(val) => setSelectedGamemode(val || '')}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-2">Team Limit</label>
-                  <select
+                  <Dropdown
                     value={selectedTeamLimit}
-                    onChange={e => setSelectedTeamLimit(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-                  >
-                    {teamLimitOptions.map(c => <option key={c || 'all'} value={c}>{c || "All Limits"}</option>)}
-                  </select>
+                    options={teamLimitOptions.map(c => ({ value: c, label: c || "All Limits" }))}
+                    onChange={(val) => setSelectedTeamLimit(val || '')}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-400 mb-2">Type</label>
-                  <select
+                  <Dropdown
                     value={selectedPVE}
-                    onChange={e => setSelectedPVE(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-                  >
-                    <option value="">All Types</option>
-                    <option value="false">PVP</option>
-                    <option value="true">PVE</option>
-                  </select>
+                    options={[
+                      { value: '', label: 'All Types' },
+                      { value: 'false', label: 'PVP' },
+                      { value: 'true', label: 'PVE' }
+                    ]}
+                    onChange={(val) => setSelectedPVE(val || '')}
+                  />
                 </div>
               </div>
               <div className="mt-4 flex justify-end">
-                <button onClick={handleResetFilters} className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors">
-                  <X className="h-4 w-4" /> Reset Filters
-                </button>
+                <Button
+                  onClick={handleResetFilters}
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<X className="h-4 w-4" />}
+                >
+                  Reset Filters
+                </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {loading && (
-          <div className="text-center py-20">
-            <RefreshCw className="h-10 w-10 mx-auto animate-spin text-purple-500 mb-4" />
-            <p className="text-zinc-400">Analyzing global player distribution...</p>
-          </div>
+          <Loading size="lg" text="Analyzing global player distribution..." />
         )}
 
         {error && !loading && (
           <div className="text-center py-10 bg-red-500/10 border border-red-500/30 p-6 rounded-xl">
             <AlertTriangle className="h-10 w-10 mx-auto text-red-400 mb-4" />
             <p className="text-lg font-semibold text-red-300 mb-4">Error: {error}</p>
-            <button onClick={fetchServers} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg transition-colors">
+            <Button onClick={fetchServers} variant="primary">
               Try Again
-            </button>
+            </Button>
           </div>
         )}
 
@@ -706,14 +653,22 @@ export default function ServerStatsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {paginatedServers.map(s => <ServerCard key={s.id} server={s} />)}
                 </div>
-                <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={p => setCurrentPage(p)} />
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                )}
               </motion.div>
             ) : (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-zinc-500 py-10">
-                <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No servers found matching your criteria.</p>
-                {searchTerm && <p className="text-sm mt-2">Your search for "{searchTerm}" yielded no results.</p>}
-              </motion.div>
+              <EmptyState
+                icon={<Server className="h-12 w-12" />}
+                title="No servers found matching your criteria"
+                description={searchTerm ? `Your search for "${searchTerm}" yielded no results.` : undefined}
+              />
             )}
           </>
         )}

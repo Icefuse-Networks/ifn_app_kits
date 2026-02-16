@@ -3,11 +3,24 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { motion } from "framer-motion"
 import {
-  ArrowLeft, Gift, Users, Search, Plus, Clock, Server, Eye,
+  ArrowLeft, Gift, Users, Plus, Clock, Server, Eye,
   Trash2, User, RefreshCw, BarChart3, Activity,
-  Power, PowerOff, Globe, Filter, Trophy, X, Check, ChevronDown
+  Power, PowerOff, Globe, Filter, Trophy, Check
 } from "lucide-react"
 import Link from "next/link"
+import {
+  Modal,
+  Input,
+  Button,
+  IconButton,
+  SearchInput,
+  Tabs,
+  Loading,
+  EmptyState,
+  Alert,
+  Dropdown,
+  NumberInput
+} from "@/components/ui"
 
 interface GiveawayPlayer {
   id: string
@@ -343,8 +356,8 @@ export default function GiveawaysPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2.5 rounded-xl transition-all hover:scale-105 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]">
-            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          <Link href="/dashboard">
+            <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -356,14 +369,21 @@ export default function GiveawaysPage() {
             <p className="text-[var(--text-muted)] text-sm ml-[52px]">Manage giveaways, entries, and pick winners</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => fetchData()} disabled={loading} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
-            </button>
-            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-[var(--accent-primary)] text-white">
-              <Plus className="w-4 h-4" />
-              <span>New Giveaway</span>
-            </button>
+            <Button
+              variant="secondary"
+              onClick={() => fetchData()}
+              disabled={loading}
+              leftIcon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => setShowCreateForm(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              New Giveaway
+            </Button>
           </div>
         </div>
 
@@ -400,35 +420,33 @@ export default function GiveawaysPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-6 p-1 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] w-fit">
-          <button onClick={() => setTab("giveaways")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "giveaways" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}>
-            <span className="flex items-center gap-2"><Gift className="w-4 h-4" />Giveaways</span>
-          </button>
-          <button onClick={() => setTab("players")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === "players" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}>
-            <span className="flex items-center gap-2"><Users className="w-4 h-4" />Players ({players.length})</span>
-          </button>
-        </div>
+        <Tabs
+          tabs={[
+            { id: "giveaways", label: "Giveaways", icon: <Gift className="w-4 h-4" /> },
+            { id: "players", label: "Players", icon: <Users className="w-4 h-4" />, badge: players.length },
+          ]}
+          activeTab={tab}
+          onChange={(id) => setTab(id as "giveaways" | "players")}
+          className="mb-6"
+        />
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 bg-red-500/10 border border-red-500/30">
-            <span className="text-red-400 flex-1">{error}</span>
-            <button onClick={() => setError(null)} className="text-red-400 hover:opacity-70 text-sm">Dismiss</button>
-          </div>
+          <Alert variant="error" dismissible onDismiss={() => setError(null)} className="mb-6">
+            {error}
+          </Alert>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Loading text="Loading giveaways..." />
         ) : tab === "giveaways" ? (
           /* Giveaways Tab */
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             {giveaways.length === 0 ? (
-              <div className="rounded-2xl p-12 text-center bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                <Gift className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
-                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No Giveaways</h3>
-                <p className="text-[var(--text-secondary)]">Create your first giveaway to get started.</p>
-              </div>
+              <EmptyState
+                icon={<Gift className="w-12 h-12" />}
+                title="No Giveaways"
+                description="Create your first giveaway to get started."
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {giveaways.map((giveaway, idx) => (
@@ -517,22 +535,33 @@ export default function GiveawaysPage() {
             {/* Players toolbar */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                  <input type="text" placeholder="Search players..." value={search} onChange={e => setSearch(e.target.value)} className="pl-11 pr-4 py-2.5 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors w-72" />
-                </div>
+                <SearchInput
+                  placeholder="Search players..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-72"
+                />
                 {selectedGiveaway && (
-                  <button onClick={() => { setSelectedGiveaway(null); fetchData() }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-colors">
-                    <Filter className="w-3.5 h-3.5" />
-                    <span>Filtered</span>
-                    <span className="text-purple-300">×</span>
-                  </button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => { setSelectedGiveaway(null); fetchData() }}
+                    leftIcon={<Filter className="w-3.5 h-3.5" />}
+                    size="sm"
+                  >
+                    Filtered ×
+                  </Button>
                 )}
               </div>
-              <button onClick={pickRandomWinner} disabled={filteredPlayers.length === 0 || isPickingWinner} className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-white disabled:opacity-50 transition-all bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
-                <Trophy className={`w-4 h-4 ${isPickingWinner ? "animate-spin" : ""}`} />
-                <span>{isPickingWinner ? "Picking..." : "Pick Winner"}</span>
-              </button>
+              <Button
+                onClick={pickRandomWinner}
+                disabled={filteredPlayers.length === 0 || isPickingWinner}
+                loading={isPickingWinner}
+                loadingText="Picking..."
+                leftIcon={<Trophy className="w-4 h-4" />}
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+              >
+                Pick Winner
+              </Button>
             </div>
 
             {/* Charts row */}
@@ -652,10 +681,11 @@ export default function GiveawaysPage() {
                 </tbody>
               </table>
               {filteredPlayers.length === 0 && (
-                <div className="text-center py-12">
-                  <Users className="w-10 h-10 mx-auto mb-3 text-[var(--text-muted)] opacity-50" />
-                  <p className="text-[var(--text-secondary)]">{search ? "No players found matching your search" : "No entries yet"}</p>
-                </div>
+                <EmptyState
+                  icon={<Users className="w-10 h-10" />}
+                  title={search ? "No players found" : "No entries yet"}
+                  description={search ? "No players found matching your search" : undefined}
+                />
               )}
             </div>
           </motion.div>
@@ -745,111 +775,125 @@ export default function GiveawaysPage() {
         )}
 
         {/* Create giveaway modal */}
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => resetCreateForm()}>
-            <div className="w-full max-w-lg rounded-2xl p-8 bg-[var(--bg-secondary)] border border-[var(--glass-border)]" onClick={e => e.stopPropagation()}>
-              <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Create Giveaway</h2>
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Name</label>
-                  <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g., February Giveaway" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description (optional)</label>
-                  <input type="text" value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Win a VIP package!" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Min Playtime (hours)</label>
-                    <input type="number" value={newMinPlaytime} onChange={e => setNewMinPlaytime(Number(e.target.value))} min={0} max={1000} step={0.5} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Winners</label>
-                    <input type="number" value={newMaxWinners} onChange={e => setNewMaxWinners(Number(e.target.value))} min={1} max={100} step={1} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                  </div>
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Scope</label>
-                    <button type="button" onClick={() => setScopeDropdownOpen(!scopeDropdownOpen)} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] flex items-center justify-between transition-colors">
-                      <span className="flex items-center gap-2">
-                        {newIsGlobal ? <><Globe className="w-4 h-4 text-blue-400" />All Servers</> : <><Server className="w-4 h-4 text-purple-400" />Specific Servers</>}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${scopeDropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
-                    {scopeDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--glass-border)] shadow-xl shadow-black/20 z-10 overflow-hidden">
-                        <button type="button" onClick={() => { setNewIsGlobal(true); setScopeDropdownOpen(false) }} className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${newIsGlobal ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]" : "text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"}`}>
-                          <Globe className="w-4 h-4 text-blue-400" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium">All Servers</div>
-                            <div className="text-xs text-[var(--text-muted)]">Available on every server</div>
-                          </div>
-                          {newIsGlobal && <Check className="w-4 h-4 text-[var(--accent-primary)]" />}
+        <Modal
+          isOpen={showCreateForm}
+          onClose={resetCreateForm}
+          title="Create Giveaway"
+          icon={<Gift className="w-5 h-5" />}
+          size="lg"
+          footer={
+            <>
+              <Button variant="secondary" onClick={resetCreateForm}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={createGiveaway}
+                disabled={!newName.trim() || creating}
+                loading={creating}
+                loadingText="Creating..."
+              >
+                Create
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-5">
+            <Input
+              label="Name"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="e.g., February Giveaway"
+            />
+            <Input
+              label="Description (optional)"
+              value={newDescription}
+              onChange={e => setNewDescription(e.target.value)}
+              placeholder="Win a VIP package!"
+            />
+            <div className="grid grid-cols-3 gap-4">
+              <NumberInput
+                label="Min Playtime (hours)"
+                value={newMinPlaytime}
+                onChange={setNewMinPlaytime}
+                min={0}
+                max={1000}
+                step={0.5}
+              />
+              <NumberInput
+                label="Winners"
+                value={newMaxWinners}
+                onChange={setNewMaxWinners}
+                min={1}
+                max={100}
+                step={1}
+              />
+              <Dropdown
+                value={newIsGlobal ? "global" : "specific"}
+                onChange={(val) => setNewIsGlobal(val === "global")}
+                options={[
+                  {
+                    value: "global",
+                    label: "All Servers",
+                    description: "Available on every server",
+                    icon: <Globe className="w-4 h-4 text-blue-400" />
+                  },
+                  {
+                    value: "specific",
+                    label: "Specific Servers",
+                    description: "Choose which servers",
+                    icon: <Server className="w-4 h-4 text-purple-400" />
+                  }
+                ]}
+              />
+            </div>
+            {!newIsGlobal && (
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                  Servers {newSelectedServers.size > 0 && <span className="text-[var(--accent-primary)]">({newSelectedServers.size} selected)</span>}
+                </label>
+                {availableServers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {availableServers.filter(s => s.ip && s.port).map(server => {
+                      const selected = newSelectedServers.has(server.hashedId)
+                      return (
+                        <button
+                          key={server.id}
+                          type="button"
+                          onClick={() => toggleServerSelection(server.hashedId)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                            selected
+                              ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
+                              : "bg-[var(--bg-input)] border-[var(--glass-border)] text-[var(--text-muted)] hover:border-[var(--glass-border-prominent)] hover:text-[var(--text-primary)]"
+                          }`}
+                        >
+                          {selected ? <Check className="w-3 h-3" /> : <Server className="w-3 h-3" />}
+                          <span className="truncate max-w-[160px]">{server.name}</span>
                         </button>
-                        <div className="border-t border-[var(--glass-border)]" />
-                        <button type="button" onClick={() => { setNewIsGlobal(false); setScopeDropdownOpen(false) }} className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors ${!newIsGlobal ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]" : "text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"}`}>
-                          <Server className="w-4 h-4 text-purple-400" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium">Specific Servers</div>
-                            <div className="text-xs text-[var(--text-muted)]">Choose which servers</div>
-                          </div>
-                          {!newIsGlobal && <Check className="w-4 h-4 text-[var(--accent-primary)]" />}
-                        </button>
-                      </div>
-                    )}
+                      )
+                    })}
                   </div>
-                </div>
-                {!newIsGlobal && (
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                      Servers {newSelectedServers.size > 0 && <span className="text-[var(--accent-primary)]">({newSelectedServers.size} selected)</span>}
-                    </label>
-                    {availableServers.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {availableServers.filter(s => s.ip && s.port).map(server => {
-                          const selected = newSelectedServers.has(server.hashedId)
-                          return (
-                            <button
-                              key={server.id}
-                              type="button"
-                              onClick={() => toggleServerSelection(server.hashedId)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                                selected
-                                  ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
-                                  : "bg-[var(--bg-input)] border-[var(--glass-border)] text-[var(--text-muted)] hover:border-[var(--glass-border-prominent)] hover:text-[var(--text-primary)]"
-                              }`}
-                            >
-                              {selected ? <Check className="w-3 h-3" /> : <Server className="w-3 h-3" />}
-                              <span className="truncate max-w-[160px]">{server.name}</span>
-                              {selected && (
-                                <X className="w-3 h-3 opacity-60 hover:opacity-100" />
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-[var(--text-muted)] py-3">No servers found. Make sure ServerID plugin is running on your servers.</p>
-                    )}
-                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--text-muted)] py-3">No servers found. Make sure ServerID plugin is running on your servers.</p>
                 )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Start Date (optional)</label>
-                    <input type="datetime-local" value={newStartAt} onChange={e => setNewStartAt(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">End Date (optional)</label>
-                    <input type="datetime-local" value={newEndAt} onChange={e => setNewEndAt(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]" />
-                  </div>
-                </div>
               </div>
-              <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--glass-border)]">
-                <button onClick={resetCreateForm} className="px-5 py-2.5 rounded-xl font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
-                <button onClick={createGiveaway} disabled={!newName.trim() || creating} className="px-5 py-2.5 rounded-xl font-medium bg-[var(--accent-primary)] text-white disabled:opacity-50">{creating ? "Creating..." : "Create"}</button>
-              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Date (optional)"
+                type="datetime-local"
+                value={newStartAt}
+                onChange={e => setNewStartAt(e.target.value)}
+              />
+              <Input
+                label="End Date (optional)"
+                type="datetime-local"
+                value={newEndAt}
+                onChange={e => setNewEndAt(e.target.value)}
+              />
             </div>
           </div>
-        )}
+        </Modal>
       </motion.div>
     </div>
   )

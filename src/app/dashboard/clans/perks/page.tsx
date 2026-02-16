@@ -13,7 +13,6 @@ import {
   Gift,
   Trash2,
   Edit3,
-  AlertCircle,
   Sparkles,
   Users,
   Sword,
@@ -22,6 +21,14 @@ import {
   Heart,
 } from 'lucide-react'
 import Link from 'next/link'
+import { Modal } from '@/components/ui/Modal'
+import { Input, Textarea, NumberInput } from '@/components/ui/Input'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { Button, IconButton } from '@/components/ui/Button'
+import { Loading } from '@/components/ui/Loading'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Badge } from '@/components/ui/Badge'
+import { Alert } from '@/components/ui/Alert'
 
 const PRESTIGE_RANKS = ['Unranked', 'Bronze', 'Silver', 'Gold', 'Diamond', 'Obsidian', 'Immortal']
 
@@ -261,376 +268,233 @@ export default function PerksPage() {
             Define perks that clans can unlock based on level and prestige.
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-          style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Perk</span>
-        </button>
+        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+          New Perk
+        </Button>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div
-          className="mb-6 p-4 rounded-lg flex items-start gap-3"
-          style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-          }}
-        >
-          <AlertCircle className="w-5 h-5 text-[var(--status-error)] flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-[var(--status-error)] font-medium">{error}</p>
-          </div>
-          <button onClick={() => setError(null)} className="text-[var(--status-error)] hover:opacity-70">
-            Dismiss
-          </button>
-        </div>
+        <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+          {error}
+        </Alert>
       )}
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl p-8"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Create Perk</h2>
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          resetCreateForm()
+          setShowCreateModal(false)
+        }}
+        title="Create Perk"
+        size="lg"
+      >
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Key"
+              value={newKey}
+              onChange={(e) => setNewKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              placeholder="e.g., member_capacity_1"
+              maxLength={50}
+              required
+              className="font-mono"
+            />
+            <Input
+              label="Name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g., Member Capacity I"
+              maxLength={100}
+              required
+            />
+          </div>
 
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Key *
-                  </label>
-                  <input
-                    type="text"
-                    value={newKey}
-                    onChange={(e) => setNewKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="e.g., member_capacity_1"
-                    maxLength={50}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g., Member Capacity I"
-                    maxLength={100}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
-              </div>
+          <Textarea
+            label="Description"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="What does this perk do?"
+            maxLength={500}
+            rows={2}
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="What does this perk do?"
-                  maxLength={500}
-                  rows={2}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] resize-none"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Dropdown
+              label="Category"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              options={[
+                { value: 'capacity', label: 'Capacity' },
+                { value: 'resources', label: 'Resources' },
+                { value: 'crafting', label: 'Crafting' },
+                { value: 'combat', label: 'Combat' },
+                { value: 'economy', label: 'Economy' },
+                { value: 'social', label: 'Social' },
+              ]}
+            />
+            <NumberInput
+              label="Sort Order"
+              value={newSortOrder}
+              onChange={(value) => setNewSortOrder(value)}
+              min={0}
+            />
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  >
-                    <option value="capacity">Capacity</option>
-                    <option value="resources">Resources</option>
-                    <option value="crafting">Crafting</option>
-                    <option value="combat">Combat</option>
-                    <option value="economy">Economy</option>
-                    <option value="social">Social</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Sort Order
-                  </label>
-                  <input
-                    type="number"
-                    value={newSortOrder}
-                    onChange={(e) => setNewSortOrder(parseInt(e.target.value) || 0)}
-                    min={0}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <NumberInput
+              label="Level Required"
+              value={newLevelRequired}
+              onChange={(value) => setNewLevelRequired(value)}
+              min={1}
+              max={50}
+            />
+            <Dropdown
+              label="Prestige Required"
+              value={newPrestigeRequired}
+              onChange={(e) => setNewPrestigeRequired(parseInt(e.target.value))}
+              options={PRESTIGE_RANKS.map((rank, idx) => ({ value: idx, label: rank }))}
+            />
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Level Required
-                  </label>
-                  <input
-                    type="number"
-                    value={newLevelRequired}
-                    onChange={(e) => setNewLevelRequired(parseInt(e.target.value) || 1)}
-                    min={1}
-                    max={50}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Prestige Required
-                  </label>
-                  <select
-                    value={newPrestigeRequired}
-                    onChange={(e) => setNewPrestigeRequired(parseInt(e.target.value))}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  >
-                    {PRESTIGE_RANKS.map((rank, idx) => (
-                      <option key={rank} value={idx}>
-                        {rank}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Effect Type
-                  </label>
-                  <select
-                    value={newEffectType}
-                    onChange={(e) => setNewEffectType(e.target.value as 'bonus_percent' | 'flat_bonus' | 'unlock')}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  >
-                    <option value="bonus_percent">Bonus Percent</option>
-                    <option value="flat_bonus">Flat Bonus</option>
-                    <option value="unlock">Unlock</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Effect Value
-                  </label>
-                  <input
-                    type="number"
-                    value={newEffectValue}
-                    onChange={(e) => setNewEffectValue(parseFloat(e.target.value) || 0)}
-                    step={newEffectType === 'bonus_percent' ? 0.1 : 1}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
-              <button
-                onClick={() => {
-                  resetCreateForm()
-                  setShowCreateModal(false)
-                }}
-                className="px-5 py-2.5 rounded-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createPerk}
-                disabled={!newKey.trim() || !newName.trim() || creating}
-                className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-              >
-                {creating ? 'Creating...' : 'Create'}
-              </button>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Dropdown
+              label="Effect Type"
+              value={newEffectType}
+              onChange={(e) => setNewEffectType(e.target.value as 'bonus_percent' | 'flat_bonus' | 'unlock')}
+              options={[
+                { value: 'bonus_percent', label: 'Bonus Percent' },
+                { value: 'flat_bonus', label: 'Flat Bonus' },
+                { value: 'unlock', label: 'Unlock' },
+              ]}
+            />
+            <NumberInput
+              label="Effect Value"
+              value={newEffectValue}
+              onChange={(value) => setNewEffectValue(value)}
+              step={newEffectType === 'bonus_percent' ? 0.1 : 1}
+            />
           </div>
         </div>
-      )}
+
+        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              resetCreateForm()
+              setShowCreateModal(false)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={createPerk}
+            disabled={!newKey.trim() || !newName.trim() || creating}
+            loading={creating}
+          >
+            Create
+          </Button>
+        </div>
+      </Modal>
 
       {/* Edit Modal */}
-      {editingPerk && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-          onClick={() => setEditingPerk(null)}
-        >
-          <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl p-8"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6">Edit Perk</h2>
-
+      <Modal
+        isOpen={!!editingPerk}
+        onClose={() => setEditingPerk(null)}
+        title="Edit Perk"
+        size="lg"
+      >
+        {editingPerk && (
+          <>
             <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Key (readonly)
-                </label>
-                <input
-                  type="text"
-                  value={editingPerk.key}
-                  disabled
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-muted)] font-mono opacity-60"
-                />
-              </div>
+              <Input
+                label="Key (readonly)"
+                value={editingPerk.key}
+                disabled
+                className="font-mono opacity-60"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={editingPerk.name}
-                  onChange={(e) => setEditingPerk({ ...editingPerk, name: e.target.value })}
-                  maxLength={100}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
+              <Input
+                label="Name"
+                value={editingPerk.name}
+                onChange={(e) => setEditingPerk({ ...editingPerk, name: e.target.value })}
+                maxLength={100}
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={editingPerk.description || ''}
-                  onChange={(e) => setEditingPerk({ ...editingPerk, description: e.target.value || null })}
-                  maxLength={500}
-                  rows={2}
-                  className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] resize-none"
+              <Textarea
+                label="Description"
+                value={editingPerk.description || ''}
+                onChange={(e) => setEditingPerk({ ...editingPerk, description: e.target.value || null })}
+                maxLength={500}
+                rows={2}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <NumberInput
+                  label="Level Required"
+                  value={editingPerk.levelRequired}
+                  onChange={(value) => setEditingPerk({ ...editingPerk, levelRequired: value })}
+                  min={1}
+                  max={50}
+                />
+                <Dropdown
+                  label="Prestige Required"
+                  value={editingPerk.prestigeRequired}
+                  onChange={(e) => setEditingPerk({ ...editingPerk, prestigeRequired: parseInt(e.target.value) })}
+                  options={PRESTIGE_RANKS.map((rank, idx) => ({ value: idx, label: rank }))}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Level Required
-                  </label>
-                  <input
-                    type="number"
-                    value={editingPerk.levelRequired}
-                    onChange={(e) =>
-                      setEditingPerk({ ...editingPerk, levelRequired: parseInt(e.target.value) || 1 })
-                    }
-                    min={1}
-                    max={50}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Prestige Required
-                  </label>
-                  <select
-                    value={editingPerk.prestigeRequired}
-                    onChange={(e) =>
-                      setEditingPerk({ ...editingPerk, prestigeRequired: parseInt(e.target.value) })
-                    }
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  >
-                    {PRESTIGE_RANKS.map((rank, idx) => (
-                      <option key={rank} value={idx}>
-                        {rank}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                    Effect Value
-                  </label>
-                  <input
-                    type="number"
-                    value={editingPerk.effectValue}
-                    onChange={(e) =>
-                      setEditingPerk({ ...editingPerk, effectValue: parseFloat(e.target.value) || 0 })
-                    }
-                    step={editingPerk.effectType === 'bonus_percent' ? 0.1 : 1}
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  />
-                </div>
+                <NumberInput
+                  label="Effect Value"
+                  value={editingPerk.effectValue}
+                  onChange={(value) => setEditingPerk({ ...editingPerk, effectValue: value })}
+                  step={editingPerk.effectType === 'bonus_percent' ? 0.1 : 1}
+                />
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                     Active
                   </label>
-                  <button
-                    type="button"
+                  <Button
+                    variant={editingPerk.isActive ? 'success' : 'outline'}
                     onClick={() => setEditingPerk({ ...editingPerk, isActive: !editingPerk.isActive })}
-                    className={`w-full px-4 py-3 rounded-lg font-medium transition-colors border ${
-                      editingPerk.isActive
-                        ? 'bg-[var(--status-success)]/20 border-[var(--status-success)] text-[var(--status-success)]'
-                        : 'border-[var(--border-secondary)] text-[var(--text-muted)]'
-                    }`}
+                    className="w-full"
                   >
                     {editingPerk.isActive ? 'Active' : 'Inactive'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-[var(--border-secondary)]">
-              <button
-                onClick={() => setEditingPerk(null)}
-                className="px-5 py-2.5 rounded-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
+              <Button variant="ghost" onClick={() => setEditingPerk(null)}>
                 Cancel
-              </button>
-              <button
-                onClick={updatePerk}
-                disabled={saving}
-                className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
-                style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              </Button>
+              <Button onClick={updatePerk} disabled={saving} loading={saving}>
+                Save Changes
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Loading />
       ) : perks.length === 0 ? (
         /* Empty State */
-        <div
-          className="rounded-xl p-12 text-center"
-          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-        >
-          <Gift className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)]" />
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No Perks Defined</h3>
-          <p className="text-[var(--text-secondary)] mb-6">
-            Create perk definitions that clans can unlock as they level up.
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-            style={{ background: 'var(--accent-primary)', color: 'var(--bg-root)' }}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Perk</span>
-          </button>
-        </div>
+        <EmptyState
+          icon={<Gift />}
+          title="No Perks Defined"
+          description="Create perk definitions that clans can unlock as they level up."
+          action={
+            <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+              Create Perk
+            </Button>
+          }
+        />
       ) : (
         /* Perks grouped by category */
         <div className="space-y-8">
@@ -656,15 +520,7 @@ export default function PerksPage() {
                         <h3 className="font-semibold text-[var(--text-primary)]">{perk.name}</h3>
                         <code className="text-xs text-[var(--text-muted)] font-mono">{perk.key}</code>
                       </div>
-                      <span
-                        className="text-sm font-medium px-2 py-1 rounded-lg"
-                        style={{
-                          backgroundColor: 'var(--accent-primary)/20',
-                          color: 'var(--accent-primary)',
-                        }}
-                      >
-                        {formatEffectValue(perk)}
-                      </span>
+                      <Badge variant="primary">{formatEffectValue(perk)}</Badge>
                     </div>
 
                     {perk.description && (
@@ -680,43 +536,32 @@ export default function PerksPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => setEditingPerk(perk)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border"
-                        style={{
-                          background: 'var(--glass-bg-subtle)',
-                          borderColor: 'var(--glass-border)',
-                          color: 'var(--text-primary)',
-                        }}
+                        icon={<Edit3 />}
+                        size="sm"
+                        className="flex-1"
                       >
-                        <Edit3 className="w-4 h-4" />
                         Edit
-                      </button>
+                      </Button>
 
                       {deleteConfirm === perk.id ? (
                         <>
-                          <button
-                            onClick={() => deletePerk(perk.id)}
-                            className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                            style={{ background: 'var(--status-error)', color: 'white' }}
-                          >
+                          <Button variant="danger" size="sm" onClick={() => deletePerk(perk.id)}>
                             Confirm
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(null)}
-                            className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)]"
-                          >
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
                             Cancel
-                          </button>
+                          </Button>
                         </>
                       ) : (
-                        <button
+                        <IconButton
+                          icon={<Trash2 />}
                           onClick={() => setDeleteConfirm(perk.id)}
-                          className="p-2 rounded-lg hover:bg-[var(--status-error)]/10 text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
                           title="Delete perk"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          variant="danger"
+                        />
                       )}
                     </div>
                   </div>

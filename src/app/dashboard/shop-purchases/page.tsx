@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  ShoppingCart, RefreshCw, Loader2, Search, ChevronLeft, ChevronRight, Filter, X, Download, Server, User, Package, DollarSign, Clock, Hash,
+  ShoppingCart, RefreshCw, Search, ChevronLeft, ChevronRight, Filter, Download, Server, User, Package, DollarSign, Clock, Hash,
   TrendingUp, BarChart3, PieChart as PieChartIcon, Calendar, Award, Zap, Users, Activity, Trash2, AlertTriangle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +18,18 @@ import {
   RankBadge,
   Column,
 } from "@/components/analytics";
+import {
+  Modal,
+  ConfirmModal,
+  Input,
+  Button,
+  SearchInput,
+  Tabs,
+  Loading,
+  EmptyState,
+  Alert,
+  Dropdown
+} from "@/components/ui";
 
 interface ShopPurchase {
   timestamp: string;
@@ -278,82 +290,80 @@ export default function ShopPurchasesPage() {
               <p className="text-zinc-500 mt-2">Comprehensive shop purchase analytics and insights</p>
             </div>
             <div className="flex gap-3 flex-wrap">
-              <div className="flex rounded-lg overflow-hidden border border-white/10">
-                <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'analytics' ? 'bg-purple-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <BarChart3 className="h-4 w-4 inline mr-2" />Analytics
-                </button>
-                <button onClick={() => setActiveTab('transactions')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'transactions' ? 'bg-purple-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <Clock className="h-4 w-4 inline mr-2" />Transactions
-                </button>
-              </div>
-              <select value={`${timeFilter.type}:${timeFilter.value}`} onChange={e => { const [type, val] = e.target.value.split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(val) }); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="hours:1">Last hour</option>
-                <option value="hours:6">Last 6 hours</option>
-                <option value="hours:12">Last 12 hours</option>
-                <option value="hours:24">Last 24 hours</option>
-                <option value="days:2">Last 2 days</option>
-                <option value="days:3">Last 3 days</option>
-                <option value="days:7">Last 7 days</option>
-                <option value="days:14">Last 14 days</option>
-                <option value="days:30">Last 30 days</option>
-                <option value="days:60">Last 60 days</option>
-                <option value="days:90">Last 90 days</option>
-                <option value="days:180">Last 6 months</option>
-                <option value="days:365">Last year</option>
-              </select>
-              <select value={serverFilter} onChange={e => { setServerFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="">All Servers</option>
-                {servers.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <motion.button onClick={() => { fetchPurchases(); fetchAnalytics(); }} disabled={loading || analyticsLoading} className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 bg-gradient-to-r from-purple-500 to-pink-500" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                {(loading || analyticsLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                <span>Refresh</span>
-              </motion.button>
-              <motion.button onClick={() => { setDeleteTarget(serverFilter || null); setShowDeleteModal(true); }} className="flex items-center space-x-2 text-red-400 px-4 py-2 rounded-lg transition-colors hover:bg-red-500/10 bg-white/5 border border-white/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Trash2 className="h-4 w-4" />
-                <span>Clear Data</span>
-              </motion.button>
+              <Tabs
+                tabs={[
+                  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+                  { id: 'transactions', label: 'Transactions', icon: <Clock className="h-4 w-4" /> }
+                ]}
+                activeTab={activeTab}
+                onChange={(id) => setActiveTab(id as 'analytics' | 'transactions')}
+                variant="pills"
+              />
+              <Dropdown
+                value={`${timeFilter.type}:${timeFilter.value}`}
+                onChange={val => { if (val) { const [type, valStr] = val.split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(valStr) }); } }}
+                options={[
+                  { value: "hours:1", label: "Last hour" },
+                  { value: "hours:6", label: "Last 6 hours" },
+                  { value: "hours:12", label: "Last 12 hours" },
+                  { value: "hours:24", label: "Last 24 hours" },
+                  { value: "days:2", label: "Last 2 days" },
+                  { value: "days:3", label: "Last 3 days" },
+                  { value: "days:7", label: "Last 7 days" },
+                  { value: "days:14", label: "Last 14 days" },
+                  { value: "days:30", label: "Last 30 days" },
+                  { value: "days:60", label: "Last 60 days" },
+                  { value: "days:90", label: "Last 90 days" },
+                  { value: "days:180", label: "Last 6 months" },
+                  { value: "days:365", label: "Last year" }
+                ]}
+              />
+              <Dropdown
+                value={serverFilter}
+                onChange={val => { setServerFilter(val || ''); setCurrentPage(1); }}
+                options={servers.map(s => ({ value: s, label: s }))}
+                placeholder="All Servers"
+                emptyOption="All Servers"
+              />
+              <Button
+                onClick={() => { fetchPurchases(); fetchAnalytics(); }}
+                disabled={loading || analyticsLoading}
+                loading={loading || analyticsLoading}
+                leftIcon={<RefreshCw className="h-4 w-4" />}
+                className="bg-gradient-to-r from-purple-500 to-pink-500"
+              >
+                Refresh
+              </Button>
+              <Button
+                variant="error"
+                onClick={() => { setDeleteTarget(serverFilter || null); setShowDeleteModal(true); }}
+                leftIcon={<Trash2 className="h-4 w-4" />}
+              >
+                Clear Data
+              </Button>
             </div>
           </div>
 
-          <AnimatePresence>
-            {showDeleteModal && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 rounded-xl bg-red-500/20">
-                      <AlertTriangle className="h-6 w-6 text-red-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Clear Shop Data</h3>
-                      <p className="text-sm text-zinc-400">This action cannot be undone</p>
-                    </div>
-                  </div>
-                  <p className="text-zinc-300 mb-6">
-                    {deleteTarget
-                      ? <>Are you sure you want to delete all purchase data for <span className="font-semibold text-purple-400">{deleteTarget}</span>?</>
-                      : <>Are you sure you want to delete <span className="font-semibold text-red-400">ALL</span> shop purchase data across all servers?</>
-                    }
-                  </p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2 rounded-lg bg-white/5 text-white hover:bg-white/10 transition-colors">Cancel</button>
-                    <button onClick={handleDelete} disabled={deleting} className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                      {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      {deleting ? "Deleting..." : "Delete"}
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <ConfirmModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={handleDelete}
+            title="Clear Shop Data"
+            description={
+              deleteTarget
+                ? `Are you sure you want to delete all purchase data for ${deleteTarget}? This action cannot be undone.`
+                : "Are you sure you want to delete ALL shop purchase data across all servers? This action cannot be undone."
+            }
+            confirmText="Delete"
+            cancelText="Cancel"
+            variant="error"
+            loading={deleting}
+          />
 
           {activeTab === 'analytics' && (
             <>
               {analyticsLoading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-purple-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading analytics...</p>
-                </div>
+                <Loading text="Loading analytics..." size="lg" />
               ) : analytics ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
@@ -455,10 +465,11 @@ export default function ShopPurchasesPage() {
                   </ChartCard>
                 </>
               ) : (
-                <div className="text-center py-20 text-zinc-600">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No analytics data available</p>
-                </div>
+                <EmptyState
+                  icon={<BarChart3 className="h-12 w-12" />}
+                  title="No analytics data"
+                  description="No analytics data available"
+                />
               )}
             </>
           )}
@@ -466,37 +477,47 @@ export default function ShopPurchasesPage() {
           {activeTab === 'transactions' && (
             <>
               <div className="flex gap-3 flex-wrap">
-                <motion.button onClick={() => setShowFilters(p => !p)} className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg transition-colors hover:bg-white/5 bg-white/[0.02] border border-white/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Filter className="h-4 w-4" />
-                  <span>Filters</span>
-                </motion.button>
-                <motion.button onClick={exportCSV} disabled={purchases.length === 0} className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-50 bg-white/[0.02] border border-white/10" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Download className="h-4 w-4" />
-                  <span>Export CSV</span>
-                </motion.button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowFilters(p => !p)}
+                  leftIcon={<Filter className="h-4 w-4" />}
+                >
+                  Filters
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={exportCSV}
+                  disabled={purchases.length === 0}
+                  leftIcon={<Download className="h-4 w-4" />}
+                >
+                  Export CSV
+                </Button>
               </div>
 
               <AnimatePresence>
                 {showFilters && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="p-6 rounded-xl overflow-hidden bg-white/[0.02] border border-white/10">
                     <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-2">Search</label>
-                        <div className="relative">
-                          <input type="text" placeholder="Player, SteamID, or Item..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-2 pl-10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500" />
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-2">Server</label>
-                        <select value={serverFilter} onChange={e => { setServerFilter(e.target.value); setCurrentPage(1); }} className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500">
-                          <option value="">All Servers</option>
-                          {servers.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
+                      <SearchInput
+                        label="Search"
+                        placeholder="Player, SteamID, or Item..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                      />
+                      <Dropdown
+                        value={serverFilter}
+                        onChange={val => { setServerFilter(val || ''); setCurrentPage(1); }}
+                        options={servers.map(s => ({ value: s, label: s }))}
+                        placeholder="All Servers"
+                        emptyOption="All Servers"
+                      />
                       <div className="flex gap-2">
-                        <button type="submit" className="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">Search</button>
-                        <button type="button" onClick={resetFilters} className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors px-3"><X className="h-4 w-4" /> Reset</button>
+                        <Button type="submit" variant="primary" className="flex-1">
+                          Search
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={resetFilters}>
+                          Reset
+                        </Button>
                       </div>
                     </form>
                   </motion.div>
@@ -504,16 +525,11 @@ export default function ShopPurchasesPage() {
               </AnimatePresence>
 
               {error && (
-                <div className="text-center py-10 bg-red-900/20 border border-red-700/50 p-6 rounded-xl">
-                  <p className="text-xl font-semibold text-red-300">{error}</p>
-                </div>
+                <Alert variant="error">{error}</Alert>
               )}
 
               {loading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-purple-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading transactions...</p>
-                </div>
+                <Loading text="Loading transactions..." size="lg" />
               ) : (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
                   <div className="overflow-x-auto">
@@ -548,17 +564,31 @@ export default function ShopPurchasesPage() {
                   </div>
 
                   {purchases.length === 0 && (
-                    <div className="text-center py-16 text-zinc-600">
-                      <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No transactions found</p>
-                    </div>
+                    <EmptyState
+                      icon={<ShoppingCart className="h-12 w-12" />}
+                      title="No transactions found"
+                    />
                   )}
 
                   {totalPages > 1 && (
                     <div className="flex justify-center items-center gap-2 p-6 border-t border-white/5">
-                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-white/5 hover:bg-purple-500 disabled:opacity-50 transition-colors"><ChevronLeft className="h-5 w-5" /></button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        size="sm"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
                       <span className="px-4 py-2 text-sm text-zinc-400">Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} records)</span>
-                      <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-white/5 hover:bg-purple-500 disabled:opacity-50 transition-colors"><ChevronRight className="h-5 w-5" /></button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        size="sm"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
                     </div>
                   )}
                 </motion.div>

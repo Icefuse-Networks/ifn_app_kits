@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from 'react'
 import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square, Edit3, Trash2, Calendar, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Dropdown } from '@/components/ui/Dropdown'
 
 interface IdentifierCategory {
   id: string
@@ -733,15 +734,13 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category</label>
-                <select
-                  value={editCategoryId || ''}
-                  onChange={e => setEditCategoryId(e.target.value || null)}
-                  className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                  style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
-                >
-                  <option value="">No category</option>
-                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                </select>
+                <Dropdown
+                  value={editCategoryId}
+                  onChange={value => setEditCategoryId(value)}
+                  options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                  emptyOption="No category"
+                  clearable
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Server ID</label>
@@ -793,14 +792,11 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={newSchedule.dayOfWeek}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, dayOfWeek: parseInt(e.target.value) })}
-                    className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-primary)]"
-                    style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
-                  >
-                    {DAYS_OF_WEEK.map((day, i) => <option key={i} value={i}>{day}</option>)}
-                  </select>
+                  <Dropdown
+                    value={String(newSchedule.dayOfWeek)}
+                    onChange={(value) => setNewSchedule({ ...newSchedule, dayOfWeek: parseInt(value) })}
+                    options={DAYS_OF_WEEK.map((day, i) => ({ value: String(i), label: day }))}
+                  />
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
@@ -822,14 +818,11 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                       style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
                     />
                   </div>
-                  <select
+                  <Dropdown
                     value={newSchedule.wipeType}
-                    onChange={(e) => setNewSchedule({ ...newSchedule, wipeType: e.target.value })}
-                    className="px-2 py-1.5 rounded-lg text-xs text-[var(--text-primary)]"
-                    style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
-                  >
-                    {WIPE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
+                    onChange={(value) => setNewSchedule({ ...newSchedule, wipeType: value })}
+                    options={WIPE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                  />
                   <button
                     onClick={addWipeSchedule}
                     disabled={addingSchedule}

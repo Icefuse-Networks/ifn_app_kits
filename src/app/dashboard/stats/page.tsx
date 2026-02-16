@@ -8,6 +8,13 @@ import {
 } from "lucide-react"
 import { StatCard } from "@/components/analytics"
 import { STAT_COLUMNS } from "@/lib/validations/stats"
+import { Dropdown } from "@/components/ui/Dropdown"
+import { SearchInput } from "@/components/ui/SearchInput"
+import { Loading, Skeleton } from "@/components/ui/Loading"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { Alert } from "@/components/ui/Alert"
+import { Button } from "@/components/ui/Button"
+import { SimplePagination } from "@/components/ui/Pagination"
 
 // Derive display columns from config (exclude json/computed fields not useful in table)
 const TABLE_COLUMNS = STAT_COLUMNS.filter(c => c.format !== 'json' && c.sortable)
@@ -171,51 +178,42 @@ export default function StatsManagementPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">Server</label>
-              <select
+              <Dropdown
                 value={selectedServer}
-                onChange={e => setSelectedServer(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-              >
-                {servers.map(s => (
-                  <option key={s.server_id} value={s.server_id}>{s.server_id}</option>
-                ))}
-              </select>
+                onChange={value => setSelectedServer(value)}
+                options={servers.map(s => ({ value: s.server_id, label: s.server_id }))}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">Timeframe</label>
-              <select
+              <Dropdown
                 value={timeframe}
-                onChange={e => setTimeframe(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-              >
-                <option value="wipe">Wipe</option>
-                <option value="monthly">Monthly</option>
-                <option value="overall">Overall</option>
-              </select>
+                onChange={value => setTimeframe(value)}
+                options={[
+                  { value: 'wipe', label: 'Wipe' },
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'overall', label: 'Overall' },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">View</label>
-              <select
+              <Dropdown
                 value={view}
-                onChange={e => setView(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
-              >
-                <option value="players">Players</option>
-                <option value="clans">Clans</option>
-              </select>
+                onChange={value => setView(value)}
+                options={[
+                  { value: 'players', label: 'Players' },
+                  { value: 'clans', label: 'Clans' },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">Search</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Name, SteamID, Clan"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 pl-10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-sm"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-              </div>
+              <SearchInput
+                placeholder="Name, SteamID, Clan"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">Wipe Actions</label>

@@ -8,10 +8,16 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Trophy, TrendingUp, Server, Clock, RefreshCw, ChevronDown, Globe, Users, ExternalLink } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Trophy, TrendingUp, Server, Clock, Globe, Users, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/global/Footer'
+import { Dropdown, DropdownOption } from '@/components/ui/Dropdown'
+import { Loading } from '@/components/ui/Loading'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Badge } from '@/components/ui/Badge'
 
 // Types
 interface KitStats {
@@ -69,7 +75,6 @@ export default function LeaderboardsPage() {
   const [categories, setCategories] = useState<IdentifierCategory[]>([])
   const [selectedIdentifierId, setSelectedIdentifierId] = useState<string | null>(null)
   const [selectedKitName, setSelectedKitName] = useState<string | null>(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   // Get selected identifier name for display
   const selectedIdentifier = identifiers.find((i) => i.id === selectedIdentifierId)
@@ -136,13 +141,6 @@ export default function LeaderboardsPage() {
     }
   }
 
-  function handleIdentifierSelect(identifierId: string | null) {
-    setSelectedIdentifierId(identifierId)
-    setSelectedKitName(null) // Clear kit filter when changing server
-    setDropdownOpen(false)
-    fetchLeaderboardData(identifierId, null)
-  }
-
   function handleKitSelect(kitName: string | null) {
     setSelectedKitName(kitName)
     fetchLeaderboardData(selectedIdentifierId, kitName)
@@ -154,24 +152,25 @@ export default function LeaderboardsPage() {
     return num.toString()
   }
 
-  // Group identifiers by category for dropdown
-  const groupedIdentifiers = (() => {
-    const groups: Record<string, ServerIdentifier[]> = { uncategorized: [] }
-
-    categories.forEach((cat) => {
-      groups[cat.id] = []
-    })
-
-    identifiers.forEach((identifier) => {
-      if (identifier.categoryId && groups[identifier.categoryId]) {
-        groups[identifier.categoryId].push(identifier)
-      } else {
-        groups.uncategorized.push(identifier)
-      }
-    })
-
-    return groups
-  })()
+  // Create dropdown options from identifiers
+  const serverOptions: DropdownOption[] = [
+    ...categories.flatMap(category => {
+      const categoryServers = identifiers.filter(i => i.categoryId === category.id)
+      return categoryServers.map(server => ({
+        value: server.id,
+        label: server.name,
+        description: category.name,
+        icon: <Server className="w-4 h-4" /> as React.ReactNode,
+      }))
+    }),
+    ...identifiers
+      .filter(i => !i.categoryId)
+      .map(server => ({
+        value: server.id,
+        label: server.name,
+        icon: <Server className="w-4 h-4" /> as React.ReactNode,
+      }))
+  ]
 
   return (
     <div className="min-h-screen bg-[var(--bg-root)] flex flex-col">
@@ -214,144 +213,38 @@ export default function LeaderboardsPage() {
         {/* Server Selector */}
         {identifiers.length > 0 && (
           <div className="flex justify-center mb-8">
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-lg)] min-w-[240px] transition-colors"
-                style={{
-                  background: 'var(--glass-bg)',
-                  border: '1px solid var(--glass-border)',
-                }}
-              >
-                {selectedIdentifierId ? (
-                  <>
-                    <Server className="w-5 h-5 text-[var(--accent-primary)]" />
-                    <span className="flex-1 text-left text-[var(--text-primary)]">
-                      {selectedIdentifier?.name || 'Unknown'}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-5 h-5 text-[var(--accent-primary)]" />
-                    <span className="flex-1 text-left text-[var(--text-primary)]">
-                      All Servers (Global)
-                    </span>
-                  </>
-                )}
-                <ChevronDown
-                  className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${
-                    dropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {dropdownOpen && (
-                <>
-                  {/* Backdrop */}
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setDropdownOpen(false)}
-                  />
-
-                  {/* Dropdown */}
-                  <div
-                    className="absolute top-full left-0 right-0 mt-2 py-2 rounded-[var(--radius-lg)] z-50 max-h-80 overflow-y-auto"
-                    style={{
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--glass-border)',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                    }}
-                  >
-                    {/* Global option */}
-                    <button
-                      onClick={() => handleIdentifierSelect(null)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
-                        !selectedIdentifierId ? 'bg-[var(--accent-primary)]/10' : ''
-                      }`}
-                    >
-                      <Globe className="w-4 h-4 text-[var(--accent-primary)]" />
-                      <span className="text-[var(--text-primary)]">All Servers (Global)</span>
-                    </button>
-
-                    <div className="my-2 border-t border-[var(--glass-border)]" />
-
-                    {/* Categorized identifiers */}
-                    {categories.map((category) => {
-                      const categoryIdentifiers = groupedIdentifiers[category.id] || []
-                      if (categoryIdentifiers.length === 0) return null
-
-                      return (
-                        <div key={category.id}>
-                          <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">
-                            {category.name}
-                          </div>
-                          {categoryIdentifiers.map((identifier) => (
-                            <button
-                              key={identifier.id}
-                              onClick={() => handleIdentifierSelect(identifier.id)}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
-                                selectedIdentifierId === identifier.id
-                                  ? 'bg-[var(--accent-primary)]/10'
-                                  : ''
-                              }`}
-                            >
-                              <Server className="w-4 h-4 text-[var(--text-muted)]" />
-                              <span className="text-[var(--text-primary)]">{identifier.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )
-                    })}
-
-                    {/* Uncategorized identifiers */}
-                    {groupedIdentifiers.uncategorized.length > 0 && (
-                      <div>
-                        {categories.length > 0 && (
-                          <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">
-                            Other
-                          </div>
-                        )}
-                        {groupedIdentifiers.uncategorized.map((identifier) => (
-                          <button
-                            key={identifier.id}
-                            onClick={() => handleIdentifierSelect(identifier.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
-                              selectedIdentifierId === identifier.id
-                                ? 'bg-[var(--accent-primary)]/10'
-                                : ''
-                            }`}
-                          >
-                            <Server className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="text-[var(--text-primary)]">{identifier.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            <Dropdown
+              value={selectedIdentifierId}
+              options={serverOptions}
+              onChange={(value) => {
+                setSelectedIdentifierId(value)
+                setSelectedKitName(null)
+                fetchLeaderboardData(value, null)
+              }}
+              placeholder="All Servers (Global)"
+              emptyOption="All Servers (Global)"
+              searchable
+              clearable
+              className="min-w-[240px]"
+            />
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 text-[var(--status-error)] text-center">
-            {error}
-            <button
-              onClick={() => fetchLeaderboardData(selectedIdentifierId)}
-              className="ml-4 underline hover:no-underline"
-            >
-              Retry
-            </button>
-          </div>
+          <Alert variant="error" className="mb-6">
+            <div className="flex items-center justify-center gap-4">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={() => fetchLeaderboardData(selectedIdentifierId)}>
+                Retry
+              </Button>
+            </div>
+          </Alert>
         )}
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <RefreshCw className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-          </div>
+          <Loading size="lg" text="Loading leaderboard data..." />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Top Kits */}
@@ -378,15 +271,15 @@ export default function LeaderboardsPage() {
                   <span className="text-xs text-[var(--text-secondary)]">
                     Filtering players by:
                   </span>
-                  <span className="text-xs font-medium text-[var(--accent-primary)]">
-                    {selectedKitName}
-                  </span>
-                  <button
+                  <Badge variant="primary">{selectedKitName}</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleKitSelect(null)}
-                    className="ml-auto text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                    className="ml-auto"
                   >
                     Clear
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -445,9 +338,11 @@ export default function LeaderboardsPage() {
                 ))}
 
                 {topKits.length === 0 && (
-                  <div className="text-center py-8 text-[var(--text-muted)]">
-                    No kit data available yet
-                  </div>
+                  <EmptyState
+                    icon={<TrendingUp className="w-8 h-8" />}
+                    title="No Kit Data"
+                    description="No kit data available yet"
+                  />
                 )}
               </div>
             </div>
@@ -474,7 +369,11 @@ export default function LeaderboardsPage() {
                 {identifierLeaderboard.map((server, index) => (
                   <button
                     key={server.identifierId}
-                    onClick={() => handleIdentifierSelect(server.identifierId)}
+                    onClick={() => {
+                      setSelectedIdentifierId(server.identifierId)
+                      setSelectedKitName(null)
+                      fetchLeaderboardData(server.identifierId, null)
+                    }}
                     className="w-full flex items-center gap-4 p-3 rounded-[var(--radius-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-colors text-left"
                   >
                     <div
@@ -510,9 +409,11 @@ export default function LeaderboardsPage() {
                 ))}
 
                 {identifierLeaderboard.length === 0 && (
-                  <div className="text-center py-8 text-[var(--text-muted)]">
-                    No server data available yet
-                  </div>
+                  <EmptyState
+                    icon={<Server className="w-8 h-8" />}
+                    title="No Server Data"
+                    description="No server data available yet"
+                  />
                 )}
               </div>
             </div>
@@ -572,8 +473,12 @@ export default function LeaderboardsPage() {
                 ))}
 
                 {topPlayers.length === 0 && (
-                  <div className="col-span-full text-center py-8 text-[var(--text-muted)]">
-                    No player data available yet
+                  <div className="col-span-full">
+                    <EmptyState
+                      icon={<Users className="w-8 h-8" />}
+                      title="No Player Data"
+                      description="No player data available yet"
+                    />
                   </div>
                 )}
               </div>
@@ -674,9 +579,12 @@ export default function LeaderboardsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="h-48 flex items-center justify-center text-[var(--text-muted)]">
-                  No activity data available yet
-                </div>
+                <EmptyState
+                  icon={<Clock className="w-8 h-8" />}
+                  title="No Activity Data"
+                  description="No activity data available yet"
+                  className="h-48"
+                />
               )}
             </div>
           </div>

@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { RustItem, fetchRustItems, getItemImageUrl, ITEM_CATEGORIES, searchItems, groupItemsByCategory, ItemCategory } from "@/lib/rust-items";
+import { CheckboxSwitch } from "@/components/ui/Switch";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 interface LootItem {
   "Item Shortname"?: string;
@@ -1155,16 +1157,14 @@ export default function LootManagerPage() {
                     className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none"
                   />
                 </div>
-                <select
+                <Dropdown
                   value={itemBrowserCategory}
-                  onChange={(e) => setItemBrowserCategory(e.target.value as ItemCategory | "All")}
-                  className="w-full rounded-lg px-2 py-1.5 text-xs text-white bg-white/5 border border-white/5 focus:outline-none"
-                >
-                  <option value="All">All Categories</option>
-                  {ITEM_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setItemBrowserCategory(value as ItemCategory | "All")}
+                  options={[
+                    { value: "All", label: "All Categories" },
+                    ...ITEM_CATEGORIES.map(cat => ({ value: cat, label: cat }))
+                  ]}
+                />
               </div>
               <div className="flex-1 overflow-y-auto p-2">
                 {rustItems.length === 0 ? (
@@ -1243,15 +1243,25 @@ export default function LootManagerPage() {
                 <label className="block text-sm text-zinc-400 mb-2">Apply To</label>
                 <div className="flex flex-wrap gap-2">
                   {[{ label: "Min", checked: multiplierApplyMin, set: setMultiplierApplyMin }, { label: "Max", checked: multiplierApplyMax, set: setMultiplierApplyMax }, { label: "Chance", checked: multiplierApplyChance, set: setMultiplierApplyChance }, { label: "Scrap", checked: multiplierApplyScrap, set: setMultiplierApplyScrap }].map(({ label, checked, set }) => (
-                      <label key={label} className={`cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-medium transition ${checked ? "bg-purple-500/20 border-purple-500 text-purple-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
-                        <input type="checkbox" className="sr-only" checked={checked} onChange={() => set(!checked)} />{label}
-                      </label>
+                      <CheckboxSwitch
+                        key={label}
+                        variant="pill"
+                        pillColor="purple-500"
+                        checked={checked}
+                        onChange={() => set(!checked)}
+                        label={label}
+                      />
                     ))}
                 </div>
               </div>
-              <label className={`cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-medium transition inline-block ${multiplierSkipOnes ? "bg-yellow-500/20 border-yellow-500 text-yellow-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
-                <input type="checkbox" className="sr-only" checked={multiplierSkipOnes} onChange={() => setMultiplierSkipOnes(!multiplierSkipOnes)} />Skip items at 1
-              </label>
+              <CheckboxSwitch
+                variant="pill"
+                pillColor="yellow-500"
+                checked={multiplierSkipOnes}
+                onChange={setMultiplierSkipOnes}
+                label="Skip items at 1"
+                className="inline-block"
+              />
               <div className="flex gap-2">
                 <button onClick={() => setMultiplierScope("current")} disabled={!selectedContainer} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "current" && selectedContainer ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400"} disabled:opacity-50`}>Current</button>
                 <button onClick={() => setMultiplierScope("all")} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "all" ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400"}`}>All</button>
@@ -1566,7 +1576,7 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
           {expanded && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
               <div className="pt-3 mt-3 space-y-2 border-t border-white/5">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={item["Is Blueprint"]} onChange={(e) => onUpdate(containerName, index, { "Is Blueprint": e.target.checked })} className="w-4 h-4 rounded" /><span className="text-xs text-zinc-500">Is Blueprint</span></label>
+                <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="Is Blueprint" />
                 <div className="grid grid-cols-2 gap-2">
                   <div><label className="text-xs text-zinc-600">Min Cond %</label><input type="number" value={item["Min Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "Min Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
                   <div><label className="text-xs text-zinc-600">Max Cond %</label><input type="number" value={item["max Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "max Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
@@ -1593,7 +1603,7 @@ function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item:
           <input type="number" value={item["Max item amount"]} onChange={(e) => onUpdate(containerName, index, { "Max item amount": parseInt(e.target.value) || 0 })} className="w-16 rounded px-2 py-1 text-white text-sm text-center bg-white/[0.02] border border-white/5 focus:outline-none" />
         </div>
         <input type="number" value={item["Chance to spawn"]} onChange={(e) => onUpdate(containerName, index, { "Chance to spawn": parseInt(e.target.value) || 0 })} className="w-20 rounded px-2 py-1 text-white text-sm text-center bg-white/[0.02] border border-white/5 focus:outline-none" title="Chance" />
-        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={item["Is Blueprint"]} onChange={(e) => onUpdate(containerName, index, { "Is Blueprint": e.target.checked })} className="w-4 h-4 rounded" /><span className="text-xs text-zinc-500">BP</span></label>
+        <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="BP" />
         <button onClick={() => onRemove(containerName, index)} className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="h-4 w-4" /></button>
       </div>
     </motion.div>

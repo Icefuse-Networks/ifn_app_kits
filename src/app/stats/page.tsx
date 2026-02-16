@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Target, Server, ChevronDown, Globe, RefreshCw, Search, ChevronLeft, ChevronRight, ArrowUpDown, Trophy } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Target, Server, Globe, ArrowUpDown, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/global/Footer'
 import { STAT_COLUMNS } from '@/lib/validations/stats'
+import { Dropdown, DropdownOption } from '@/components/ui/Dropdown'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { Loading } from '@/components/ui/Loading'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/Alert'
+import { SimplePagination } from '@/components/ui/Pagination'
 
 // Derive display columns from config
 const TABLE_COLUMNS = STAT_COLUMNS.filter(c => c.format !== 'json' && c.sortable)
@@ -41,7 +48,6 @@ export default function PublicStatsPage() {
   const [identifiers, setIdentifiers] = useState<ServerIdentifier[]>([])
   const [categories, setCategories] = useState<IdentifierCategory[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const [timeframe, setTimeframe] = useState('wipe')
   const [view, setView] = useState('players')
@@ -124,27 +130,28 @@ export default function PublicStatsPage() {
     }
   }
 
-  const handleServerSelect = (id: string | null) => {
-    setSelectedId(id)
-    setDropdownOpen(false)
-  }
-
   const totalPages = meta ? Math.ceil(meta.filteredTotal / limit) : 0
   const currentPage = Math.floor(offset / limit) + 1
 
-  // Group identifiers by category
-  const groupedIdentifiers = (() => {
-    const groups: Record<string, ServerIdentifier[]> = { uncategorized: [] }
-    categories.forEach(cat => { groups[cat.id] = [] })
-    identifiers.forEach(identifier => {
-      if (identifier.categoryId && groups[identifier.categoryId]) {
-        groups[identifier.categoryId].push(identifier)
-      } else {
-        groups.uncategorized.push(identifier)
-      }
-    })
-    return groups
-  })()
+  // Create dropdown options from identifiers
+  const serverOptions: DropdownOption[] = [
+    ...categories.flatMap(category => {
+      const categoryServers = identifiers.filter(i => i.categoryId === category.id)
+      return categoryServers.map(server => ({
+        value: server.id,
+        label: server.name,
+        description: category.name,
+        icon: <Server className="w-4 h-4" /> as React.ReactNode,
+      }))
+    }),
+    ...identifiers
+      .filter(i => !i.categoryId)
+      .map(server => ({
+        value: server.id,
+        label: server.name,
+        icon: <Server className="w-4 h-4" /> as React.ReactNode,
+      }))
+  ]
 
   return (
     <div className="min-h-screen bg-[var(--bg-root)] flex flex-col">
@@ -183,76 +190,19 @@ export default function PublicStatsPage() {
           </p>
         </div>
 
-        {/* Server Selector (reuses existing identifier pattern) */}
+        {/* Server Selector */}
         {identifiers.length > 0 && (
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-lg)] min-w-[240px] transition-colors"
-                style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-              >
-                {selectedId ? (
-                  <>
-                    <Server className="w-5 h-5 text-[var(--accent-primary)]" />
-                    <span className="flex-1 text-left text-[var(--text-primary)]">
-                      {selectedIdentifier?.name || 'Unknown'}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-5 h-5 text-[var(--accent-primary)]" />
-                    <span className="flex-1 text-left text-[var(--text-primary)]">Select Server</span>
-                  </>
-                )}
-                <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {dropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                  <div
-                    className="absolute top-full left-0 right-0 mt-2 py-2 rounded-[var(--radius-lg)] z-50 max-h-80 overflow-y-auto"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}
-                  >
-                    {categories.map(category => {
-                      const catIds = groupedIdentifiers[category.id] || []
-                      if (catIds.length === 0) return null
-                      return (
-                        <div key={category.id}>
-                          <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">{category.name}</div>
-                          {catIds.map(identifier => (
-                            <button
-                              key={identifier.id}
-                              onClick={() => handleServerSelect(identifier.id)}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${selectedId === identifier.id ? 'bg-[var(--accent-primary)]/10' : ''}`}
-                            >
-                              <Server className="w-4 h-4 text-[var(--text-muted)]" />
-                              <span className="text-[var(--text-primary)]">{identifier.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )
-                    })}
-                    {groupedIdentifiers.uncategorized.length > 0 && (
-                      <div>
-                        {categories.length > 0 && <div className="px-4 py-1.5 text-xs font-medium text-[var(--text-muted)] uppercase">Other</div>}
-                        {groupedIdentifiers.uncategorized.map(identifier => (
-                          <button
-                            key={identifier.id}
-                            onClick={() => handleServerSelect(identifier.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${selectedId === identifier.id ? 'bg-[var(--accent-primary)]/10' : ''}`}
-                          >
-                            <Server className="w-4 h-4 text-[var(--text-muted)]" />
-                            <span className="text-[var(--text-primary)]">{identifier.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            <Dropdown
+              value={selectedId}
+              options={serverOptions}
+              onChange={(value) => setSelectedId(value)}
+              placeholder="Select Server"
+              emptyOption="All Servers (Global)"
+              searchable
+              clearable
+              className="min-w-[240px]"
+            />
           </div>
         )}
 
@@ -293,42 +243,41 @@ export default function PublicStatsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search player or clan..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-[var(--radius-lg)] text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
-              style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-          </div>
+          <SearchInput
+            placeholder="Search player or clan..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onClear={() => setSearch('')}
+          />
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 text-[var(--status-error)] text-center">
-            {error}
-            <button onClick={() => fetchStats()} className="ml-4 underline hover:no-underline">Retry</button>
-          </div>
+          <Alert variant="error" className="mb-6">
+            <div className="flex items-center justify-center gap-4">
+              <span>{error}</span>
+              <Button variant="outline" size="sm" onClick={() => fetchStats()}>
+                Retry
+              </Button>
+            </div>
+          </Alert>
         )}
 
         {/* Loading */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <RefreshCw className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-          </div>
+          <Loading size="lg" text="Loading statistics..." />
         ) : !selectedId ? (
-          <div className="text-center py-20 text-[var(--text-secondary)]">
-            <Server className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Select a server above to view the leaderboard.</p>
-          </div>
+          <EmptyState
+            icon={<Server className="w-12 h-12" />}
+            title="No Server Selected"
+            description="Select a server above to view the leaderboard."
+          />
         ) : data.length === 0 ? (
-          <div className="text-center py-20 text-[var(--text-secondary)]">
-            <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No stats found for this server.</p>
-          </div>
+          <EmptyState
+            icon={<Target className="w-12 h-12" />}
+            title="No Stats Found"
+            description="No statistics available for this server."
+          />
         ) : (
           /* Data Table — config-driven columns */
           <div
@@ -418,26 +367,13 @@ export default function PublicStatsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-3 p-4" style={{ borderTop: '1px solid var(--glass-border)' }}>
-                <button
-                  onClick={() => setOffset(Math.max(0, offset - limit))}
-                  disabled={offset === 0}
-                  className="p-2 rounded-lg transition-colors disabled:opacity-50"
-                  style={{ background: 'var(--glass-bg)' }}
-                >
-                  <ChevronLeft className="h-4 w-4 text-[var(--text-muted)]" />
-                </button>
-                <span className="text-sm text-[var(--text-secondary)]">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setOffset(offset + limit)}
-                  disabled={!meta?.hasMore}
-                  className="p-2 rounded-lg transition-colors disabled:opacity-50"
-                  style={{ background: 'var(--glass-bg)' }}
-                >
-                  <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
-                </button>
+              <div className="flex justify-center p-4" style={{ borderTop: '1px solid var(--glass-border)' }}>
+                <SimplePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(page) => setOffset((page - 1) * limit)}
+                  showPageInfo
+                />
               </div>
             )}
           </div>

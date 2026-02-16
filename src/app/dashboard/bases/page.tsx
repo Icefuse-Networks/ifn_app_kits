@@ -11,6 +11,8 @@ import {
   ConfigManager,
 } from "@/components/loot-shared";
 import type { GenericLootItem, ExtraFieldDef, SavedConfig, MappingRecord, ServerIdentifierRecord } from "@/components/loot-shared";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { CheckboxSwitch } from "@/components/ui/Switch";
 
 // ─── IcefuseBases data types ──────────────────────────────────────────────────
 
@@ -733,10 +735,11 @@ export default function BasesPage() {
                     Loot Multiplier
                     <input type="number" value={data.pluginConfig["Loot Multiplier"]} onChange={(e) => handleUpdatePluginSetting("Loot Multiplier", parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                   </label>
-                  <label className="text-sm text-zinc-400 flex items-center gap-3">
-                    <input type="checkbox" checked={data.pluginConfig["Wipe Progression Enabled"]} onChange={(e) => handleUpdatePluginSetting("Wipe Progression Enabled", e.target.checked)} className="w-4 h-4 rounded" />
-                    Wipe Progression
-                  </label>
+                  <CheckboxSwitch
+                    checked={data.pluginConfig["Wipe Progression Enabled"]}
+                    onChange={(checked) => handleUpdatePluginSetting("Wipe Progression Enabled", checked)}
+                    label="Wipe Progression"
+                  />
                   {data.pluginConfig["Wipe Progression Enabled"] && (
                     <>
                       <label className="text-sm text-zinc-400">
@@ -787,16 +790,13 @@ export default function BasesPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium text-emerald-400">{baseType} <span className="text-zinc-600 font-normal">({baseData.Buildings.length})</span></h4>
                         {unassignedFiles.length > 0 && (
-                          <select
-                            value=""
-                            onChange={(e) => { if (e.target.value) handleAddBuilding(baseType, e.target.value); }}
-                            className="px-2 py-1 text-xs bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20 focus:outline-none cursor-pointer"
-                          >
-                            <option value="" className="bg-zinc-900">+ Add file...</option>
-                            {unassignedFiles.map(f => (
-                              <option key={f.name} value={f.name} className="bg-zinc-900">{f.name}</option>
-                            ))}
-                          </select>
+                          <Dropdown
+                            value={null}
+                            onChange={(value) => { if (value) handleAddBuilding(baseType, value); }}
+                            options={unassignedFiles.map(f => ({ value: f.name, label: f.name }))}
+                            placeholder="+ Add file..."
+                            emptyOption="+ Add file..."
+                          />
                         )}
                       </div>
                       {baseData.Buildings.length === 0 ? (

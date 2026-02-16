@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  Trophy, RefreshCw, Loader2, ChevronLeft, ChevronRight, Server, User, Clock,
+  Trophy, RefreshCw, Clock,
   TrendingUp, BarChart3, Calendar, Award, Users, Swords, MapPin, Crown, Target, Skull, ChevronDown, ChevronUp
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,13 @@ import {
   RankBadge,
   Column,
 } from "@/components/analytics";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Tabs, Tab } from "@/components/ui/Tabs";
+import { SimplePagination } from "@/components/ui/Pagination";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Loading } from "@/components/ui/Loading";
 
 interface Participant {
   steam_id: string;
@@ -285,47 +292,62 @@ export default function EventAnalyticsPage() {
               <p className="text-zinc-500 mt-2">KOTH and Maze event statistics and leaderboards</p>
             </div>
             <div className="flex gap-3 flex-wrap">
-              <div className="flex rounded-lg overflow-hidden border border-white/10">
-                <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'analytics' ? 'bg-amber-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <BarChart3 className="h-4 w-4 inline mr-2" />Analytics
-                </button>
-                <button onClick={() => setActiveTab('events')} className={`px-4 py-2 text-sm transition-colors ${activeTab === 'events' ? 'bg-amber-500 text-white' : 'bg-white/5 text-zinc-400 hover:text-white'}`}>
-                  <Swords className="h-4 w-4 inline mr-2" />Events
-                </button>
-              </div>
-              <select value={`${timeFilter.type}:${timeFilter.value}`} onChange={e => { const [type, val] = e.target.value.split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(val) }); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="hours:1">Last hour</option>
-                <option value="hours:6">Last 6 hours</option>
-                <option value="hours:24">Last 24 hours</option>
-                <option value="days:7">Last 7 days</option>
-                <option value="days:14">Last 14 days</option>
-                <option value="days:30">Last 30 days</option>
-                <option value="days:60">Last 60 days</option>
-                <option value="days:90">Last 90 days</option>
-              </select>
-              <select value={eventTypeFilter} onChange={e => { setEventTypeFilter(e.target.value as "" | "koth" | "maze"); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="">All Events</option>
-                <option value="koth">KOTH</option>
-                <option value="maze">Maze</option>
-              </select>
-              <select value={serverFilter} onChange={e => { setServerFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 rounded-lg text-sm text-white bg-white/5 border border-white/10">
-                <option value="">All Servers</option>
-                {servers.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <motion.button onClick={() => { fetchEvents(); fetchAnalytics(); }} disabled={loading || analyticsLoading} className="flex items-center space-x-2 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 bg-gradient-to-r from-amber-500 to-red-500" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                {(loading || analyticsLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                <span>Refresh</span>
-              </motion.button>
+              <Tabs
+                tabs={[
+                  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
+                  { id: 'events', label: 'Events', icon: <Swords className="h-4 w-4" /> }
+                ]}
+                activeTab={activeTab}
+                onChange={(tab) => setActiveTab(tab as 'analytics' | 'events')}
+                variant="pills"
+              />
+              <Dropdown
+                value={`${timeFilter.type}:${timeFilter.value}`}
+                options={[
+                  { value: 'hours:1', label: 'Last hour' },
+                  { value: 'hours:6', label: 'Last 6 hours' },
+                  { value: 'hours:24', label: 'Last 24 hours' },
+                  { value: 'days:7', label: 'Last 7 days' },
+                  { value: 'days:14', label: 'Last 14 days' },
+                  { value: 'days:30', label: 'Last 30 days' },
+                  { value: 'days:60', label: 'Last 60 days' },
+                  { value: 'days:90', label: 'Last 90 days' }
+                ]}
+                onChange={(val) => { const [type, value] = (val || '').split(':'); setTimeFilter({ type: type as 'hours' | 'days', value: Number(value) }); setCurrentPage(1); }}
+              />
+              <Dropdown
+                value={eventTypeFilter}
+                options={[
+                  { value: '', label: 'All Events' },
+                  { value: 'koth', label: 'KOTH' },
+                  { value: 'maze', label: 'Maze' }
+                ]}
+                onChange={(val) => { setEventTypeFilter(val as "" | "koth" | "maze"); setCurrentPage(1); }}
+              />
+              <Dropdown
+                value={serverFilter}
+                options={[
+                  { value: '', label: 'All Servers' },
+                  ...servers.map(s => ({ value: s, label: s }))
+                ]}
+                onChange={(val) => { setServerFilter(val || ''); setCurrentPage(1); }}
+              />
+              <Button
+                onClick={() => { fetchEvents(); fetchAnalytics(); }}
+                disabled={loading || analyticsLoading}
+                loading={loading || analyticsLoading}
+                leftIcon={<RefreshCw className="h-4 w-4" />}
+                variant="primary"
+              >
+                Refresh
+              </Button>
             </div>
           </div>
 
           {activeTab === 'analytics' && (
             <>
               {analyticsLoading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-amber-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading analytics...</p>
-                </div>
+                <Loading size="lg" text="Loading analytics..." />
               ) : analytics ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
@@ -393,10 +415,10 @@ export default function EventAnalyticsPage() {
                   </ChartCard>
                 </>
               ) : (
-                <div className="text-center py-20 text-zinc-600">
-                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No event data available</p>
-                </div>
+                <EmptyState
+                  icon={<Trophy className="h-12 w-12" />}
+                  title="No event data available"
+                />
               )}
             </>
           )}
@@ -410,10 +432,7 @@ export default function EventAnalyticsPage() {
               )}
 
               {loading ? (
-                <div className="text-center py-20">
-                  <Loader2 className="h-12 w-12 mx-auto animate-spin text-amber-400 mb-4" />
-                  <p className="text-lg text-zinc-400">Loading events...</p>
-                </div>
+                <Loading size="lg" text="Loading events..." />
               ) : (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                   {events.map((event, idx) => {
@@ -436,16 +455,16 @@ export default function EventAnalyticsPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold uppercase ${event.event_type === 'koth' ? 'text-amber-400' : 'text-purple-400'}`}>
-                                  {event.event_type}
-                                </span>
+                                <Badge variant={event.event_type === 'koth' ? 'warning' : 'primary'} size="sm">
+                                  {event.event_type.toUpperCase()}
+                                </Badge>
                                 {event.location && (
                                   <span className="text-xs text-zinc-500">@ {event.location}</span>
                                 )}
                                 {event.event_modes?.length > 0 && (
                                   <div className="flex gap-1">
                                     {event.event_modes.map(mode => (
-                                      <span key={mode} className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-zinc-400">{mode}</span>
+                                      <Badge key={mode} variant="secondary" size="sm">{mode}</Badge>
                                     ))}
                                   </div>
                                 )}
@@ -528,17 +547,19 @@ export default function EventAnalyticsPage() {
                   })}
 
                   {events.length === 0 && (
-                    <div className="text-center py-16 text-zinc-600">
-                      <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No events found</p>
-                    </div>
+                    <EmptyState
+                      icon={<Trophy className="h-12 w-12" />}
+                      title="No events found"
+                    />
                   )}
 
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 pt-4">
-                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg bg-white/5 hover:bg-amber-500 disabled:opacity-50 transition-colors"><ChevronLeft className="h-5 w-5" /></button>
-                      <span className="px-4 py-2 text-sm text-zinc-400">Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} events)</span>
-                      <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg bg-white/5 hover:bg-amber-500 disabled:opacity-50 transition-colors"><ChevronRight className="h-5 w-5" /></button>
+                    <div className="flex justify-center pt-4">
+                      <SimplePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
                     </div>
                   )}
                 </motion.div>

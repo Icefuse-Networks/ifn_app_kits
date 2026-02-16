@@ -1,8 +1,13 @@
 "use client";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Server, Link2, ToggleLeft, ToggleRight, Clock, Pencil } from "lucide-react";
+import { Plus, Trash2, Server, Link2, Clock, Pencil } from "lucide-react";
 import type { MappingRecord, ServerIdentifierRecord, SavedConfig } from "./types";
+import { Button, IconButton } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Switch } from "@/components/ui/Switch";
+import { Modal } from "@/components/ui/Modal";
 
 const formatDuration = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
@@ -63,6 +68,16 @@ export default function ServerMappingEditor({
     if (!selectedServerId) return [];
     return (serverGroups[selectedServerId] || []).sort((a, b) => (a.minutesAfterWipe ?? -1) - (b.minutesAfterWipe ?? -1));
   }, [selectedServerId, serverGroups]);
+
+  const configOptions: DropdownOption[] = savedConfigs.map(c => ({
+    value: String(c.id),
+    label: c.name,
+  }));
+
+  const serverOptions: DropdownOption[] = servers.map(s => ({
+    value: s.id,
+    label: s.name,
+  }));
 
   const handleAddMapping = async () => {
     if (!selectedConfig || !selectedServer) { toast.error("Select both config and server"); return; }
@@ -206,12 +221,15 @@ export default function ServerMappingEditor({
               <h3 className="text-lg font-semibold text-white">
                 {servers.find(s => s.id === selectedServerId)?.name || selectedServerId}
               </h3>
-              <button
+              <Button
                 onClick={() => handleAddToRotation(selectedServerId)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 rounded-lg hover:bg-${accentColor}-500/20 transition-colors`}
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus className="h-3 w-3" />}
+                className={`text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 hover:bg-${accentColor}-500/20`}
               >
-                <Plus className="h-3 w-3" /> Add to Rotation
-              </button>
+                Add to Rotation
+              </Button>
             </div>
 
             {selectedServerMappings.length === 0 ? (
@@ -223,13 +241,11 @@ export default function ServerMappingEditor({
               <div className="space-y-2">
                 {selectedServerMappings.map((m) => (
                   <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                    <button onClick={() => handleToggleLive(m)} className="flex-shrink-0">
-                      {m.isLive ? (
-                        <ToggleRight className="h-5 w-5 text-green-400" />
-                      ) : (
-                        <ToggleLeft className="h-5 w-5 text-zinc-600" />
-                      )}
-                    </button>
+                    <Switch
+                      checked={m.isLive}
+                      onChange={() => handleToggleLive(m)}
+                      size="sm"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-white">{m.config.name}</span>
@@ -242,12 +258,20 @@ export default function ServerMappingEditor({
                         {m.minutesAfterWipe !== null ? `After ${formatDuration(m.minutesAfterWipe)}` : "Wipe Day (default)"}
                       </div>
                     </div>
-                    <button onClick={() => handleEditMapping(m)} className="p-1.5 text-zinc-500 hover:text-white transition-colors">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => handleDeleteMapping(m.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <IconButton
+                      icon={<Pencil className="h-3.5 w-3.5" />}
+                      onClick={() => handleEditMapping(m)}
+                      label="Edit mapping"
+                      size="sm"
+                      className="text-zinc-500 hover:text-white"
+                    />
+                    <IconButton
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                      onClick={() => handleDeleteMapping(m.id)}
+                      label="Delete mapping"
+                      size="sm"
+                      className="text-zinc-500 hover:text-red-400"
+                    />
                   </div>
                 ))}
               </div>
@@ -277,58 +301,61 @@ export default function ServerMappingEditor({
       </div>
 
       {/* Add/Edit mapping modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeModal}>
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-white mb-4">{editingId ? "Edit Mapping" : "Add to Rotation"}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-2">Config</label>
-                <select
-                  value={selectedConfig ?? ""}
-                  onChange={(e) => setSelectedConfig(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full rounded-lg px-3 py-2 text-sm text-white bg-white/5 border border-white/5 focus:outline-none"
-                >
-                  <option value="">Select a config...</option>
-                  {savedConfigs.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              {!editingId && (
-                <div>
-                  <label className="block text-sm text-zinc-400 mb-2">Server</label>
-                  <select
-                    value={selectedServer ?? ""}
-                    onChange={(e) => setSelectedServer(e.target.value || null)}
-                    className="w-full rounded-lg px-3 py-2 text-sm text-white bg-white/5 border border-white/5 focus:outline-none"
-                  >
-                    <option value="">Select a server...</option>
-                    {servers.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm text-zinc-400 mb-2">Time After Wipe (leave empty for default)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} min={0} placeholder="Hours" className="flex-1 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none" />
-                  <span className="text-zinc-500">h</span>
-                  <input type="number" value={minutes} onChange={(e) => setMinutes(e.target.value)} min={0} max={59} placeholder="Min" className="flex-1 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none" />
-                  <span className="text-zinc-500">m</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={closeModal} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={handleAddMapping} className={`flex-1 px-4 py-2 bg-${accentColor}-500 text-white rounded-lg font-medium`}>
-                {editingId ? "Update" : "Add"}
-              </button>
+      <Modal
+        isOpen={showAddModal}
+        onClose={closeModal}
+        title={editingId ? "Edit Mapping" : "Add to Rotation"}
+        size="md"
+        footer={
+          <>
+            <Button onClick={closeModal} variant="secondary">Cancel</Button>
+            <Button onClick={handleAddMapping} variant="primary">
+              {editingId ? "Update" : "Add"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Dropdown
+            value={selectedConfig ? String(selectedConfig) : null}
+            options={configOptions}
+            onChange={(value) => setSelectedConfig(value ? parseInt(value) : null)}
+            placeholder="Select a config..."
+          />
+          {!editingId && (
+            <Dropdown
+              value={selectedServer}
+              options={serverOptions}
+              onChange={(value) => setSelectedServer(value)}
+              placeholder="Select a server..."
+            />
+          )}
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">Time After Wipe (leave empty for default)</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                min={0}
+                placeholder="Hours"
+                size="sm"
+              />
+              <span className="text-zinc-500">h</span>
+              <Input
+                type="number"
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value)}
+                min={0}
+                max={59}
+                placeholder="Min"
+                size="sm"
+              />
+              <span className="text-zinc-500">m</span>
             </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

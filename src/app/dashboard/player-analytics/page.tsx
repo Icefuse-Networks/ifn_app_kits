@@ -12,6 +12,10 @@ import {
   DataTable,
   Column,
 } from "@/components/analytics";
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Button } from "@/components/ui/Button";
+import { Tabs, Tab } from "@/components/ui/Tabs";
+import { Loading } from "@/components/ui/Loading";
 
 interface TimeSeriesPoint {
   time_bucket: string;
@@ -421,17 +425,16 @@ export default function AnalyticsPage() {
               placeholder="All Servers"
             />
 
-            <div className="flex rounded-lg overflow-hidden border border-white/10">
-              {(Object.keys(TIME_PRESETS) as TimeRange[]).map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-3 py-2 text-sm transition-colors ${timeRange === range ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"}`}
-                >
-                  {TIME_PRESETS[range].label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              tabs={(Object.keys(TIME_PRESETS) as TimeRange[]).map((range) => ({
+                id: range,
+                label: TIME_PRESETS[range].label
+              }))}
+              activeTab={timeRange}
+              onChange={(tab) => setTimeRange(tab as TimeRange)}
+              variant="pills"
+              size="sm"
+            />
 
             {timeRange === "custom" && (
               <div className="flex items-center gap-2">
@@ -451,23 +454,24 @@ export default function AnalyticsPage() {
               </div>
             )}
 
-            <select
+            <Dropdown
               value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500"
-            >
-              <option value="minute">Group by Minute</option>
-              <option value="hour">Group by Hour</option>
-              <option value="day">Group by Day</option>
-              <option value="week">Group by Week</option>
-            </select>
+              options={[
+                { value: 'minute', label: 'Group by Minute' },
+                { value: 'hour', label: 'Group by Hour' },
+                { value: 'day', label: 'Group by Day' },
+                { value: 'week', label: 'Group by Week' }
+              ]}
+              onChange={(val) => setGroupBy(val as GroupBy)}
+            />
 
-            <button
+            <Button
               onClick={fetchData}
-              className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white transition-colors"
+              disabled={loading}
+              variant="ghost"
             >
               <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-            </button>
+            </Button>
           </div>
         </div>
 

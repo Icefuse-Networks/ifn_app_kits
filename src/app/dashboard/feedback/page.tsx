@@ -3,12 +3,20 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ArrowLeft, MessageCircle, RefreshCw, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, Check, X, Clock, Server,
-  Inbox, AlertCircle, CheckCircle2, XCircle, Bug, MessageSquare,
+  ArrowLeft, MessageCircle, RefreshCw, ChevronUp, ChevronDown, Check,
+  Clock, Server,
+  Inbox, CheckCircle2, XCircle, Bug, MessageSquare,
   DollarSign, Layers
 } from "lucide-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Loading } from "@/components/ui/Loading"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { Alert } from "@/components/ui/Alert"
+import { Dropdown, DropdownOption } from "@/components/ui/Dropdown"
+import { NumberInput } from "@/components/ui/Input"
+import { SimplePagination } from "@/components/ui/Pagination"
 
 interface FeedbackItem {
   id: string
@@ -59,14 +67,15 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 ${
-        type === "success" ? "bg-green-500/90" : "bg-red-500/90"
-      } text-white`}
+      className="fixed bottom-4 right-4 z-[10000]"
     >
-      {message}
-      <button onClick={onClose} className="ml-2 hover:opacity-75">
-        <X className="h-4 w-4" />
-      </button>
+      <Alert
+        variant={type === "success" ? "success" : "error"}
+        dismissible
+        onDismiss={onClose}
+      >
+        {message}
+      </Alert>
     </motion.div>
   )
 }
@@ -218,24 +227,24 @@ export default function FeedbackPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20"><Clock className="w-3 h-3" />Pending</span>
+        return <Badge variant="warning" size="sm" icon={<Clock className="w-3 h-3" />}>Pending</Badge>
       case "accepted":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"><CheckCircle2 className="w-3 h-3" />Accepted</span>
+        return <Badge variant="success" size="sm" icon={<CheckCircle2 className="w-3 h-3" />}>Accepted</Badge>
       case "denied":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20"><XCircle className="w-3 h-3" />Denied</span>
+        return <Badge variant="error" size="sm" icon={<XCircle className="w-3 h-3" />}>Denied</Badge>
       default:
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/15 text-gray-400 border border-gray-500/20">{status}</span>
+        return <Badge variant="secondary" size="sm">{status}</Badge>
     }
   }
 
   const categoryBadge = (category: string) => {
     switch (category) {
       case "server_feedback":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/15 text-blue-400 border border-blue-500/20"><MessageSquare className="w-3 h-3" />{CATEGORY_LABELS[category]}</span>
+        return <Badge variant="info" size="sm" icon={<MessageSquare className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
       case "bug_report":
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/20"><Bug className="w-3 h-3" />{CATEGORY_LABELS[category]}</span>
+        return <Badge variant="warning" size="sm" icon={<Bug className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
       default:
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/15 text-gray-400 border border-gray-500/20">{category}</span>
+        return <Badge variant="secondary" size="sm">{category}</Badge>
     }
   }
 
@@ -332,14 +341,14 @@ export default function FeedbackPage() {
                 </div>
               )}
             </div>
-            <button
+            <Button
               onClick={() => fetchData()}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              variant="secondary"
+              leftIcon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
-            </button>
+              Refresh
+            </Button>
           </div>
         </div>
 
@@ -433,20 +442,18 @@ export default function FeedbackPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Loading size="lg" text="Loading feedback..." />
         ) : feedbackList.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <div className="rounded-2xl p-12 text-center bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No Feedback Found</h3>
-              <p className="text-[var(--text-secondary)]">
-                {statusFilter !== "all" || categoryFilter !== "all"
+            <EmptyState
+              icon={<MessageCircle className="w-12 h-12" />}
+              title="No Feedback Found"
+              description={
+                statusFilter !== "all" || categoryFilter !== "all"
                   ? "No feedback matches your current filters. Try adjusting them."
-                  : "No feedback has been submitted for this server yet."}
-              </p>
-            </div>
+                  : "No feedback has been submitted for this server yet."
+              }
+            />
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
@@ -500,22 +507,22 @@ export default function FeedbackPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {isPending && (
                         <>
-                          <button
+                          <Button
                             onClick={(e) => { e.stopPropagation(); handleReview(item.id, "accept") }}
                             disabled={actionLoading === item.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+                            variant="success"
+                            size="sm"
                           >
-                            <Check className="w-3.5 h-3.5" />
                             Accept
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={(e) => { e.stopPropagation(); handleReview(item.id, "deny") }}
                             disabled={actionLoading === item.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25 transition-colors disabled:opacity-50"
+                            variant="error"
+                            size="sm"
                           >
-                            <X className="w-3.5 h-3.5" />
                             Deny
-                          </button>
+                          </Button>
                         </>
                       )}
                       {isExpanded ? (
@@ -576,16 +583,14 @@ export default function FeedbackPage() {
                             <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-black/10">
                               <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
                               <label className="text-xs font-medium text-[var(--text-muted)] shrink-0">Reward on accept:</label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)]">$</span>
-                                <input
-                                  type="number"
+                              <div className="w-40" onClick={(e) => e.stopPropagation()}>
+                                <NumberInput
                                   value={currentReward}
-                                  onChange={(e) => setRewardAmounts(prev => ({ ...prev, [item.id]: Number(e.target.value) || 0 }))}
-                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(val) => setRewardAmounts(prev => ({ ...prev, [item.id]: val }))}
                                   min={0}
                                   step={100}
-                                  className="w-32 pl-7 pr-3 py-1.5 rounded-lg text-sm bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+                                  size="sm"
+                                  showControls={false}
                                 />
                               </div>
                             </div>
@@ -602,27 +607,17 @@ export default function FeedbackPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6 pt-4">
-            <span className="text-sm text-[var(--text-muted)]">
-              Page {page} of {totalPages} ({total} total)
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50 transition-colors"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
+          <div className="mt-6 pt-4">
+            <SimplePagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              showPageInfo
+            />
+            <div className="text-center mt-2">
+              <span className="text-sm text-[var(--text-muted)]">
+                {total} total
+              </span>
             </div>
           </div>
         )}
