@@ -47,19 +47,40 @@ export async function GET(request: NextRequest) {
       let kitConfig: { id: string; name: string; kitData: string } | null = null
 
       if (idParam) {
-        // SECURITY: Validate prefixed ID format
-        if (!isValidPrefixedId(idParam, 'category')) {
-          return NextResponse.json(
-            { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid category ID format' } },
-            { status: 400 }
-          )
-        }
+        // Check if this is a category ID or a server identifier
+        if (isValidPrefixedId(idParam, 'category')) {
+          // Direct category ID lookup (legacy)
+          kitConfig = await prisma.kitConfig.findUnique({
+            where: { id: idParam },
+            select: { id: true, name: true, kitData: true },
+          })
+        } else {
+          // Server identifier lookup - find via ServerIdentifier -> GameServer -> KitConfig
+          const serverIdentifier = await prisma.serverIdentifier.findFirst({
+            where: { OR: [{ id: idParam }, { hashedId: idParam }] },
+            select: { id: true },
+          })
 
-        // PERF: Select only needed fields
-        kitConfig = await prisma.kitConfig.findUnique({
-          where: { id: idParam },
-          select: { id: true, name: true, kitData: true },
-        })
+          if (serverIdentifier) {
+            // Find GameServer linked to this ServerIdentifier
+            const gameServer = await prisma.gameServer.findFirst({
+              where: {
+                OR: [
+                  { name: { contains: serverIdentifier.id } },
+                  { ip: { contains: serverIdentifier.id } }
+                ]
+              },
+              select: { kitConfigId: true },
+            })
+
+            if (gameServer?.kitConfigId) {
+              kitConfig = await prisma.kitConfig.findUnique({
+                where: { id: gameServer.kitConfigId },
+                select: { id: true, name: true, kitData: true },
+              })
+            }
+          }
+        }
       } else if (configParam) {
         // SECURITY: Basic validation for legacy name-based lookup
         if (configParam.length > 100) {

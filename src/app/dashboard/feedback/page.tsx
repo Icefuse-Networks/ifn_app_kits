@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageCircle, RefreshCw, ChevronUp, ChevronDown, Check,
   Clock, Server,
   Inbox, CheckCircle2, XCircle, Bug, MessageSquare,
-  DollarSign, Layers
+  DollarSign, Layers, Trash2, EyeOff, Eye
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/Button"
@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/Badge"
 import { Loading } from "@/components/ui/Loading"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { Alert } from "@/components/ui/Alert"
-import { Dropdown, DropdownOption } from "@/components/ui/Dropdown"
 import { NumberInput } from "@/components/ui/Input"
 import { SimplePagination } from "@/components/ui/Pagination"
 
@@ -96,6 +95,7 @@ export default function FeedbackPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false)
   const serverDropdownRef = useRef<HTMLDivElement>(null)
+  const [showDenied, setShowDenied] = useState(false)
 
   const limit = 20
 
@@ -218,6 +218,36 @@ export default function FeedbackPage() {
     }
   }, [rewardAmounts, fetchData])
 
+  const handleDelete = useCallback(async (id: string) => {
+    const confirmed = window.confirm("Are you sure you want to delete this feedback? This action cannot be undone.")
+    if (!confirmed) return
+
+    setActionLoading(id)
+    try {
+      const res = await fetch(`/api/feedback?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          setToast({ message: "Feedback deleted successfully", type: "success" })
+          fetchData()
+        } else {
+          setToast({ message: data.error || "Failed to delete feedback", type: "error" })
+        }
+      } else {
+        const errorData = await res.json().catch(() => null)
+        setToast({ message: errorData?.error || "Failed to delete feedback", type: "error" })
+      }
+    } catch {
+      setToast({ message: "Network error while deleting feedback", type: "error" })
+    } finally {
+      setActionLoading(null)
+    }
+  }, [fetchData])
+
   useEffect(() => { fetchServers() }, [fetchServers])
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -248,6 +278,157 @@ export default function FeedbackPage() {
     }
   }
 
+  const renderFeedbackCard = (item: FeedbackItem, idx: number) => {
+    const isExpanded = expandedId === item.id
+    const isPending = item.status === "pending"
+    const currentReward = rewardAmounts[item.id] ?? 1000
+
+    return (
+      <motion.div
+        key={item.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: idx * 0.03 }}
+        className={`rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
+          isPending
+            ? "border-amber-500/20 hover:border-amber-500/40"
+            : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"
+        }`}
+      >
+        <div
+          className="flex items-center gap-4 p-4 cursor-pointer"
+          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-1 flex-wrap">
+              <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{item.playerName}</span>
+              <span className="text-xs font-mono text-[var(--text-muted)]">{item.steamId}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isAllServers && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                  <Server className="w-3 h-3" />
+                  {servers.find(s => s.hashedId === item.serverIdentifier)?.name || item.serverIdentifier}
+                </span>
+              )}
+              {categoryBadge(item.category)}
+              {statusBadge(item.status)}
+              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatDate(item.createdAt)}
+              </span>
+              {item.rewardAmount != null && item.status === "accepted" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  <DollarSign className="w-3 h-3" />{item.rewardAmount.toLocaleString()}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isPending && (
+              <>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleReview(item.id, "accept") }}
+                  disabled={actionLoading === item.id}
+                  variant="success"
+                  size="sm"
+                >
+                  Accept
+                </Button>
+                <Button
+                  onClick={(e) => { e.stopPropagation(); handleReview(item.id, "deny") }}
+                  disabled={actionLoading === item.id}
+                  variant="error"
+                  size="sm"
+                >
+                  Deny
+                </Button>
+              </>
+            )}
+            <Button
+              onClick={(e) => { e.stopPropagation(); handleDelete(item.id) }}
+              disabled={actionLoading === item.id}
+              variant="ghost"
+              size="sm"
+              leftIcon={<Trash2 className="w-4 h-4" />}
+            />
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-4 pt-0 border-t border-[var(--glass-border)]">
+                <div className="mt-4 space-y-3">
+                  {item.responses.map((r, rIdx) => (
+                    <div key={rIdx} className="rounded-lg bg-black/10 p-3">
+                      <p className="text-xs font-medium text-[var(--text-muted)] mb-1">{r.question}</p>
+                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{r.answer}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {item.reviewedBy && (
+                  <div className="mt-3 text-xs text-[var(--text-muted)]">
+                    Reviewed by <span className="text-[var(--text-secondary)]">{item.reviewedBy}</span>
+                    {item.reviewedAt && <> on {formatDateTime(item.reviewedAt)}</>}
+                  </div>
+                )}
+
+                {item.reward && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                    <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                    Reward: <span className="text-emerald-400 font-medium">${item.reward.amount.toLocaleString()}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                      item.reward.status === "processed" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+                    }`}>
+                      {item.reward.status}
+                    </span>
+                    {item.reward.processedAt && (
+                      <span>- Processed {formatDateTime(item.reward.processedAt)}</span>
+                    )}
+                  </div>
+                )}
+
+                {isPending && (
+                  <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-black/10">
+                    <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <label className="text-xs font-medium text-[var(--text-muted)] shrink-0">Reward on accept:</label>
+                    <div className="w-40" onClick={(e) => e.stopPropagation()}>
+                      <NumberInput
+                        value={currentReward}
+                        onChange={(val) => setRewardAmounts(prev => ({ ...prev, [item.id]: val }))}
+                        min={0}
+                        step={100}
+                        size="sm"
+                        showControls={false}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    )
+  }
+
+  const pendingFeedback = feedbackList.filter(f => f.status === "pending")
+  const acceptedFeedback = feedbackList.filter(f => f.status === "accepted")
+  const deniedFeedback = feedbackList.filter(f => f.status === "denied")
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -266,7 +447,6 @@ export default function FeedbackPage() {
             <p className="text-[var(--text-muted)] text-sm ml-[52px]">Review player feedback and bug reports</p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Custom server selector dropdown */}
             <div className="relative" ref={serverDropdownRef}>
               <button
                 type="button"
@@ -297,7 +477,6 @@ export default function FeedbackPage() {
                   }}
                 >
                   <div className="py-1 max-h-[300px] overflow-y-auto">
-                    {/* All Servers option */}
                     <button
                       type="button"
                       onClick={() => { setSelectedServer("__all__"); setServerDropdownOpen(false) }}
@@ -314,7 +493,6 @@ export default function FeedbackPage() {
                     {servers.length > 0 && (
                       <div className="mx-3 my-1 border-t border-white/10" />
                     )}
-                    {/* Individual servers */}
                     {servers.map((s) => {
                       const isSelected = selectedServer === s.hashedId
                       return (
@@ -402,7 +580,6 @@ export default function FeedbackPage() {
 
         {/* Filter Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-          {/* Status filter */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
             {(["all", "pending", "accepted", "denied"] as const).map((s) => (
               <button
@@ -418,7 +595,6 @@ export default function FeedbackPage() {
               </button>
             ))}
           </div>
-          {/* Category filter */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
             {([
               { key: "all", label: "All Types" },
@@ -456,153 +632,57 @@ export default function FeedbackPage() {
             />
           </motion.div>
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
-            {feedbackList.map((item, idx) => {
-              const isExpanded = expandedId === item.id
-              const isPending = item.status === "pending"
-              const currentReward = rewardAmounts[item.id] ?? 1000
-
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + idx * 0.03 }}
-                  className={`rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
-                    isPending
-                      ? "border-amber-500/20 hover:border-amber-500/40"
-                      : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"
-                  }`}
-                >
-                  {/* Card header */}
-                  <div
-                    className="flex items-center gap-4 p-4 cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1 flex-wrap">
-                        <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{item.playerName}</span>
-                        <span className="text-xs font-mono text-[var(--text-muted)]">{item.steamId}</span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {isAllServers && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                            <Server className="w-3 h-3" />
-                            {servers.find(s => s.hashedId === item.serverIdentifier)?.name || item.serverIdentifier}
-                          </span>
-                        )}
-                        {categoryBadge(item.category)}
-                        {statusBadge(item.status)}
-                        <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDate(item.createdAt)}
-                        </span>
-                        {item.rewardAmount != null && item.status === "accepted" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                            <DollarSign className="w-3 h-3" />{item.rewardAmount.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isPending && (
-                        <>
-                          <Button
-                            onClick={(e) => { e.stopPropagation(); handleReview(item.id, "accept") }}
-                            disabled={actionLoading === item.id}
-                            variant="success"
-                            size="sm"
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            onClick={(e) => { e.stopPropagation(); handleReview(item.id, "deny") }}
-                            disabled={actionLoading === item.id}
-                            variant="error"
-                            size="sm"
-                          >
-                            Deny
-                          </Button>
-                        </>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expanded content */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-4 pt-0 border-t border-[var(--glass-border)]">
-                          {/* Responses */}
-                          <div className="mt-4 space-y-3">
-                            {item.responses.map((r, rIdx) => (
-                              <div key={rIdx} className="rounded-lg bg-black/10 p-3">
-                                <p className="text-xs font-medium text-[var(--text-muted)] mb-1">{r.question}</p>
-                                <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{r.answer}</p>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Review info */}
-                          {item.reviewedBy && (
-                            <div className="mt-3 text-xs text-[var(--text-muted)]">
-                              Reviewed by <span className="text-[var(--text-secondary)]">{item.reviewedBy}</span>
-                              {item.reviewedAt && <> on {formatDateTime(item.reviewedAt)}</>}
-                            </div>
-                          )}
-
-                          {/* Reward info for accepted */}
-                          {item.reward && (
-                            <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                              Reward: <span className="text-emerald-400 font-medium">${item.reward.amount.toLocaleString()}</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                item.reward.status === "processed" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
-                              }`}>
-                                {item.reward.status}
-                              </span>
-                              {item.reward.processedAt && (
-                                <span>- Processed {formatDateTime(item.reward.processedAt)}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Reward amount editor for pending */}
-                          {isPending && (
-                            <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-black/10">
-                              <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
-                              <label className="text-xs font-medium text-[var(--text-muted)] shrink-0">Reward on accept:</label>
-                              <div className="w-40" onClick={(e) => e.stopPropagation()}>
-                                <NumberInput
-                                  value={currentReward}
-                                  onChange={(val) => setRewardAmounts(prev => ({ ...prev, [item.id]: val }))}
-                                  min={0}
-                                  step={100}
-                                  size="sm"
-                                  showControls={false}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+          <>
+            {pendingFeedback.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-amber-400 mb-3 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Unreviewed Feedback ({pendingFeedback.length})
+                </h2>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
+                  {pendingFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
                 </motion.div>
-              )
-            })}
-          </motion.div>
+              </div>
+            )}
+
+            {acceptedFeedback.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Accepted Feedback ({acceptedFeedback.length})
+                </h2>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="space-y-3">
+                  {acceptedFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
+                </motion.div>
+              </div>
+            )}
+
+            {deniedFeedback.length > 0 && (
+              <div className="mb-8">
+                <button
+                  onClick={() => setShowDenied(!showDenied)}
+                  className="flex items-center gap-2 text-lg font-semibold text-red-400 mb-3 hover:text-red-300 transition-colors"
+                >
+                  {showDenied ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                  Denied Feedback ({deniedFeedback.length})
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showDenied ? "rotate-180" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {showDenied && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-3 overflow-hidden"
+                    >
+                      {deniedFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </>
         )}
 
         {/* Pagination */}

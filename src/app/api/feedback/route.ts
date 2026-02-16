@@ -253,3 +253,60 @@ export async function PATCH(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const authResult = await requireSession(request)
+  if (!authResult.success) {
+    return NextResponse.json(
+      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+      { status: authResult.status }
+    )
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const feedbackId = searchParams.get('id')
+
+    if (!feedbackId) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Feedback ID is required' } },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.feedback.findUnique({
+      where: { id: feedbackId },
+      select: { id: true, status: true, steamId: true, playerName: true },
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Feedback not found' } },
+        { status: 404 }
+      )
+    }
+
+    // Delete associated rewards first if any
+    await prisma.feedbackReward.deleteMany({
+      where: { feedbackId },
+    })
+
+    // Delete the feedback
+    await prisma.feedback.delete({
+      where: { id: feedbackId },
+    })
+
+    logger.admin.info('Feedback deleted', {
+      feedbackId,
+      actor: authResult.context.actorId,
+    })
+
+    return NextResponse.json({ success: true, data: { id: feedbackId } })
+  } catch (error) {
+    logger.admin.error('Failed to delete feedback', error as Error)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to delete feedback' } },
+      { status: 500 }
+    )
+  }
+}
