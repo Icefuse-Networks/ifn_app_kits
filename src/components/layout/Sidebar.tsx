@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  Target,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -23,6 +24,7 @@ const sidebarItems = [
   { id: "lootmanager", href: "/admin/lootmanager", icon: Package, label: "Loot Manager" },
   { id: "announcements", href: "/admin/announcements", icon: MessageSquare, label: "Announcements" },
   { id: "users", href: "/admin/users", icon: Users, label: "Users" },
+  { id: "stats", href: "/admin/stats", icon: Target, label: "Player Stats" },
 ];
 
 export default function Sidebar() {

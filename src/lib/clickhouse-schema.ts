@@ -75,6 +75,35 @@ SETTINGS index_granularity = 8192
 `
 
 /**
+ * Base Raid Events Table
+ * Stores raid statistics from IcefuseBases plugin
+ */
+const BASES_RAID_EVENTS_SCHEMA = `
+CREATE TABLE IF NOT EXISTS bases_raid_events (
+    server_id String,
+    base_id UInt32,
+    building_name String,
+    base_type String,
+    building_grade String,
+    raid_duration_seconds UInt32,
+    was_completed UInt8,
+    total_entities_destroyed UInt16,
+    total_containers_destroyed UInt16,
+    total_npcs_killed UInt16,
+    raider_steam_ids Array(String),
+    raider_names Array(String),
+    raider_entities_destroyed Array(UInt16),
+    raider_containers_destroyed Array(UInt16),
+    raider_npcs_killed Array(UInt16),
+    timestamp DateTime DEFAULT now()
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (server_id, timestamp)
+TTL timestamp + INTERVAL 365 DAY
+SETTINGS index_granularity = 8192
+`
+
+/**
  * Kit Usage Events Table (Future)
  * Uncomment when ready to migrate kit analytics to ClickHouse
  */
@@ -104,13 +133,129 @@ const KIT_USAGE_EVENTS_SCHEMA = `
 `
 
 /**
+ * Rust Player Stats - Wipe (cleared on server wipe)
+ * Uses ReplacingMergeTree to deduplicate by (server_id, steamid), keeping latest updated_at
+ */
+const RUST_PLAYER_STATS_WIPE_SCHEMA = `
+CREATE TABLE IF NOT EXISTS rust_player_stats_wipe (
+    server_id String,
+    steamid String,
+    name String DEFAULT '',
+    avatar String DEFAULT '',
+    clan String DEFAULT '',
+    kills UInt64 DEFAULT 0,
+    deaths UInt64 DEFAULT 0,
+    kdr Float64 DEFAULT 0,
+    playtime UInt64 DEFAULT 0,
+    tcs_destroyed UInt64 DEFAULT 0,
+    c4_thrown UInt64 DEFAULT 0,
+    rockets_launched UInt64 DEFAULT 0,
+    c4_crafted UInt64 DEFAULT 0,
+    rockets_crafted UInt64 DEFAULT 0,
+    container_points UInt64 DEFAULT 0,
+    weapon_kills String DEFAULT '{}',
+    points UInt64 DEFAULT 0,
+    updated_at DateTime DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (server_id, steamid)
+PARTITION BY server_id
+SETTINGS index_granularity = 8192
+`
+
+/**
+ * Rust Player Stats - Monthly (auto-TTL 90 days)
+ */
+const RUST_PLAYER_STATS_MONTHLY_SCHEMA = `
+CREATE TABLE IF NOT EXISTS rust_player_stats_monthly (
+    server_id String,
+    steamid String,
+    name String DEFAULT '',
+    avatar String DEFAULT '',
+    clan String DEFAULT '',
+    kills UInt64 DEFAULT 0,
+    deaths UInt64 DEFAULT 0,
+    kdr Float64 DEFAULT 0,
+    playtime UInt64 DEFAULT 0,
+    tcs_destroyed UInt64 DEFAULT 0,
+    c4_thrown UInt64 DEFAULT 0,
+    rockets_launched UInt64 DEFAULT 0,
+    c4_crafted UInt64 DEFAULT 0,
+    rockets_crafted UInt64 DEFAULT 0,
+    container_points UInt64 DEFAULT 0,
+    weapon_kills String DEFAULT '{}',
+    points UInt64 DEFAULT 0,
+    updated_at DateTime DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (server_id, steamid)
+PARTITION BY toYYYYMM(updated_at)
+TTL updated_at + INTERVAL 90 DAY
+SETTINGS index_granularity = 8192
+`
+
+/**
+ * Rust Player Stats - Overall (lifetime, no TTL)
+ */
+const RUST_PLAYER_STATS_OVERALL_SCHEMA = `
+CREATE TABLE IF NOT EXISTS rust_player_stats_overall (
+    server_id String,
+    steamid String,
+    name String DEFAULT '',
+    avatar String DEFAULT '',
+    clan String DEFAULT '',
+    kills UInt64 DEFAULT 0,
+    deaths UInt64 DEFAULT 0,
+    kdr Float64 DEFAULT 0,
+    playtime UInt64 DEFAULT 0,
+    tcs_destroyed UInt64 DEFAULT 0,
+    c4_thrown UInt64 DEFAULT 0,
+    rockets_launched UInt64 DEFAULT 0,
+    c4_crafted UInt64 DEFAULT 0,
+    rockets_crafted UInt64 DEFAULT 0,
+    container_points UInt64 DEFAULT 0,
+    weapon_kills String DEFAULT '{}',
+    points UInt64 DEFAULT 0,
+    updated_at DateTime DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY (server_id, steamid)
+PARTITION BY toYYYYMM(updated_at)
+SETTINGS index_granularity = 8192
+`
+
+const RUST_PLAYER_STATS_COLUMNS: Array<{ name: string; type: string }> = [
+  { name: 'server_id', type: 'String' },
+  { name: 'steamid', type: 'String' },
+  { name: 'name', type: 'String' },
+  { name: 'avatar', type: 'String' },
+  { name: 'clan', type: 'String' },
+  { name: 'kills', type: 'UInt64' },
+  { name: 'deaths', type: 'UInt64' },
+  { name: 'kdr', type: 'Float64' },
+  { name: 'playtime', type: 'UInt64' },
+  { name: 'tcs_destroyed', type: 'UInt64' },
+  { name: 'c4_thrown', type: 'UInt64' },
+  { name: 'rockets_launched', type: 'UInt64' },
+  { name: 'c4_crafted', type: 'UInt64' },
+  { name: 'rockets_crafted', type: 'UInt64' },
+  { name: 'container_points', type: 'UInt64' },
+  { name: 'weapon_kills', type: 'String' },
+  { name: 'points', type: 'UInt64' },
+  { name: 'updated_at', type: 'DateTime' },
+]
+
+/**
  * All table schemas to be created/checked
  */
 const SCHEMAS = [
   { name: 'server_population_stats', schema: SERVER_POPULATION_STATS_SCHEMA },
   { name: 'event_completions', schema: EVENT_COMPLETIONS_SCHEMA },
-  // Add more tables here as needed
+  { name: 'bases_raid_events', schema: BASES_RAID_EVENTS_SCHEMA },
   // { name: 'kit_usage_events', schema: KIT_USAGE_EVENTS_SCHEMA },
+  { name: 'rust_player_stats_wipe', schema: RUST_PLAYER_STATS_WIPE_SCHEMA },
+  { name: 'rust_player_stats_monthly', schema: RUST_PLAYER_STATS_MONTHLY_SCHEMA },
+  { name: 'rust_player_stats_overall', schema: RUST_PLAYER_STATS_OVERALL_SCHEMA },
 ]
 
 /**
@@ -146,6 +291,27 @@ const COLUMN_DEFINITIONS: Record<string, Array<{ name: string; type: string }>> 
     { name: 'participants', type: 'Array(Tuple(steam_id UInt64, name String, kills UInt16, deaths UInt16, position UInt16))' },
     { name: 'timestamp', type: 'DateTime64(3)' },
   ],
+  bases_raid_events: [
+    { name: 'server_id', type: 'String' },
+    { name: 'base_id', type: 'UInt32' },
+    { name: 'building_name', type: 'String' },
+    { name: 'base_type', type: 'String' },
+    { name: 'building_grade', type: 'String' },
+    { name: 'raid_duration_seconds', type: 'UInt32' },
+    { name: 'was_completed', type: 'UInt8' },
+    { name: 'total_entities_destroyed', type: 'UInt16' },
+    { name: 'total_containers_destroyed', type: 'UInt16' },
+    { name: 'total_npcs_killed', type: 'UInt16' },
+    { name: 'raider_steam_ids', type: 'Array(String)' },
+    { name: 'raider_names', type: 'Array(String)' },
+    { name: 'raider_entities_destroyed', type: 'Array(UInt16)' },
+    { name: 'raider_containers_destroyed', type: 'Array(UInt16)' },
+    { name: 'raider_npcs_killed', type: 'Array(UInt16)' },
+    { name: 'timestamp', type: 'DateTime' },
+  ],
+  rust_player_stats_wipe: RUST_PLAYER_STATS_COLUMNS,
+  rust_player_stats_monthly: RUST_PLAYER_STATS_COLUMNS,
+  rust_player_stats_overall: RUST_PLAYER_STATS_COLUMNS,
 }
 
 /**

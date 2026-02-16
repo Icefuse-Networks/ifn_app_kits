@@ -26,12 +26,10 @@ interface Announcement {
 }
 
 interface ServerInfo {
-  id: number;
+  id: string;
   name: string;
-  ip: string;
-  port: number;
-  game: string;
-  serverId?: string;
+  ip: string | null;
+  port: number | null;
 }
 
 const MultiSelectDropdown = ({ servers, selectedServerIds, onSelectionChange, disabled }: { servers: ServerInfo[]; selectedServerIds: string[]; onSelectionChange: (serverIds: string[]) => void; disabled?: boolean }) => {
@@ -56,7 +54,7 @@ const MultiSelectDropdown = ({ servers, selectedServerIds, onSelectionChange, di
   const getDisplayText = () => {
     if (selectedServerIds.length === 0) return "Select servers...";
     if (selectedServerIds.length === 1) {
-      const server = servers.find((s) => s.serverId === selectedServerIds[0]);
+      const server = servers.find((s) => s.id === selectedServerIds[0]);
       return server ? server.name : "1 server selected";
     }
     return `${selectedServerIds.length} servers selected`;
@@ -77,16 +75,16 @@ const MultiSelectDropdown = ({ servers, selectedServerIds, onSelectionChange, di
         <div className="absolute z-50 mt-1 w-full rounded-lg shadow-lg max-h-60 overflow-auto bg-zinc-900 border border-white/10" onClick={(e) => e.stopPropagation()}>
           <div className="p-2 border-b border-white/5">
             <button type="button" onClick={(e) => { e.stopPropagation(); onSelectionChange([]); }} className="w-full text-left px-3 py-2 text-sm text-zinc-500 hover:text-white rounded transition-colors">Clear all</button>
-            <button type="button" onClick={(e) => { e.stopPropagation(); onSelectionChange(servers.map((s) => s.serverId!)); }} className="w-full text-left px-3 py-2 text-sm text-zinc-500 hover:text-white rounded transition-colors">Select all</button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onSelectionChange(servers.map((s) => s.id)); }} className="w-full text-left px-3 py-2 text-sm text-zinc-500 hover:text-white rounded transition-colors">Select all</button>
           </div>
           <div className="py-1">
             {servers.map((server) => (
-              <button key={server.serverId} type="button" onClick={(e) => { e.stopPropagation(); toggleServer(server.serverId!); }} className="w-full text-left px-4 py-3 transition-colors flex items-center justify-between hover:bg-white/5">
+              <button key={server.id} type="button" onClick={(e) => { e.stopPropagation(); toggleServer(server.id); }} className="w-full text-left px-4 py-3 transition-colors flex items-center justify-between hover:bg-white/5">
                 <div>
                   <div className="text-white font-medium">{server.name}</div>
-                  <div className="text-xs text-zinc-500">{server.game} - {server.ip}:{server.port}</div>
+                  {server.ip && server.port && <div className="text-xs text-zinc-500">{server.ip}:{server.port}</div>}
                 </div>
-                {selectedServerIds.includes(server.serverId!) && <Check className="h-4 w-4 text-purple-400" />}
+                {selectedServerIds.includes(server.id) && <Check className="h-4 w-4 text-purple-400" />}
               </button>
             ))}
           </div>
@@ -98,7 +96,7 @@ const MultiSelectDropdown = ({ servers, selectedServerIds, onSelectionChange, di
 
 const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announcement: Announcement; servers: ServerInfo[]; onEdit: (announcement: Announcement) => void; onDelete: (id: number) => void }) => {
   const isGlobal = announcement.isGlobal;
-  const assignedServers = servers.filter((s) => announcement.serverAssignments.some((sa) => sa.serverId === s.serverId));
+  const assignedServers = servers.filter((s) => announcement.serverAssignments.some((sa) => sa.serverId === s.id));
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="rounded-xl p-6 transition-all group bg-white/[0.02] border border-white/5">
@@ -125,7 +123,7 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
             {!isGlobal && assignedServers.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {assignedServers.slice(0, 3).map((server) => (
-                  <span key={server.serverId} className="text-xs px-2 py-1 rounded bg-white/5">{server.name}</span>
+                  <span key={server.id} className="text-xs px-2 py-1 rounded bg-white/5">{server.name}</span>
                 ))}
                 {assignedServers.length > 3 && <span className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-400">+{assignedServers.length - 3} more</span>}
               </div>
@@ -275,17 +273,22 @@ export default function AnnouncementsPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [announcementsRes, serversRes] = await Promise.all([fetch("/api/announcements"), fetch("/api/servers")]);
+      const [announcementsRes, serversRes] = await Promise.all([
+        fetch("/api/announcements", { credentials: "include" }),
+        fetch("/api/identifiers", { credentials: "include" }),
+      ]);
       if (announcementsRes.ok) {
         const data = await announcementsRes.json();
         setAnnouncements(data.announcements || []);
       }
+      console.log("identifiers status:", serversRes.status);
       if (serversRes.ok) {
         const serversData = await serversRes.json();
-        const serversList = serversData.data || serversData;
-        if (Array.isArray(serversList)) {
-          setServers(serversList.map((s: ServerInfo) => ({ ...s, serverId: `${s.ip}:${s.port}` })));
-        }
+        console.log("identifiers data:", serversData);
+        const list = Array.isArray(serversData) ? serversData : serversData.data || [];
+        setServers(list.filter((s: ServerInfo) => s.id && s.name));
+      } else {
+        console.error("identifiers failed:", serversRes.status, await serversRes.text());
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);

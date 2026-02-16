@@ -138,12 +138,13 @@ registerPrefix('giveawayPlayer', 'giveawayp', 'Giveaway Player', 'giveaways')
 registerPrefix('giveaway', 'giveaway', 'Giveaway', 'giveaways')
 registerPrefix('giveawayServer', 'giveaways', 'Giveaway Server', 'giveaways')
 
-// -----------------------------------------------------------------------------
-// Future Plugin Prefixes (uncomment when adding plugins)
-// -----------------------------------------------------------------------------
-// registerPrefix('playerStat', 'pstat', 'Player Stat', 'stats')
-// registerPrefix('killEvent', 'kill', 'Kill Event', 'stats')
-// registerPrefix('deathEvent', 'death', 'Death Event', 'stats')
+// Stats plugin entities
+registerPrefix('playerStat', 'pstat', 'Player Stat', 'stats')
+registerPrefix('statsWipe', 'statswipe', 'Stats Wipe', 'stats')
+
+// Feedback plugin entities
+registerPrefix('feedback', 'fb', 'Feedback', 'feedback')
+registerPrefix('feedbackReward', 'fbrw', 'Feedback Reward', 'feedback')
 
 // =============================================================================
 // Legacy Type Support
@@ -197,6 +198,12 @@ export type IdType =
   | 'giveawayPlayer'
   | 'giveaway'
   | 'giveawayServer'
+  // Stats plugin
+  | 'playerStat'
+  | 'statsWipe'
+  // Feedback plugin
+  | 'feedback'
+  | 'feedbackReward'
 
 // =============================================================================
 // Core Functions
@@ -372,6 +379,14 @@ export const id = {
   giveawayPlayer: () => generateId('giveawayPlayer'),
   giveaway: () => generateId('giveaway'),
   giveawayServer: () => generateId('giveawayServer'),
+
+  // Stats plugin
+  playerStat: () => generateId('playerStat'),
+  statsWipe: () => generateId('statsWipe'),
+
+  // Feedback plugin
+  feedback: () => generateId('feedback'),
+  feedbackReward: () => generateId('feedbackReward'),
 } as const
 
 /**

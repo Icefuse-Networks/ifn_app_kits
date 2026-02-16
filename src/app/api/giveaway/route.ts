@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger'
 import { id } from '@/lib/id'
 import { prisma } from '@/lib/db'
 
+// SECURITY: Zod validated input schemas
 const entrySchema = z.object({
   playerName: z.string().min(1).max(255).trim(),
   playerSteamId64: z.string().min(17).max(17).regex(/^\d{17}$/),
@@ -14,58 +15,147 @@ const entrySchema = z.object({
 
 const checkQuerySchema = z.object({
   steamId: z.string().min(17).max(17).regex(/^\d{17}$/).optional(),
-  server: z.string().optional(),
+  server: z.string().min(1).max(255).optional(),
 })
 
+// Shared active giveaway query builder - enforces time window + server match
+function buildActiveGiveawayWhere(server?: string) {
+  const now = new Date()
+  return {
+    isActive: true,
+    AND: [
+      {
+        OR: [
+          { startAt: null, endAt: null },
+          { startAt: { lte: now }, endAt: null },
+          { startAt: null, endAt: { gte: now } },
+          { startAt: { lte: now }, endAt: { gte: now } },
+        ],
+      },
+      {
+        OR: [
+          { isGlobal: true },
+          ...(server ? [{ servers: { some: { serverIdentifier: server } } }] : []),
+        ],
+      },
+    ],
+  }
+}
+
+// Auto-lifecycle: activate/deactivate giveaways based on time window
+async function processGiveawayLifecycle() {
+  const now = new Date()
+
+  // Auto-activate: startAt <= now, not yet active, not already ended
+  await prisma.giveaway.updateMany({
+    where: {
+      isActive: false,
+      startAt: { lte: now },
+      endedAt: null,
+      OR: [
+        { endAt: null },
+        { endAt: { gt: now } },
+      ],
+    },
+    data: { isActive: true },
+  })
+
+  // Auto-end + pick winner: endAt <= now, still active
+  const expiredGiveaways = await prisma.giveaway.findMany({
+    where: {
+      isActive: true,
+      endAt: { lte: now },
+      endedAt: null,
+    },
+    include: { players: true },
+  })
+
+  for (const giveaway of expiredGiveaways) {
+    const winnerCount = Math.min(giveaway.maxWinners, giveaway.players.length)
+    const shuffled = [...giveaway.players].sort(() => Math.random() - 0.5)
+    const winners = shuffled.slice(0, winnerCount)
+
+    if (winners.length > 0) {
+      await prisma.giveawayPlayer.updateMany({
+        where: { id: { in: winners.map(w => w.id) } },
+        data: { isWinner: true },
+      })
+    }
+
+    const primaryWinner = winners[0]
+    await prisma.giveaway.update({
+      where: { id: giveaway.id },
+      data: {
+        isActive: false,
+        endedAt: now,
+        ...(primaryWinner ? {
+          winnerId: primaryWinner.id,
+          winnerName: primaryWinner.playerName,
+          winnerSteamId64: primaryWinner.playerSteamId64,
+        } : {}),
+      },
+    })
+
+    const winnerNames = winners.map(w => w.playerName).join(', ')
+    logger.admin.info(`Giveaway "${giveaway.name}" auto-ended. Winners: ${winnerNames || 'none'}`)
+  }
+}
+
 export async function GET(request: NextRequest) {
+  // SECURITY: Scope check
   const authResult = await authenticateWithScope(request, 'giveaways:read')
   if (!authResult.success) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
   try {
+    // Auto-start/stop giveaways based on time window
+    await processGiveawayLifecycle()
+
     const { searchParams } = new URL(request.url)
+    // SECURITY: Zod validated
     const parsed = checkQuerySchema.safeParse({
       steamId: searchParams.get('steamId') || undefined,
       server: searchParams.get('server') || undefined,
     })
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
+      return NextResponse.json({ error: { code: 'VALIDATION_ERROR', details: parsed.error.flatten() } }, { status: 400 })
     }
 
     const { steamId, server } = parsed.data
 
-    const now = new Date()
     const activeGiveaway = await prisma.giveaway.findFirst({
-      where: {
-        isActive: true,
-        AND: [
-          {
-            OR: [
-              { startAt: null, endAt: null },
-              { startAt: { lte: now }, endAt: null },
-              { startAt: null, endAt: { gte: now } },
-              { startAt: { lte: now }, endAt: { gte: now } },
-            ],
-          },
-          {
-            OR: [
-              { isGlobal: true },
-              ...(server ? [{ servers: { some: { serverIdentifier: server } } }] : []),
-            ],
-          },
-        ],
-      },
+      where: buildActiveGiveawayWhere(server),
       include: { servers: true },
       orderBy: { createdAt: 'desc' },
     })
 
     if (!activeGiveaway) {
+      // Return most recently ended giveaway for winner announcement
+      const recentlyEnded = await prisma.giveaway.findFirst({
+        where: {
+          endedAt: { not: null },
+          ...(server ? {
+            OR: [
+              { isGlobal: true },
+              { servers: { some: { serverIdentifier: server } } },
+            ],
+          } : {}),
+        },
+        orderBy: { endedAt: 'desc' },
+      })
+
       return NextResponse.json({
         success: true,
         active: false,
         message: 'No active giveaway',
+        giveaway: recentlyEnded ? {
+          id: recentlyEnded.id,
+          name: recentlyEnded.name,
+          winnerName: recentlyEnded.winnerName,
+          winnerSteamId64: recentlyEnded.winnerSteamId64,
+        } : null,
         data: [],
         count: 0,
       })
@@ -103,11 +193,12 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     logger.admin.error('Failed to check giveaway', error as Error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Operation failed' } }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  // SECURITY: Scope check
   const authResult = await authenticateWithScope(request, 'giveaways:write')
   if (!authResult.success) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
@@ -115,35 +206,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    // SECURITY: Zod validated
     const parsed = entrySchema.safeParse(body)
 
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
+      return NextResponse.json({ error: { code: 'VALIDATION_ERROR', details: parsed.error.flatten() } }, { status: 400 })
     }
 
     const { playerName, playerSteamId64, playTime, server } = parsed.data
 
-    const now = new Date()
+    // SECURITY: Fail-closed - verify giveaway is active before allowing entry
     const activeGiveaway = await prisma.giveaway.findFirst({
-      where: {
-        isActive: true,
-        AND: [
-          {
-            OR: [
-              { startAt: null, endAt: null },
-              { startAt: { lte: now }, endAt: null },
-              { startAt: null, endAt: { gte: now } },
-              { startAt: { lte: now }, endAt: { gte: now } },
-            ],
-          },
-          {
-            OR: [
-              { isGlobal: true },
-              { servers: { some: { serverIdentifier: server } } },
-            ],
-          },
-        ],
-      },
+      where: buildActiveGiveawayWhere(server),
       orderBy: { createdAt: 'desc' },
     })
 
@@ -151,6 +225,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No active giveaway for this server' }, { status: 400 })
     }
 
+    // SECURITY: Server-side playtime enforcement
     const minPlaytimeSeconds = activeGiveaway.minPlaytimeHours * 3600
     if (playTime < minPlaytimeSeconds) {
       return NextResponse.json({
@@ -161,6 +236,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // SECURITY: Idempotency check - prevent duplicate entries
     const existing = await prisma.giveawayPlayer.findFirst({
       where: { playerSteamId64, giveawayId: activeGiveaway.id },
     })
@@ -187,6 +263,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     logger.admin.error('Failed to enter giveaway', error as Error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Operation failed' } }, { status: 500 })
   }
 }

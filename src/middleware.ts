@@ -35,6 +35,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/lootmanager/download',
   '/api/rust-servers',
   '/api/announcements',
+  '/api/giveaway',
   '/kits',
   '/_next',
   '/logos',

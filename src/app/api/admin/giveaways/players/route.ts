@@ -85,7 +85,17 @@ export async function POST(request: NextRequest) {
 
     const { playerName, playerSteamId64, playTime, server, giveawayId } = parsed.data
 
+    // SECURITY: Fail-closed - if giveawayId provided, verify it exists and is active
     if (giveawayId) {
+      const giveaway = await prisma.giveaway.findUnique({ where: { id: giveawayId } })
+      if (!giveaway) {
+        return NextResponse.json({ success: false, error: 'Giveaway not found' }, { status: 404 })
+      }
+      if (!giveaway.isActive) {
+        return NextResponse.json({ success: false, error: 'Cannot add player to inactive giveaway' }, { status: 400 })
+      }
+
+      // SECURITY: Idempotency check
       const existing = await prisma.giveawayPlayer.findFirst({
         where: { playerSteamId64, giveawayId },
       })
@@ -114,6 +124,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const updatePlayerSchema = z.object({
+  isWinner: z.boolean().optional(),
+})
+
+export async function PUT(request: NextRequest) {
+  const authResult = await requireSession(request)
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const playerId = searchParams.get('id')
+
+    if (!playerId || playerId.length > 60) {
+      return NextResponse.json({ error: 'Player ID required' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const parsed = updatePlayerSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
+    }
+
+    const player = await prisma.giveawayPlayer.update({
+      where: { id: playerId },
+      data: parsed.data,
+    })
+
+    return NextResponse.json({ success: true, data: player })
+  } catch (error) {
+    logger.admin.error('Failed to update giveaway player', error as Error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   const authResult = await requireSession(request)
   if (!authResult.success) {
@@ -124,7 +170,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const playerId = searchParams.get('id')
 
-    if (!playerId) {
+    // SECURITY: Validate ID
+    if (!playerId || playerId.length > 60) {
       return NextResponse.json({ error: 'Player ID required' }, { status: 400 })
     }
 

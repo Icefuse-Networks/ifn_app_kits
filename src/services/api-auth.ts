@@ -254,6 +254,20 @@ export async function requireLootManagerWrite(request: NextRequest): Promise<Aut
 }
 
 /**
+ * Require authentication for bases:read
+ */
+export async function requireBasesRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'bases:read')
+}
+
+/**
+ * Require authentication for bases:write
+ */
+export async function requireBasesWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'bases:write')
+}
+
+/**
  * Require authentication for announcements:read
  */
 export async function requireAnnouncementsRead(request: NextRequest): Promise<AuthResult> {

@@ -97,6 +97,10 @@ registerScope('redirect:write', 'Manage redirect configuration and submit logs',
 registerScope('lootmanager:read', 'Read loot configurations from game servers', 'lootmanager')
 registerScope('lootmanager:write', 'Create and update loot configurations', 'lootmanager')
 
+// IcefuseBases plugin scopes
+registerScope('bases:read', 'Read IcefuseBases configurations from game servers', 'bases')
+registerScope('bases:write', 'Create and update IcefuseBases configurations', 'bases')
+
 // Giveaway plugin scopes
 registerScope('giveaways:read', 'Read giveaway players', 'giveaways')
 registerScope('giveaways:write', 'Create and delete giveaway players', 'giveaways')
@@ -105,11 +109,13 @@ registerScope('giveaways:write', 'Create and delete giveaway players', 'giveaway
 registerScope('announcements:read', 'Read server announcements', 'announcements')
 registerScope('announcements:write', 'Create, update, and delete server announcements', 'announcements')
 
-// -----------------------------------------------------------------------------
-// Future Plugin Scopes (uncomment when adding plugins)
-// -----------------------------------------------------------------------------
-// registerScope('stats:read', 'Read player statistics', 'stats')
-// registerScope('stats:write', 'Submit player statistics', 'stats')
+// Stats plugin scopes
+registerScope('stats:read', 'Read player statistics and leaderboards', 'stats')
+registerScope('stats:write', 'Submit player statistics from game servers', 'stats')
+
+// Feedback plugin scopes
+registerScope('feedback:read', 'Read feedback submissions and reward queue', 'feedback')
+registerScope('feedback:write', 'Submit feedback and manage reward status', 'feedback')
 
 /**
  * All available scopes (for backwards compatibility)
@@ -329,6 +335,10 @@ registerResourceType('wipe_schedule', 'Wipe Schedule', 'redirect')
 registerResourceType('loot_config', 'Loot Configuration', 'lootmanager')
 registerResourceType('loot_mapping', 'Loot Mapping', 'lootmanager')
 
+// IcefuseBases plugin resources
+registerResourceType('bases_config', 'Bases Configuration', 'bases')
+registerResourceType('bases_mapping', 'Bases Mapping', 'bases')
+
 // Giveaway plugin resources
 registerResourceType('giveaway_player', 'Giveaway Player', 'giveaways')
 registerResourceType('giveaway', 'Giveaway', 'giveaways')
@@ -337,11 +347,13 @@ registerResourceType('giveaway_server', 'Giveaway Server', 'giveaways')
 // Announcements plugin resources
 registerResourceType('announcement', 'Announcement', 'announcements')
 
-// -----------------------------------------------------------------------------
-// Future Plugin Resources (uncomment when adding plugins)
-// -----------------------------------------------------------------------------
-// registerResourceType('player_stat', 'Player Statistic', 'stats')
-// registerResourceType('kill_event', 'Kill Event', 'stats')
+// Stats plugin resources
+registerResourceType('player_stat', 'Player Statistic', 'stats')
+registerResourceType('stats_wipe', 'Stats Wipe Event', 'stats')
+
+// Feedback plugin resources
+registerResourceType('feedback', 'Feedback', 'feedback')
+registerResourceType('feedback_reward', 'Feedback Reward', 'feedback')
 
 /**
  * Known resource types (for backwards compatibility and type hints)

@@ -196,8 +196,9 @@ model ServerIdentifier {
 
   // Relations
   category     ServerIdentifierCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  usageEvents  KitUsageEvent[]
-  lootMappings LootMapping[]
+  usageEvents   KitUsageEvent[]
+  lootMappings  LootMapping[]
+  basesMappings BasesMapping[]
 
   @@unique([ip, port])
   @@index([hashedId])
@@ -701,6 +702,68 @@ model LootApiKey {
 }
 
 // =============================================================================
+// ICEFUSE BASES
+// =============================================================================
+
+model BasesConfig {
+  id               Int                   @id @default(autoincrement())
+  name             String                @db.VarChar(100)
+  description      String?
+  configData       String                @map("config_data")
+  currentVersion   Int                   @default(1) @map("current_version")
+  publishedVersion Int?                  @map("published_version")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+  versions         BasesConfigVersion[]
+  mappings         BasesMapping[]
+
+  @@index([name])
+  @@map("bases_configs")
+}
+
+model BasesMapping {
+  id                 Int              @id @default(autoincrement())
+  configId           Int              @map("config_id")
+  serverIdentifierId String           @map("server_identifier_id") @db.VarChar(60)
+  isLive             Boolean          @default(false) @map("is_live")
+  minutesAfterWipe   Int?             @map("minutes_after_wipe")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  config             BasesConfig      @relation(fields: [configId], references: [id], onDelete: Cascade)
+  serverIdentifier   ServerIdentifier @relation(fields: [serverIdentifierId], references: [id], onDelete: Cascade)
+
+  @@unique([serverIdentifierId, minutesAfterWipe])
+  @@index([configId])
+  @@index([serverIdentifierId])
+  @@map("bases_mappings")
+}
+
+model BasesConfigVersion {
+  id         Int         @id @default(autoincrement())
+  configId   Int         @map("config_id")
+  configData String      @map("config_data")
+  version    Int
+  createdAt  DateTime    @default(now()) @map("created_at")
+  config     BasesConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, version])
+  @@index([configId])
+  @@map("bases_config_versions")
+}
+
+model BasesFile {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  fileData  String   @map("file_data")
+  fileSize  Int      @map("file_size")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([name])
+  @@map("bases_files")
+}
+
+// =============================================================================
 // ANNOUNCEMENTS
 // =============================================================================
 
@@ -848,6 +911,7 @@ model GiveawayPlayer {
   playerSteamId64 String   @map("player_steam_id64") @db.VarChar(17)
   playTime        Float    @map("play_time")
   server          String   @db.VarChar(255)
+  isWinner        Boolean  @default(false) @map("is_winner")
   giveawayId      String?  @map("giveaway_id") @db.VarChar(60)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -868,8 +932,13 @@ model Giveaway {
   isActive            Boolean   @default(false) @map("is_active")
   isGlobal            Boolean   @default(false) @map("is_global")
   minPlaytimeHours    Float     @default(2) @map("min_playtime_hours")
+  maxWinners          Int       @default(1) @map("max_winners")
   startAt             DateTime? @map("start_at")
   endAt               DateTime? @map("end_at")
+  winnerId            String?   @map("winner_id") @db.VarChar(60)
+  winnerName          String?   @map("winner_name") @db.VarChar(255)
+  winnerSteamId64     String?   @map("winner_steam_id64") @db.VarChar(17)
+  endedAt             DateTime? @map("ended_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -892,5 +961,52 @@ model GiveawayServer {
   @@unique([giveawayId, serverIdentifier])
   @@index([serverIdentifier])
   @@map("giveaway_server")
+}
+
+// =============================================================================
+// FEEDBACK PLUGIN MODELS
+// =============================================================================
+
+model Feedback {
+  id               String    @id @db.VarChar(60)
+  serverIdentifier String    @map("server_identifier") @db.VarChar(60)
+  steamId          String    @map("steam_id") @db.VarChar(20)
+  playerName       String    @map("player_name") @db.VarChar(100)
+  category         String    @db.VarChar(50)
+  responses        Json
+  status           String    @default("pending") @db.VarChar(20)
+  rewardAmount     Int?      @map("reward_amount")
+  reviewedBy       String?   @map("reviewed_by") @db.VarChar(100)
+  reviewedAt       DateTime? @map("reviewed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  reward FeedbackReward?
+
+  @@index([serverIdentifier, status])
+  @@index([steamId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("feedback")
+}
+
+model FeedbackReward {
+  id               String    @id @db.VarChar(60)
+  feedbackId       String    @unique @map("feedback_id") @db.VarChar(60)
+  serverIdentifier String    @map("server_identifier") @db.VarChar(60)
+  steamId          String    @map("steam_id") @db.VarChar(20)
+  playerName       String    @map("player_name") @db.VarChar(100)
+  amount           Int
+  status           String    @default("pending") @db.VarChar(20)
+  processedAt      DateTime? @map("processed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([serverIdentifier, status])
+  @@index([steamId])
+  @@index([status])
+  @@map("feedback_reward")
 }
 

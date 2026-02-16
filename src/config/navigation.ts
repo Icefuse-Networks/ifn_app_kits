@@ -1,7 +1,7 @@
 import {
   Package, Settings, BarChart2, Shield, Key, HardDrive,
-  MessageSquare, Box, ShoppingCart, ArrowRightLeft, TrendingUp,
-  Gift, Trophy, LucideIcon
+  MessageSquare, MessageCircle, Box, ShoppingCart, ArrowRightLeft, TrendingUp,
+  Gift, Trophy, Castle, Hammer, LucideIcon
 } from 'lucide-react'
 
 export interface NavItem {
@@ -26,8 +26,10 @@ export const dashboardSections: NavSection[] = [
       { href: '/dashboard/kits', icon: Package, label: 'Kits', desc: 'Create and manage kit configurations', gradient: 'from-blue-500 to-indigo-600' },
       { href: '/dashboard/clans', icon: Shield, label: 'Clans', desc: 'Clan perks, settings and banned names', gradient: 'from-amber-500 to-orange-500' },
       { href: '/dashboard/lootmanager', icon: Box, label: 'Loot Manager', desc: 'Configure loot tables and drop rates', gradient: 'from-yellow-500 to-orange-500' },
+      { href: '/dashboard/bases', icon: Castle, label: 'Bases', desc: 'IcefuseBases loot tables and config', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/redirection', icon: ArrowRightLeft, label: 'Redirection', desc: 'AFK redirect settings and logs', gradient: 'from-orange-500 to-red-500' },
       { href: '/dashboard/giveaways', icon: Gift, label: 'Giveaways', desc: 'Manage giveaway players and select winners', gradient: 'from-pink-500 to-purple-600' },
+      { href: '/dashboard/feedback', icon: MessageCircle, label: 'Feedback', desc: 'Review player feedback and bug reports', gradient: 'from-cyan-500 to-blue-500' },
     ]
   },
   {
@@ -45,6 +47,7 @@ export const dashboardSections: NavSection[] = [
       { href: '/dashboard/player-analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
       { href: '/dashboard/event-analytics', icon: Trophy, label: 'Event Analytics', desc: 'KOTH and Maze event statistics', gradient: 'from-amber-500 to-red-500' },
+      { href: '/dashboard/bases-analytics', icon: Hammer, label: 'Base Raids', desc: 'Raid statistics and leaderboards', gradient: 'from-red-500 to-orange-500' },
       { href: '/dashboard/server-stats', icon: TrendingUp, label: 'Global Stats', desc: 'Global Rust server analytics', gradient: 'from-purple-500 to-pink-500' },
     ]
   },

@@ -165,6 +165,7 @@ export const logger = {
   kits: createModuleLogger('kits'),
   admin: createModuleLogger('admin'),
   analytics: createModuleLogger('analytics'),
+  stats: createModuleLogger('stats'),
   log: createModuleLogger('app'),
 }
 
