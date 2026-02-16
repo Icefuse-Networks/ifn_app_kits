@@ -44,6 +44,7 @@ export const dashboardSections: NavSection[] = [
     title: 'Analytics',
     description: 'View server and player analytics',
     items: [
+      { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics Hub', desc: 'Central analytics dashboard', gradient: 'from-purple-500 to-pink-500' },
       { href: '/dashboard/player-analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
       { href: '/dashboard/event-analytics', icon: Trophy, label: 'Event Analytics', desc: 'KOTH and Maze event statistics', gradient: 'from-amber-500 to-red-500' },

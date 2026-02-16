@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { requireKitsRead } from '@/services/api-auth'
 import { safeParseKitData } from '@/lib/utils/kit'
@@ -38,8 +39,26 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const configParam = searchParams.get('config')
-    const idParam = searchParams.get('id')
+
+    // SECURITY: Zod validated query params
+    const querySchema = z.object({
+      config: z.string().max(100).optional(),
+      id: z.string().max(100).optional(),
+    })
+
+    const queryValidation = querySchema.safeParse({
+      config: searchParams.get('config'),
+      id: searchParams.get('id'),
+    })
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid query parameters', details: queryValidation.error.flatten() } },
+        { status: 400 }
+      )
+    }
+
+    const { config: configParam, id: idParam } = queryValidation.data
 
     // Single config mode: plugin requests a specific kit configuration
     // Prefer ID-based lookup if provided
@@ -62,14 +81,9 @@ export async function GET(request: NextRequest) {
           })
 
           if (serverIdentifier) {
-            // Find GameServer linked to this ServerIdentifier
+            // Find GameServer by serverIdentifierId (single source of truth)
             const gameServer = await prisma.gameServer.findFirst({
-              where: {
-                OR: [
-                  { name: { contains: serverIdentifier.id } },
-                  { ip: { contains: serverIdentifier.id } }
-                ]
-              },
+              where: { serverIdentifierId: serverIdentifier.id },
               select: { kitConfigId: true },
             })
 
@@ -82,14 +96,6 @@ export async function GET(request: NextRequest) {
           }
         }
       } else if (configParam) {
-        // SECURITY: Basic validation for legacy name-based lookup
-        if (configParam.length > 100) {
-          return NextResponse.json(
-            { success: false, error: { code: 'VALIDATION_ERROR', message: 'Config name too long' } },
-            { status: 400 }
-          )
-        }
-
         // Legacy: lookup by name (first match)
         kitConfig = await prisma.kitConfig.findFirst({
           where: { name: configParam.trim() },

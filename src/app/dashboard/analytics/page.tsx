@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   BarChart3, RefreshCw, Castle, Trophy, Users, TrendingUp, Clock, Calendar,
   Target, Skull, Crown, Hammer, Shield, Box, CheckCircle2, MapPin, ChevronDown, ChevronUp,
-  Activity, Zap, Server as ServerIcon, Swords
+  Activity, Zap, Server as ServerIcon, Swords, Award
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -547,7 +547,7 @@ export default function CentralAnalyticsPage() {
                   />
                 </>
               )}
-              {activeCategory !== 'servers' && (
+              {activeCategory !== 'servers' && activeCategory !== 'overview' && (
                 <>
                   <Dropdown
                     value={`${timeFilter.type}:${timeFilter.value}`}
@@ -596,19 +596,21 @@ export default function CentralAnalyticsPage() {
                   />
                 </>
               )}
-              <Button
-                onClick={() => {
-                  if (activeCategory === 'bases') fetchBasesData();
-                  else if (activeCategory === 'events') fetchEventsData();
-                  else fetchServersData();
-                }}
-                disabled={loading}
-                loading={loading}
-                leftIcon={<RefreshCw className="h-4 w-4" />}
-                variant="primary"
-              >
-                Refresh
-              </Button>
+              {activeCategory !== 'overview' && (
+                <Button
+                  onClick={() => {
+                    if (activeCategory === 'bases') fetchBasesData();
+                    else if (activeCategory === 'events') fetchEventsData();
+                    else fetchServersData();
+                  }}
+                  disabled={loading}
+                  loading={loading}
+                  leftIcon={<RefreshCw className="h-4 w-4" />}
+                  variant="primary"
+                >
+                  Refresh
+                </Button>
+              )}
             </div>
           </div>
 
@@ -705,15 +707,53 @@ export default function CentralAnalyticsPage() {
                       </div>
                     </ChartCard>
 
-                    <ChartCard title="Base Types" icon={Castle} delay={0.5}>
+                    <ChartCard title="Completion Rate" icon={CheckCircle2} delay={0.5}>
                       <div className="h-72">
+                        <PieChart data={[
+                          { name: 'Completed', value: basesAnalytics.overview.completedRaids },
+                          { name: 'Abandoned', value: basesAnalytics.overview.totalRaids - basesAnalytics.overview.completedRaids },
+                        ].filter(d => d.value > 0)} height="100%" colors={['#22c55e', '#ef4444']} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Base Types" icon={Castle} delay={0.55}>
+                      <div className="h-64">
                         <PieChart data={basesAnalytics.baseTypes} height="100%" colors={COLORS} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Building Grade" icon={Shield} delay={0.6}>
+                      <div className="h-64">
+                        <PieChart data={basesAnalytics.gradeDistribution} height="100%" colors={['#a855f7', '#3b82f6', '#f59e0b', '#22c55e']} />
                       </div>
                     </ChartCard>
                   </div>
 
-                  <ChartCard title="Raid Activity Heatmap (by Day & Hour)" icon={Calendar} delay={0.55}>
+                  <ChartCard title="Raid Activity Heatmap (by Day & Hour)" icon={Calendar} delay={0.65}>
                     <ActivityHeatmap data={basesHeatmapGrid} tooltipPrefix="raids" />
+                  </ChartCard>
+
+                  <ChartCard title="Raider Leaderboard" icon={Target} delay={0.7}>
+                    <DataTable
+                      data={basesAnalytics.topRaiders}
+                      columns={[
+                        { key: "rank", header: "#", render: (_, __, idx) => <RankBadge rank={(idx || 0) + 1} /> },
+                        {
+                          key: "name",
+                          header: "Player",
+                          render: (_, row) => (
+                            <div>
+                              <div className="text-sm text-white font-medium">{row.name}</div>
+                              <div className="text-xs text-zinc-600 font-mono">{row.steam_id}</div>
+                            </div>
+                          ),
+                        },
+                        { key: "raids", header: "Raids", align: "right" as const, render: (v) => <span className="text-amber-400 font-semibold">{(v as number).toLocaleString()}</span> },
+                        { key: "entities", header: "Destroyed", align: "right" as const, render: (v) => <span className="text-red-400">{(v as number).toLocaleString()}</span> },
+                        { key: "completed", header: "Completed", align: "right" as const, render: (v) => <span className="text-green-400">{(v as number).toLocaleString()}</span> },
+                      ]}
+                      keyExtractor={(row) => row.steam_id}
+                    />
                   </ChartCard>
                 </>
               )}
@@ -753,15 +793,52 @@ export default function CentralAnalyticsPage() {
                       </div>
                     </ChartCard>
 
-                    <ChartCard title="Event Modes" icon={Target} delay={0.5}>
+                    <ChartCard title="Event Types" icon={Trophy} delay={0.5}>
                       <div className="h-72">
+                        <PieChart data={[
+                          { name: 'KOTH', value: eventsAnalytics.overview.kothCount },
+                          { name: 'Maze', value: eventsAnalytics.overview.mazeCount },
+                        ].filter(d => d.value > 0)} height="100%" colors={['#f59e0b', '#a855f7']} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Event Modes" icon={Target} delay={0.55}>
+                      <div className="h-64">
                         <PieChart data={eventsAnalytics.eventModes.map(m => ({ name: m.mode, value: m.count }))} height="100%" colors={COLORS} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="KOTH Locations" icon={MapPin} delay={0.6}>
+                      <div className="h-64">
+                        <BarChart data={eventsAnalytics.locationStats.map(l => ({ label: l.location, value: l.count }))} height="100%" horizontal={false} colors={COLORS} showLabels={false} />
                       </div>
                     </ChartCard>
                   </div>
 
-                  <ChartCard title="Activity Heatmap (Events by Day & Hour)" icon={Calendar} delay={0.55}>
+                  <ChartCard title="Activity Heatmap (Events by Day & Hour)" icon={Calendar} delay={0.65}>
                     <ActivityHeatmap data={eventsHeatmapGrid} tooltipPrefix="events" />
+                  </ChartCard>
+
+                  <ChartCard title="Winner Leaderboard" icon={Award} delay={0.7}>
+                    <DataTable
+                      data={eventsAnalytics.topWinners}
+                      columns={[
+                        { key: "rank", header: "#", render: (_, __, idx) => <RankBadge rank={(idx || 0) + 1} /> },
+                        {
+                          key: "name",
+                          header: "Player",
+                          render: (_, row) => (
+                            <div>
+                              <div className="text-sm text-white font-medium">{row.name}</div>
+                              <div className="text-xs text-zinc-600 font-mono">{row.steam_id}</div>
+                            </div>
+                          ),
+                        },
+                        { key: "wins", header: "Wins", align: "right" as const, render: (v) => <span className="text-amber-400 font-semibold">{(v as number).toLocaleString()}</span> },
+                        { key: "kills", header: "Kills", align: "right" as const, render: (v) => <span className="text-red-400">{(v as number).toLocaleString()}</span> },
+                      ]}
+                      keyExtractor={(row) => row.steam_id}
+                    />
                   </ChartCard>
                 </>
               )}
@@ -775,20 +852,74 @@ export default function CentralAnalyticsPage() {
                     <StatCard label="Avg Utilization" value={`${summaryStats.avgUtil}%`} icon={Activity} iconColor="text-green-400" iconBgColor="bg-green-500/20" delay={0.3} />
                   </div>
 
-                  <ChartCard title="Total Players Over Time" icon={TrendingUp} iconColor="text-purple-400" delay={0.4}>
-                    <div className="h-72">
-                      <TimeSeriesChart
-                        data={totalPlayersData}
-                        series={[{ key: "total_players", name: "Total Players", type: "line", color: COLORS[0], smooth: true, areaStyle: true }]}
-                        height="100%"
-                      />
-                    </div>
-                  </ChartCard>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ChartCard title="Total Players Over Time" icon={TrendingUp} iconColor="text-purple-400" delay={0.4}>
+                      <div className="h-72">
+                        <TimeSeriesChart
+                          data={totalPlayersData}
+                          series={[{ key: "total_players", name: "Total Players", type: "line", color: COLORS[0], smooth: true, areaStyle: true }]}
+                          height="100%"
+                        />
+                      </div>
+                    </ChartCard>
 
-                  <ChartCard title="Activity Heatmap" icon={Clock} iconColor="text-pink-400" delay={0.5}>
-                    <div className="h-64 overflow-auto">
-                      <ActivityHeatmap data={serverHeatmapGrid} tooltipPrefix="players" cellHeight={20} />
-                    </div>
+                    <ChartCard title="Server Utilization" icon={BarChart3} iconColor="text-green-400" delay={0.45}>
+                      <div className="h-72">
+                        <BarChart data={aggregate.slice(0, 10).map((a) => ({
+                          label: a.server_name.substring(0, 15),
+                          value: Number(a.avg_utilization),
+                        }))} height="100%" colors={COLORS} labelWidth={80} valueFormatter={(v) => `${v.toFixed(1)}%`} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Peak Players by Server" icon={Zap} iconColor="text-yellow-400" delay={0.5}>
+                      <div className="h-64">
+                        <PieChart data={aggregate.slice(0, 10).map((a) => ({
+                          name: a.server_name.substring(0, 15),
+                          value: Number(a.peak_players),
+                        }))} height="100%" colors={COLORS} />
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Activity Heatmap" icon={Clock} iconColor="text-pink-400" delay={0.55}>
+                      <div className="h-64 overflow-auto">
+                        <ActivityHeatmap data={serverHeatmapGrid} tooltipPrefix="players" cellHeight={20} />
+                      </div>
+                    </ChartCard>
+                  </div>
+
+                  <ChartCard title="Server Statistics" icon={ServerIcon} iconColor="text-purple-400" delay={0.6}>
+                    <DataTable
+                      data={aggregate}
+                      columns={[
+                        {
+                          key: "server_name",
+                          header: "Server",
+                          render: (_, row) => (
+                            <div>
+                              <div className="text-white font-medium">{row.server_name}</div>
+                              <div className="text-xs text-zinc-500">{row.server_ip}</div>
+                            </div>
+                          ),
+                        },
+                        { key: "category", header: "Category", className: "text-zinc-400" },
+                        { key: "avg_players", header: "Avg Players", align: "right" as const, render: (v) => <span className="text-white font-semibold">{Math.round(Number(v))}</span> },
+                        { key: "peak_players", header: "Peak", align: "right" as const, render: (v) => <span className="text-yellow-400 font-semibold">{Number(v)}</span> },
+                        { key: "avg_capacity", header: "Capacity", align: "right" as const, render: (v) => <span className="text-zinc-400">{Math.round(Number(v))}</span> },
+                        {
+                          key: "avg_utilization",
+                          header: "Utilization",
+                          align: "right" as const,
+                          render: (v) => {
+                            const util = Number(v);
+                            const color = util > 75 ? "text-green-400" : util > 50 ? "text-yellow-400" : "text-red-400";
+                            return <span className={`font-semibold ${color}`}>{util.toFixed(1)}%</span>;
+                          },
+                        },
+                        { key: "data_points", header: "Data Points", align: "right" as const, className: "text-zinc-500" },
+                      ]}
+                      keyExtractor={(row, idx) => `${row.server_ip}-${row.server_name}-${idx}`}
+                    />
                   </ChartCard>
                 </>
               )}
