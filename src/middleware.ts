@@ -36,6 +36,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/rust-servers',
   '/api/announcements',
   '/api/giveaway',
+  '/api/feedback',
   '/kits',
   '/_next',
   '/logos',
