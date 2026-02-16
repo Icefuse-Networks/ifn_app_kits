@@ -50,7 +50,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  return handleRewardUpdate(request)
+}
+
 export async function PATCH(request: NextRequest) {
+  return handleRewardUpdate(request)
+}
+
+async function handleRewardUpdate(request: NextRequest) {
   const authResult = await authenticateWithScope(request, 'feedback:write')
   if (!authResult.success) {
     return NextResponse.json(
