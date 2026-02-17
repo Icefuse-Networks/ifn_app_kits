@@ -81,12 +81,11 @@ export async function GET(request: NextRequest) {
           })
 
           if (serverIdentifier) {
-            // Find live kit mapping for this server (single source of truth)
+            // Find kit mapping for this server (single source of truth)
             const mapping = await prisma.kitMapping.findFirst({
               where: {
                 serverIdentifierId: serverIdentifier.id,
-                isLive: true,
-                minutesAfterWipe: null // Base config only (no scheduled configs)
+                minutesAfterWipe: null,
               },
               select: { configId: true },
             })
