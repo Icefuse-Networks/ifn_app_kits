@@ -73,7 +73,7 @@ export default function DashboardPage() {
               transition={{ delay: index * 0.1 }}
             >
               <StatCard
-                leftIcon={<card.icon className="h-5 w-5" />}
+                icon={<card.icon className="h-5 w-5" />}
                 label={card.label}
                 value={card.value}
                 loading={loading}

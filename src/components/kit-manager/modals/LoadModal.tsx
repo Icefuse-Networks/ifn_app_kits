@@ -61,7 +61,7 @@ export function LoadModal({
       isOpen={true}
       onClose={onClose}
       title="Load Configuration"
-      leftIcon={<FolderOpen className="h-5 w-5" />}
+      icon={<FolderOpen className="h-5 w-5" />}
       size="xl"
       footer={
         <Button variant="secondary" onClick={onClose} fullWidth>
@@ -121,7 +121,7 @@ export function LoadModal({
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       <IconButton
-                        leftIcon={<Check className="h-4 w-4" />}
+                        icon={<Check className="h-4 w-4" />}
                         onClick={() => onLoad(config.id)}
                         label="Load"
                         className="!bg-[var(--accent-primary)] !text-white hover:!opacity-90"

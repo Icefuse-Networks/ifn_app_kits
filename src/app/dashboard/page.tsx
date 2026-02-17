@@ -38,7 +38,7 @@ export default function DashboardPage() {
               transition={{ delay: i * 0.05 }}
             >
               <StatCard
-                leftIcon={<stat.icon className="h-5 w-5" />}
+                icon={<stat.icon className="h-5 w-5" />}
                 label={stat.label}
                 value={stat.value}
                 change={stat.change}

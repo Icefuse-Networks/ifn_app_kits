@@ -204,7 +204,7 @@ export default function ClansPage() {
             Manage clans, banned names, and perks definitions.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
           New Clan
         </Button>
       </div>
@@ -242,7 +242,7 @@ export default function ClansPage() {
         <div className="max-w-md">
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by tag or description..."
           />
         </div>
@@ -250,7 +250,7 @@ export default function ClansPage() {
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+        <Alert variant="error" onDismiss={() => setError(null)} className="mb-6">
           {error}
         </Alert>
       )}
@@ -330,15 +330,15 @@ export default function ClansPage() {
       ) : clans.length === 0 ? (
         /* Empty State */
         <EmptyState
-          leftIcon={<Shield />}
+          icon={<Shield />}
           title={search ? 'No clans found' : 'No Clans Yet'}
           description={search ? 'Try adjusting your search terms.' : 'Create your first clan to get started.'}
           action={
-            !search ? (
-              <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
-                Create Clan
-              </Button>
-            ) : undefined
+            !search ? {
+              label: 'Create Clan',
+              onClick: () => setShowCreateModal(true),
+              icon: <Plus />,
+            } : undefined
           }
         />
       ) : (
@@ -375,9 +375,9 @@ export default function ClansPage() {
                       <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                         [{clan.tag}]
                       </h3>
-                      <Badge variant="neutral">Level {level}</Badge>
+                      <Badge variant="secondary">Level {level}</Badge>
                       <Badge
-                        variant={prestigeRank === 'Immortal' ? 'warning' : prestigeRank === 'Unranked' ? 'neutral' : 'primary'}
+                        variant={prestigeRank === 'Immortal' ? 'warning' : prestigeRank === 'Unranked' ? 'secondary' : 'primary'}
                       >
                         {prestigeRank}
                       </Badge>
@@ -402,12 +402,12 @@ export default function ClansPage() {
 
                   <div className="flex items-center gap-2">
                     <Link href={`/dashboard/clans/${clan.id}`}>
-                      <IconButton leftIcon={<ChevronRight />} title="View details" />
+                      <IconButton icon={<ChevronRight />} title="View details" />
                     </Link>
 
                     {deleteConfirm === clan.id ? (
                       <>
-                        <Button variant="danger" size="sm" onClick={() => deleteClan(clan.id)}>
+                        <Button variant="error" size="sm" onClick={() => deleteClan(clan.id)}>
                           Confirm
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
@@ -416,10 +416,10 @@ export default function ClansPage() {
                       </>
                     ) : (
                       <IconButton
-                        leftIcon={<Trash2 />}
+                        icon={<Trash2 />}
                         onClick={() => setDeleteConfirm(clan.id)}
                         title="Disband clan"
-                        variant="danger"
+                        variant="error"
                       />
                     )}
                   </div>
@@ -433,7 +433,7 @@ export default function ClansPage() {
             <SimplePagination
               currentPage={page}
               onPageChange={setPage}
-              hasMore={hasMore}
+              totalPages={hasMore ? page + 1 : page}
               className="pt-6"
             />
           )}

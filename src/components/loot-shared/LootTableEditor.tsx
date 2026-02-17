@@ -66,12 +66,12 @@ export default function LootTableEditor({
           />
           <ButtonGroup>
             <IconButton
-              leftIcon={<Grid className="h-3.5 w-3.5" />}
+              icon={<Grid className="h-3.5 w-3.5" />}
               onClick={() => onViewModeChange("grid")}
               className={viewMode === "grid" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}
             />
             <IconButton
-              leftIcon={<List className="h-3.5 w-3.5" />}
+              icon={<List className="h-3.5 w-3.5" />}
               onClick={() => onViewModeChange("list")}
               className={viewMode === "list" ? `bg-${accentColor}-500/20 text-${accentColor}-400` : "text-zinc-500"}
             />
@@ -103,7 +103,7 @@ export default function LootTableEditor({
           onClick={() => setShowAddItem(true)}
           variant="primary"
           size="sm"
-          leftIcon={<Plus className="h-3 w-3" />}
+          icon={<Plus className="h-3 w-3" />}
           className={`ml-auto text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 hover:bg-${accentColor}-500/20`}
         >
           Add Item
@@ -233,7 +233,7 @@ function ItemCard({
           <p className="text-xs text-zinc-500">Chance: {item.spawnChance}%</p>
         </div>
         <IconButton
-          leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+          icon={<Trash2 className="h-3.5 w-3.5" />}
           onClick={() => onRemove(index)}
           label="Remove item"
           className="text-zinc-600 hover:text-red-400"
@@ -331,7 +331,7 @@ function ItemListRow({
         )
       ))}
       <IconButton
-        leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+        icon={<Trash2 className="h-3.5 w-3.5" />}
         onClick={() => onRemove(index)}
         label="Remove item"
         className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"

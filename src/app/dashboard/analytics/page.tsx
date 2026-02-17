@@ -531,7 +531,7 @@ export default function CentralAnalyticsPage() {
                   <Button
                     onClick={() => setActiveCategory('overview')}
                     variant="ghost"
-                    leftIcon={<BarChart3 className="h-4 w-4" />}
+                    icon={<BarChart3 className="h-4 w-4" />}
                   >
                     Back to Overview
                   </Button>
@@ -605,7 +605,7 @@ export default function CentralAnalyticsPage() {
                   }}
                   disabled={loading}
                   loading={loading}
-                  leftIcon={<RefreshCw className="h-4 w-4" />}
+                  icon={<RefreshCw className="h-4 w-4" />}
                   variant="primary"
                 >
                   Refresh

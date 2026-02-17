@@ -74,7 +74,7 @@ export function RenameModal({
       isOpen={true}
       onClose={onClose}
       title="Edit Kit"
-      leftIcon={<Edit3 className="h-5 w-5" />}
+      icon={<Edit3 className="h-5 w-5" />}
       size="md"
       footer={
         <>

@@ -176,7 +176,7 @@ export default function BannedNamesPage() {
             Manage patterns that are not allowed for clan tags.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
           Add Pattern
         </Button>
       </div>
@@ -226,7 +226,7 @@ export default function BannedNamesPage() {
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+        <Alert variant="error" onDismiss={() => setError(null)} className="mb-6">
           {error}
         </Alert>
       )}
@@ -253,7 +253,7 @@ export default function BannedNamesPage() {
             <Button
               variant={newIsRegex ? 'primary' : 'outline'}
               onClick={() => setNewIsRegex(!newIsRegex)}
-              leftIcon={<Code />}
+              icon={<Code />}
               size="sm"
             >
               Regex
@@ -294,14 +294,14 @@ export default function BannedNamesPage() {
       ) : bannedNames.length === 0 ? (
         /* Empty State */
         <EmptyState
-          leftIcon={<Ban />}
+          icon={<Ban />}
           title="No Banned Patterns"
           description="Add patterns to prevent certain clan tags from being used."
-          action={
-            <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
-              Add Pattern
-            </Button>
-          }
+          action={{
+            label: 'Add Pattern',
+            onClick: () => setShowCreateModal(true),
+            icon: <Plus />,
+          }}
         />
       ) : (
         /* Banned Names List */
@@ -333,7 +333,7 @@ export default function BannedNamesPage() {
                     <code className="text-lg font-mono text-[var(--text-primary)]">
                       {banned.pattern}
                     </code>
-                    <Badge variant={banned.isRegex ? 'primary' : 'neutral'}>
+                    <Badge variant={banned.isRegex ? 'primary' : 'secondary'}>
                       {banned.isRegex ? 'Regex' : 'Exact'}
                     </Badge>
                   </div>
@@ -350,7 +350,7 @@ export default function BannedNamesPage() {
                 <div className="flex items-center gap-2">
                   {deleteConfirm === banned.id ? (
                     <>
-                      <Button variant="danger" size="sm" onClick={() => deleteBannedName(banned.id)}>
+                      <Button variant="error" size="sm" onClick={() => deleteBannedName(banned.id)}>
                         Confirm
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
@@ -359,10 +359,10 @@ export default function BannedNamesPage() {
                     </>
                   ) : (
                     <IconButton
-                      leftIcon={<Trash2 />}
+                      icon={<Trash2 />}
                       onClick={() => setDeleteConfirm(banned.id)}
                       title="Delete pattern"
-                      variant="danger"
+                      variant="error"
                     />
                   )}
                 </div>

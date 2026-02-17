@@ -330,7 +330,7 @@ export default function BasesAnalyticsPage() {
                 onClick={() => { fetchRaids(); fetchAnalytics(); }}
                 disabled={loading || analyticsLoading}
                 loading={loading || analyticsLoading}
-                leftIcon={<RefreshCw className="h-4 w-4" />}
+                icon={<RefreshCw className="h-4 w-4" />}
                 variant="primary"
               >
                 Refresh
@@ -408,7 +408,7 @@ export default function BasesAnalyticsPage() {
                 </>
               ) : (
                 <EmptyState
-                  leftIcon={<Castle className="h-12 w-12" />}
+                  icon={<Castle className="h-12 w-12" />}
                   title="No raid data available"
                 />
               )}
@@ -526,7 +526,7 @@ export default function BasesAnalyticsPage() {
 
                   {raids.length === 0 && (
                     <EmptyState
-                      leftIcon={<Castle className="h-12 w-12" />}
+                      icon={<Castle className="h-12 w-12" />}
                       title="No raids found"
                     />
                   )}

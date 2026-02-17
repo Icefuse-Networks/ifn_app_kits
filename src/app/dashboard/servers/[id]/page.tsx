@@ -794,7 +794,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                 <div className="flex flex-wrap items-center gap-2">
                   <Dropdown
                     value={String(newSchedule.dayOfWeek)}
-                    onChange={(value) => setNewSchedule({ ...newSchedule, dayOfWeek: parseInt(value) })}
+                    onChange={(value) => setNewSchedule({ ...newSchedule, dayOfWeek: parseInt(value ?? '0') })}
                     options={DAYS_OF_WEEK.map((day, i) => ({ value: String(i), label: day }))}
                   />
                   <div className="flex items-center gap-1">
@@ -820,7 +820,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                   <Dropdown
                     value={newSchedule.wipeType}
-                    onChange={(value) => setNewSchedule({ ...newSchedule, wipeType: value })}
+                    onChange={(value) => setNewSchedule({ ...newSchedule, wipeType: value ?? '' })}
                     options={WIPE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                   />
                   <button

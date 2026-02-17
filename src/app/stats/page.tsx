@@ -268,13 +268,13 @@ export default function PublicStatsPage() {
           <Loading size="lg" text="Loading statistics..." />
         ) : !selectedId ? (
           <EmptyState
-            leftIcon={<Server className="w-12 h-12" />}
+            icon={<Server className="w-12 h-12" />}
             title="No Server Selected"
             description="Select a server above to view the leaderboard."
           />
         ) : data.length === 0 ? (
           <EmptyState
-            leftIcon={<Target className="w-12 h-12" />}
+            icon={<Target className="w-12 h-12" />}
             title="No Stats Found"
             description="No statistics available for this server."
           />

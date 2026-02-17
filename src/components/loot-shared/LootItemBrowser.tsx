@@ -42,7 +42,7 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
   return (
     <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${isOpen ? "w-72" : "w-10"}`}>
       <IconButton
-        leftIcon={<ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
+        icon={<ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
         onClick={onToggle}
         label={isOpen ? "Hide item browser" : "Show item browser"}
         className="p-2 text-zinc-500 hover:text-white border-b border-white/5 flex items-center justify-center"

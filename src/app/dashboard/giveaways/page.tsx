@@ -357,7 +357,7 @@ export default function GiveawaysPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard">
-            <IconButton leftIcon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
+            <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -373,14 +373,14 @@ export default function GiveawaysPage() {
               variant="secondary"
               onClick={() => fetchData()}
               disabled={loading}
-              leftIcon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
+              icon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
             >
               Refresh
             </Button>
             <Button
               variant="primary"
               onClick={() => setShowCreateForm(true)}
-              leftIcon={<Plus className="w-4 h-4" />}
+              icon={<Plus className="w-4 h-4" />}
             >
               New Giveaway
             </Button>
@@ -443,7 +443,7 @@ export default function GiveawaysPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             {giveaways.length === 0 ? (
               <EmptyState
-                leftIcon={<Gift className="w-12 h-12" />}
+                icon={<Gift className="w-12 h-12" />}
                 title="No Giveaways"
                 description="Create your first giveaway to get started."
               />
@@ -545,7 +545,7 @@ export default function GiveawaysPage() {
                   <Button
                     variant="secondary"
                     onClick={() => { setSelectedGiveaway(null); fetchData() }}
-                    leftIcon={<Filter className="w-3.5 h-3.5" />}
+                    icon={<Filter className="w-3.5 h-3.5" />}
                     size="sm"
                   >
                     Filtered ×
@@ -557,7 +557,7 @@ export default function GiveawaysPage() {
                 disabled={filteredPlayers.length === 0 || isPickingWinner}
                 loading={isPickingWinner}
                 loadingText="Picking..."
-                leftIcon={<Trophy className="w-4 h-4" />}
+                 icon={<Trophy className="w-4 h-4" />}
                 className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
               >
                 Pick Winner
@@ -682,7 +682,7 @@ export default function GiveawaysPage() {
               </table>
               {filteredPlayers.length === 0 && (
                 <EmptyState
-                  leftIcon={<Users className="w-10 h-10" />}
+                  icon={<Users className="w-10 h-10" />}
                   title={search ? "No players found" : "No entries yet"}
                   description={search ? "No players found matching your search" : undefined}
                 />
@@ -779,7 +779,7 @@ export default function GiveawaysPage() {
           isOpen={showCreateForm}
           onClose={resetCreateForm}
           title="Create Giveaway"
-          leftIcon={<Gift className="w-5 h-5" />}
+          icon={<Gift className="w-5 h-5" />}
           size="lg"
           footer={
             <>

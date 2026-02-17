@@ -339,7 +339,7 @@ export default function LeaderboardsPage() {
 
                 {topKits.length === 0 && (
                   <EmptyState
-                    leftIcon={<TrendingUp className="w-8 h-8" />}
+                    icon={<TrendingUp className="w-8 h-8" />}
                     title="No Kit Data"
                     description="No kit data available yet"
                   />
@@ -410,7 +410,7 @@ export default function LeaderboardsPage() {
 
                 {identifierLeaderboard.length === 0 && (
                   <EmptyState
-                    leftIcon={<Server className="w-8 h-8" />}
+                    icon={<Server className="w-8 h-8" />}
                     title="No Server Data"
                     description="No server data available yet"
                   />
@@ -475,7 +475,7 @@ export default function LeaderboardsPage() {
                 {topPlayers.length === 0 && (
                   <div className="col-span-full">
                     <EmptyState
-                      leftIcon={<Users className="w-8 h-8" />}
+                      icon={<Users className="w-8 h-8" />}
                       title="No Player Data"
                       description="No player data available yet"
                     />
@@ -580,7 +580,7 @@ export default function LeaderboardsPage() {
                 </div>
               ) : (
                 <EmptyState
-                  leftIcon={<Clock className="w-8 h-8" />}
+                  icon={<Clock className="w-8 h-8" />}
                   title="No Activity Data"
                   description="No activity data available yet"
                   className="h-48"

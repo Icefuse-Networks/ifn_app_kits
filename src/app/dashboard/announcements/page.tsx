@@ -56,11 +56,11 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
             <h4 className="text-white font-semibold group-hover:text-purple-400 transition-colors">{isGlobal ? "Global Announcement" : `${assignedServers.length} Server${assignedServers.length !== 1 ? "s" : ""}`}</h4>
             <div className="flex items-center space-x-2 mt-1">
               {announcement.showCardNotification ? (
-                <Badge variant="success" size="sm" leftIcon={<Bell className="h-3 w-3" />}>
+                <Badge variant="success" size="sm" icon={<Bell className="h-3 w-3" />}>
                   Card: {announcement.delay}s delay, {announcement.cardDisplayDuration}s display
                 </Badge>
               ) : (
-                <Badge variant="secondary" size="sm" leftIcon={<BellOff className="h-3 w-3" />}>
+                <Badge variant="secondary" size="sm" icon={<BellOff className="h-3 w-3" />}>
                   Text only
                 </Badge>
               )}
@@ -76,8 +76,8 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
           </div>
         </div>
         <div className="flex space-x-2">
-          <IconButton leftIcon={<Edit2 className="h-4 w-4" />} onClick={() => onEdit(announcement)} label="Edit" size="sm" />
-          <IconButton leftIcon={<Trash2 className="h-4 w-4" />} onClick={() => onDelete(announcement.id)} label="Delete" size="sm" />
+          <IconButton icon={<Edit2 className="h-4 w-4" />} onClick={() => onEdit(announcement)} label="Edit" size="sm" />
+          <IconButton icon={<Trash2 className="h-4 w-4" />} onClick={() => onDelete(announcement.id)} label="Delete" size="sm" />
         </div>
       </div>
       <div className="rounded-lg p-3 bg-purple-500/10 border-l-4 border-purple-500">
@@ -148,7 +148,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
             variant="primary"
             onClick={handleSave}
             disabled={!text.trim() || (!isGlobal && selectedServerIds.length === 0) || (showCardNotification && cardDisplayDuration <= 0)}
-            leftIcon={<Save className="h-4 w-4" />}
+             icon={<Save className="h-4 w-4" />}
           >
             {announcement ? "Update" : "Create"}
           </Button>
@@ -330,7 +330,7 @@ export default function AnnouncementsPage() {
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant="primary"
-              leftIcon={<Plus className="h-4 w-4" />}
+               icon={<Plus className="h-4 w-4" />}
               onClick={openCreateModal}
               size="lg"
             >
@@ -367,7 +367,7 @@ export default function AnnouncementsPage() {
             )}
             {announcements.length === 0 && (
               <EmptyState
-                leftIcon={<MessageSquare className="h-16 w-16" />}
+                icon={<MessageSquare className="h-16 w-16" />}
                 title="No announcements configured"
                 description="Create your first announcement to get started"
                 action={{

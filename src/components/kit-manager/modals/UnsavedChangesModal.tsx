@@ -32,7 +32,7 @@ export function UnsavedChangesModal({
       isOpen={true}
       onClose={onClose}
       title="Unsaved Changes"
-      leftIcon={<AlertCircle className="h-5 w-5 text-[var(--status-warning)]" />}
+      icon={<AlertCircle className="h-5 w-5 text-[var(--status-warning)]" />}
       size="sm"
     >
       <div className="space-y-4">
@@ -51,7 +51,7 @@ export function UnsavedChangesModal({
             disabled={isSaving}
             loading={isSaving}
             loadingText="Saving..."
-            leftIcon={<Save className="w-4 h-4" />}
+             icon={<Save className="w-4 h-4" />}
             fullWidth
           >
             Save & Switch
@@ -60,7 +60,7 @@ export function UnsavedChangesModal({
             variant="error"
             onClick={onDiscard}
             disabled={isSaving}
-            leftIcon={<Trash2 className="w-4 h-4" />}
+             icon={<Trash2 className="w-4 h-4" />}
             fullWidth
           >
             Discard & Switch

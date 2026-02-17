@@ -13,6 +13,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
   loadingText?: string
   leftIcon?: ReactNode
+  icon?: ReactNode
   rightIcon?: ReactNode
   fullWidth?: boolean
 }
@@ -29,6 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       loading = false,
       loadingText,
       leftIcon,
+      icon,
       rightIcon,
       fullWidth = false,
       className = '',
@@ -38,6 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    const resolvedLeftIcon = leftIcon ?? icon
     const sizeClasses = {
       sm: 'px-2.5 py-1.5 text-xs',
       md: 'px-4 py-2 text-sm',
@@ -98,7 +101,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
-        {!loading && leftIcon && <span className="shrink-0">{leftIcon}</span>}
+        {!loading && resolvedLeftIcon && <span className="shrink-0">{resolvedLeftIcon}</span>}
         <span className={loading && !loadingText ? 'opacity-0' : ''}>
           {loading && loadingText ? loadingText : children}
         </span>

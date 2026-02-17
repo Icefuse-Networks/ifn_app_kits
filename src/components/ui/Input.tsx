@@ -11,6 +11,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   error?: string
   helperText?: string
   leftIcon?: ReactNode
+  icon?: ReactNode
   rightIcon?: ReactNode
   size?: 'sm' | 'md' | 'lg'
   variant?: 'default' | 'filled' | 'outlined'
@@ -34,6 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       error,
       helperText,
       leftIcon,
+      icon,
       rightIcon,
       size = 'md',
       variant = 'default',
@@ -43,6 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const resolvedLeftIcon = leftIcon ?? icon
     const sizeClasses = {
       sm: 'px-2.5 py-1.5 text-xs',
       md: 'px-3 py-2 text-sm',
@@ -74,9 +77,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
 
         <div className="relative">
-          {leftIcon && (
+          {resolvedLeftIcon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
-              {leftIcon}
+              {resolvedLeftIcon}
             </div>
           )}
 
@@ -85,7 +88,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             className={`w-full rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] disabled:opacity-50 disabled:cursor-not-allowed ${
               sizeClasses[size]
-            } ${leftIcon ? 'pl-9' : ''} ${rightIcon ? 'pr-9' : ''}`}
+            } ${resolvedLeftIcon ? 'pl-9' : ''} ${rightIcon ? 'pr-9' : ''}`}
             style={variantStyles[variant]}
             {...props}
           />
@@ -174,7 +177,7 @@ Textarea.displayName = 'Textarea'
 // Number Input with Controls
 // =============================================================================
 
-export interface NumberInputProps extends Omit<InputProps, 'type'> {
+export interface NumberInputProps extends Omit<InputProps, 'type' | 'onChange'> {
   value: number
   onChange: (value: number) => void
   min?: number

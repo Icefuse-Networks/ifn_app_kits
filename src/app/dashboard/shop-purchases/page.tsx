@@ -329,7 +329,7 @@ export default function ShopPurchasesPage() {
                 onClick={() => { fetchPurchases(); fetchAnalytics(); }}
                 disabled={loading || analyticsLoading}
                 loading={loading || analyticsLoading}
-                leftIcon={<RefreshCw className="h-4 w-4" />}
+                icon={<RefreshCw className="h-4 w-4" />}
                 className="bg-gradient-to-r from-purple-500 to-pink-500"
               >
                 Refresh
@@ -337,7 +337,7 @@ export default function ShopPurchasesPage() {
               <Button
                 variant="error"
                 onClick={() => { setDeleteTarget(serverFilter || null); setShowDeleteModal(true); }}
-                leftIcon={<Trash2 className="h-4 w-4" />}
+                icon={<Trash2 className="h-4 w-4" />}
               >
                 Clear Data
               </Button>
@@ -466,7 +466,7 @@ export default function ShopPurchasesPage() {
                 </>
               ) : (
                 <EmptyState
-                  leftIcon={<BarChart3 className="h-12 w-12" />}
+                  icon={<BarChart3 className="h-12 w-12" />}
                   title="No analytics data"
                   description="No analytics data available"
                 />
@@ -480,7 +480,7 @@ export default function ShopPurchasesPage() {
                 <Button
                   variant="secondary"
                   onClick={() => setShowFilters(p => !p)}
-                  leftIcon={<Filter className="h-4 w-4" />}
+                  icon={<Filter className="h-4 w-4" />}
                 >
                   Filters
                 </Button>
@@ -488,7 +488,7 @@ export default function ShopPurchasesPage() {
                   variant="secondary"
                   onClick={exportCSV}
                   disabled={purchases.length === 0}
-                  leftIcon={<Download className="h-4 w-4" />}
+                   icon={<Download className="h-4 w-4" />}
                 >
                   Export CSV
                 </Button>
@@ -565,7 +565,7 @@ export default function ShopPurchasesPage() {
 
                   {purchases.length === 0 && (
                     <EmptyState
-                      leftIcon={<ShoppingCart className="h-12 w-12" />}
+                      icon={<ShoppingCart className="h-12 w-12" />}
                       title="No transactions found"
                     />
                   )}

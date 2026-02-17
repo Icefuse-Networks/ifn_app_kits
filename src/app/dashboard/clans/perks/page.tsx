@@ -268,14 +268,14 @@ export default function PerksPage() {
             Define perks that clans can unlock based on level and prestige.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
           New Perk
         </Button>
       </div>
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+        <Alert variant="error" onDismiss={() => setError(null)} className="mb-6">
           {error}
         </Alert>
       )}
@@ -322,9 +322,8 @@ export default function PerksPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Dropdown
-              label="Category"
               value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
+              onChange={(val) => setNewCategory(val ?? '')}
               options={[
                 { value: 'capacity', label: 'Capacity' },
                 { value: 'resources', label: 'Resources' },
@@ -351,18 +350,16 @@ export default function PerksPage() {
               max={50}
             />
             <Dropdown
-              label="Prestige Required"
-              value={newPrestigeRequired}
-              onChange={(e) => setNewPrestigeRequired(parseInt(e.target.value))}
-              options={PRESTIGE_RANKS.map((rank, idx) => ({ value: idx, label: rank }))}
+              value={String(newPrestigeRequired)}
+              onChange={(val) => setNewPrestigeRequired(parseInt(val ?? '0'))}
+              options={PRESTIGE_RANKS.map((rank, idx) => ({ value: String(idx), label: rank }))}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Dropdown
-              label="Effect Type"
               value={newEffectType}
-              onChange={(e) => setNewEffectType(e.target.value as 'bonus_percent' | 'flat_bonus' | 'unlock')}
+              onChange={(val) => setNewEffectType(val as 'bonus_percent' | 'flat_bonus' | 'unlock')}
               options={[
                 { value: 'bonus_percent', label: 'Bonus Percent' },
                 { value: 'flat_bonus', label: 'Flat Bonus' },
@@ -439,10 +436,9 @@ export default function PerksPage() {
                   max={50}
                 />
                 <Dropdown
-                  label="Prestige Required"
-                  value={editingPerk.prestigeRequired}
-                  onChange={(e) => setEditingPerk({ ...editingPerk, prestigeRequired: parseInt(e.target.value) })}
-                  options={PRESTIGE_RANKS.map((rank, idx) => ({ value: idx, label: rank }))}
+                  value={String(editingPerk.prestigeRequired)}
+                  onChange={(val) => setEditingPerk({ ...editingPerk, prestigeRequired: parseInt(val ?? '0') })}
+                  options={PRESTIGE_RANKS.map((rank, idx) => ({ value: String(idx), label: rank }))}
                 />
               </div>
 
@@ -486,14 +482,14 @@ export default function PerksPage() {
       ) : perks.length === 0 ? (
         /* Empty State */
         <EmptyState
-          leftIcon={<Gift />}
+          icon={<Gift />}
           title="No Perks Defined"
           description="Create perk definitions that clans can unlock as they level up."
-          action={
-            <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
-              Create Perk
-            </Button>
-          }
+          action={{
+            label: 'Create Perk',
+            onClick: () => setShowCreateModal(true),
+            icon: <Plus />,
+          }}
         />
       ) : (
         /* Perks grouped by category */
@@ -539,7 +535,7 @@ export default function PerksPage() {
                       <Button
                         variant="outline"
                         onClick={() => setEditingPerk(perk)}
-                        leftIcon={<Edit3 />}
+                        icon={<Edit3 />}
                         size="sm"
                         className="flex-1"
                       >
@@ -548,7 +544,7 @@ export default function PerksPage() {
 
                       {deleteConfirm === perk.id ? (
                         <>
-                          <Button variant="danger" size="sm" onClick={() => deletePerk(perk.id)}>
+                          <Button variant="error" size="sm" onClick={() => deletePerk(perk.id)}>
                             Confirm
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
@@ -557,10 +553,10 @@ export default function PerksPage() {
                         </>
                       ) : (
                         <IconButton
-                          leftIcon={<Trash2 />}
+                          icon={<Trash2 />}
                           onClick={() => setDeleteConfirm(perk.id)}
                           title="Delete perk"
-                          variant="danger"
+                          variant="error"
                         />
                       )}
                     </div>

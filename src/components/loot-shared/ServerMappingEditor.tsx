@@ -225,7 +225,7 @@ export default function ServerMappingEditor({
                 onClick={() => handleAddToRotation(selectedServerId)}
                 variant="primary"
                 size="sm"
-                leftIcon={<Plus className="h-3 w-3" />}
+                icon={<Plus className="h-3 w-3" />}
                 className={`text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 hover:bg-${accentColor}-500/20`}
               >
                 Add to Rotation
@@ -259,14 +259,14 @@ export default function ServerMappingEditor({
                       </div>
                     </div>
                     <IconButton
-                      leftIcon={<Pencil className="h-3.5 w-3.5" />}
+                      icon={<Pencil className="h-3.5 w-3.5" />}
                       onClick={() => handleEditMapping(m)}
                       label="Edit mapping"
                       size="sm"
                       className="text-zinc-500 hover:text-white"
                     />
                     <IconButton
-                      leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
                       onClick={() => handleDeleteMapping(m.id)}
                       label="Delete mapping"
                       size="sm"

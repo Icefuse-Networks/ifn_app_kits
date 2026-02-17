@@ -7,11 +7,12 @@ import { Search, X } from 'lucide-react'
 // Types
 // =============================================================================
 
-export interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
   onClear?: () => void
   showClearButton?: boolean
   size?: 'sm' | 'md' | 'lg'
   variant?: 'default' | 'filled'
+  label?: string
 }
 
 // =============================================================================

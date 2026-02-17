@@ -557,7 +557,7 @@ export default function RedirectionPage() {
                   size="lg"
                   loading={saving}
                   loadingText="Saving..."
-                  leftIcon={<Save className="h-4 w-4" />}
+                   icon={<Save className="h-4 w-4" />}
                 >
                   Save Configuration
                 </Button>
@@ -591,7 +591,7 @@ export default function RedirectionPage() {
                       value={searchSteamId}
                       onChange={(e) => { setSearchSteamId(e.target.value); setLogPage(1); }}
                       placeholder="Search Steam ID..."
-                      leftIcon={<Search className="h-4 w-4" />}
+                      icon={<Search className="h-4 w-4" />}
                       size="sm"
                       className="w-48"
                     />
@@ -617,7 +617,7 @@ export default function RedirectionPage() {
                   </div>
                 ) : logs.length === 0 ? (
                   <EmptyState
-                    leftIcon={<ArrowRightLeft className="h-12 w-12" />}
+                    icon={<ArrowRightLeft className="h-12 w-12" />}
                     title="No redirect logs found"
                   />
                 ) : (

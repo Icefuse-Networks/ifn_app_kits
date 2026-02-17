@@ -156,7 +156,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }:
     <div className="mb-6">
       <AccordionItem
         title={title}
-        leftIcon={<Icon className="h-5 w-5" />}
+        icon={<Icon className="h-5 w-5" />}
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
       >
@@ -194,7 +194,7 @@ function ServerCard({ server }: { server: ProcessedServer }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-1 mb-3 text-xs">
-          <Badge variant="primary" size="sm" leftIcon={<Gamepad2 size={10} />}>
+          <Badge variant="primary" size="sm" icon={<Gamepad2 size={10} />}>
             {server.primaryGamemode}
           </Badge>
           {server.isOfficial && <Badge variant="warning" size="sm">Official</Badge>}
@@ -445,7 +445,7 @@ export default function ServerStatsPage() {
             <Button
               onClick={() => setShowFilters(p => !p)}
               variant="secondary"
-              leftIcon={<FilterIcon className="h-4 w-4" />}
+              icon={<FilterIcon className="h-4 w-4" />}
             >
               Filters
             </Button>
@@ -453,7 +453,7 @@ export default function ServerStatsPage() {
               onClick={fetchServers}
               disabled={loading}
               loading={loading}
-              leftIcon={<RefreshCw className="h-4 w-4" />}
+               icon={<RefreshCw className="h-4 w-4" />}
               variant="primary"
             >
               Refresh
@@ -525,7 +525,7 @@ export default function ServerStatsPage() {
                   onClick={handleResetFilters}
                   variant="ghost"
                   size="sm"
-                  leftIcon={<X className="h-4 w-4" />}
+                   icon={<X className="h-4 w-4" />}
                 >
                   Reset Filters
                 </Button>
@@ -665,7 +665,7 @@ export default function ServerStatsPage() {
               </motion.div>
             ) : (
               <EmptyState
-                leftIcon={<Server className="h-12 w-12" />}
+                icon={<Server className="h-12 w-12" />}
                 title="No servers found matching your criteria"
                 description={searchTerm ? `Your search for "${searchTerm}" yielded no results.` : undefined}
               />

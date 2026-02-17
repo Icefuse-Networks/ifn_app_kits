@@ -140,7 +140,7 @@ export default function ConfigManager({
             variant="success"
             size="sm"
             fullWidth
-            leftIcon={<Save className="h-3.5 w-3.5" />}
+             icon={<Save className="h-3.5 w-3.5" />}
             loading={isSaving}
             className={`bg-${accentColor}-500 hover:bg-${accentColor}-600`}
           >
@@ -153,7 +153,7 @@ export default function ConfigManager({
             variant="success"
             size="sm"
             fullWidth
-            leftIcon={<Save className="h-3.5 w-3.5" />}
+            icon={<Save className="h-3.5 w-3.5" />}
           >
             Save As
           </Button>
@@ -164,7 +164,7 @@ export default function ConfigManager({
             onClick={() => { fetchSavedConfigs(); setShowLoadModal(true); }}
             variant="secondary"
             size="sm"
-            leftIcon={<FolderOpen className="h-3 w-3" />}
+            icon={<FolderOpen className="h-3 w-3" />}
             className="flex-1"
           >
             Load
@@ -175,13 +175,13 @@ export default function ConfigManager({
                 onClick={() => handlePublish(currentConfigId)}
                 variant="secondary"
                 size="sm"
-                leftIcon={<CloudUpload className="h-3 w-3" />}
+                icon={<CloudUpload className="h-3 w-3" />}
                 className="flex-1"
               >
                 Publish
               </Button>
               <IconButton
-                leftIcon={<History className="h-3 w-3" />}
+                icon={<History className="h-3 w-3" />}
                 onClick={handleOpenVersionHistory}
                 label="Version history"
                 size="sm"
@@ -197,7 +197,7 @@ export default function ConfigManager({
             variant="warning"
             size="sm"
             fullWidth
-            leftIcon={<CloudUpload className="h-3 w-3" />}
+            icon={<CloudUpload className="h-3 w-3" />}
           >
             {unstagedConfigs.length} unpublished
           </Button>
@@ -215,7 +215,7 @@ export default function ConfigManager({
             <Button onClick={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} variant="secondary">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving || !saveName.trim()} variant="success" loading={isSaving} leftIcon={<Save className="h-4 w-4" />}>
+            <Button onClick={handleSave} disabled={isSaving || !saveName.trim()} variant="success" loading={isSaving} icon={<Save className="h-4 w-4" />}>
               Save
             </Button>
           </>
@@ -259,7 +259,7 @@ export default function ConfigManager({
                   <p className="text-xs text-zinc-500">v{config.currentVersion} {config.publishedVersion !== null && `(pub v${config.publishedVersion})`}</p>
                 </button>
                 <IconButton
-                  leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                  icon={<Trash2 className="h-3.5 w-3.5" />}
                   onClick={() => handleDelete(config.id)}
                   label="Delete config"
                   size="sm"
@@ -297,7 +297,7 @@ export default function ConfigManager({
                     onClick={() => { onRestoreVersion(v.version); setShowVersionModal(false); }}
                     variant="secondary"
                     size="sm"
-                    leftIcon={<RotateCcw className="h-3 w-3" />}
+                    icon={<RotateCcw className="h-3 w-3" />}
                   >
                     Restore
                   </Button>
@@ -331,7 +331,7 @@ export default function ConfigManager({
                 onClick={() => handlePublish(config.id)}
                 variant="success"
                 size="sm"
-                leftIcon={<CloudUpload className="h-3 w-3" />}
+                icon={<CloudUpload className="h-3 w-3" />}
               >
                 Publish
               </Button>

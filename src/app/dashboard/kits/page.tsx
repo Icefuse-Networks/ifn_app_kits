@@ -2209,7 +2209,7 @@ export default function KitsPage() {
             checked={showSkins}
             onChange={setShowSkins}
             label="Skins"
-            leftIcon={<Paintbrush className="w-3 h-3" />}
+            icon={<Paintbrush className="w-3 h-3" />}
             size="sm"
           />
         </div>
@@ -2299,6 +2299,7 @@ export default function KitsPage() {
       {/* Modals */}
       {activeModal === 'new' && (
         <NewKitModal
+          isOpen={activeModal === 'new'}
           onClose={() => {
             setActiveModal(null)
             setNewKitName('')

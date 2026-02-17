@@ -1,4 +1,4 @@
-export { default as Modal } from './Modal'
+export { Modal } from './Modal'
 export { default as LootItemBrowser } from './LootItemBrowser'
 export { default as LootTableEditor } from './LootTableEditor'
 export { default as ServerMappingEditor } from './ServerMappingEditor'

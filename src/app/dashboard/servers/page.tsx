@@ -158,7 +158,7 @@ export default function ServersPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard">
-            <IconButton leftIcon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
+            <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -180,7 +180,7 @@ export default function ServersPage() {
             <Button
               variant="primary"
               onClick={() => setShowCreateForm(true)}
-              leftIcon={<Plus className="w-4 h-4" />}
+              icon={<Plus className="w-4 h-4" />}
             >
               New Server
             </Button>
@@ -223,7 +223,7 @@ export default function ServersPage() {
         ) : filteredServers.length === 0 ? (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <EmptyState
-              leftIcon={<Server className="w-12 h-12" />}
+              icon={<Server className="w-12 h-12" />}
               title={search ? "No Results" : "No Live Servers"}
               description={search ? `No servers match "${search}"` : "Servers will appear here once they connect via the ServerID plugin."}
             />
@@ -295,7 +295,7 @@ export default function ServersPage() {
           isOpen={showCreateForm}
           onClose={() => setShowCreateForm(false)}
           title="Create Server"
-          leftIcon={<Server className="w-5 h-5" />}
+          icon={<Server className="w-5 h-5" />}
           footer={
             <>
               <Button variant="secondary" onClick={() => setShowCreateForm(false)}>

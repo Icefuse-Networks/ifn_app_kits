@@ -180,7 +180,7 @@ export default function StatsManagementPage() {
               <label className="block text-sm font-medium text-zinc-400 mb-2">Server</label>
               <Dropdown
                 value={selectedServer}
-                onChange={value => setSelectedServer(value)}
+                onChange={value => setSelectedServer(value ?? '')}
                 options={servers.map(s => ({ value: s.server_id, label: s.server_id }))}
               />
             </div>
@@ -188,7 +188,7 @@ export default function StatsManagementPage() {
               <label className="block text-sm font-medium text-zinc-400 mb-2">Timeframe</label>
               <Dropdown
                 value={timeframe}
-                onChange={value => setTimeframe(value)}
+                onChange={value => setTimeframe(value ?? 'wipe')}
                 options={[
                   { value: 'wipe', label: 'Wipe' },
                   { value: 'monthly', label: 'Monthly' },
@@ -200,7 +200,7 @@ export default function StatsManagementPage() {
               <label className="block text-sm font-medium text-zinc-400 mb-2">View</label>
               <Dropdown
                 value={view}
-                onChange={value => setView(value)}
+                onChange={value => setView(value ?? 'players')}
                 options={[
                   { value: 'players', label: 'Players' },
                   { value: 'clans', label: 'Clans' },

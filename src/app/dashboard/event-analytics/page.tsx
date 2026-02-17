@@ -336,7 +336,7 @@ export default function EventAnalyticsPage() {
                 onClick={() => { fetchEvents(); fetchAnalytics(); }}
                 disabled={loading || analyticsLoading}
                 loading={loading || analyticsLoading}
-                leftIcon={<RefreshCw className="h-4 w-4" />}
+                icon={<RefreshCw className="h-4 w-4" />}
                 variant="primary"
               >
                 Refresh
@@ -416,7 +416,7 @@ export default function EventAnalyticsPage() {
                 </>
               ) : (
                 <EmptyState
-                  leftIcon={<Trophy className="h-12 w-12" />}
+                  icon={<Trophy className="h-12 w-12" />}
                   title="No event data available"
                 />
               )}
@@ -548,7 +548,7 @@ export default function EventAnalyticsPage() {
 
                   {events.length === 0 && (
                     <EmptyState
-                      leftIcon={<Trophy className="h-12 w-12" />}
+                      icon={<Trophy className="h-12 w-12" />}
                       title="No events found"
                     />
                   )}
