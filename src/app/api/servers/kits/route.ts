@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     })
 
     const queryValidation = querySchema.safeParse({
-      config: searchParams.get('config'),
-      id: searchParams.get('id'),
+      config: searchParams.get('config') ?? undefined,
+      id: searchParams.get('id') ?? undefined,
     })
 
     if (!queryValidation.success) {
