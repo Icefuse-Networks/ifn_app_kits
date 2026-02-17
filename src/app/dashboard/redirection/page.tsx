@@ -617,7 +617,7 @@ export default function RedirectionPage() {
                   </div>
                 ) : logs.length === 0 ? (
                   <EmptyState
-                    icon={<ArrowRightLeft className="h-12 w-12" />}
+                    leftIcon={<ArrowRightLeft className="h-12 w-12" />}
                     title="No redirect logs found"
                   />
                 ) : (

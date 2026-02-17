@@ -156,7 +156,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }:
     <div className="mb-6">
       <AccordionItem
         title={title}
-        icon={<Icon className="h-5 w-5" />}
+        leftIcon={<Icon className="h-5 w-5" />}
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
       >
@@ -194,7 +194,7 @@ function ServerCard({ server }: { server: ProcessedServer }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-1 mb-3 text-xs">
-          <Badge variant="primary" size="sm" icon={<Gamepad2 size={10} />}>
+          <Badge variant="primary" size="sm" leftIcon={<Gamepad2 size={10} />}>
             {server.primaryGamemode}
           </Badge>
           {server.isOfficial && <Badge variant="warning" size="sm">Official</Badge>}
@@ -665,7 +665,7 @@ export default function ServerStatsPage() {
               </motion.div>
             ) : (
               <EmptyState
-                icon={<Server className="h-12 w-12" />}
+                leftIcon={<Server className="h-12 w-12" />}
                 title="No servers found matching your criteria"
                 description={searchTerm ? `Your search for "${searchTerm}" yielded no results.` : undefined}
               />

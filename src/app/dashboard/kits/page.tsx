@@ -34,6 +34,7 @@ import {
   ItemEditor,
   ItemEditorEmpty,
   CategorySelector,
+  ServerMappingsTab,
   VisibilityDropdown,
   CategoryDropdown,
   type ItemSlot,
@@ -145,12 +146,13 @@ export default function KitsPage() {
   // Category drop target: "cat:categoryId" or "sub:categoryId:subcategoryId" or "uncategorized"
   const [dragOverCategoryTarget, setDragOverCategoryTarget] = useState<string | null>(null)
 
-  // Kit view tab state (Default Kits vs Auto Kits)
-  const [kitViewTab, setKitViewTab] = useState<'default' | 'auto'>('default')
+  // Kit view tab state (Default Kits vs Auto Kits vs Server Mappings)
+  const [kitViewTab, setKitViewTab] = useState<'default' | 'auto' | 'mappings'>('default')
 
   // Subcategory collapse state (collapsed by default)
   const [collapsedSubcategories, setCollapsedSubcategories] = useState<Set<string>>(new Set())
   const [subcategoryCollapsedInitialized, setSubcategoryCollapsedInitialized] = useState(false)
+
 
   // ---------------------------------------------------------------------------
   // Derived State
@@ -165,6 +167,9 @@ export default function KitsPage() {
   )
 
   const filteredKitList = useMemo(() => {
+    // Server mappings tab has no kits to filter
+    if (kitViewTab === 'mappings') return []
+
     // First filter by tab (default vs auto)
     const tabFiltered = kitList.filter(({ kit }) => {
       const isAutoKit = kit.IsAutoKit ?? false
@@ -1605,6 +1610,7 @@ export default function KitsPage() {
             onDuplicate={duplicateCategory}
             onDelete={deleteCategoryHandler}
             loading={loading}
+            onOpenMappings={() => setKitViewTab('mappings')}
           />
 
           {/* Sidebar Header */}
@@ -2005,6 +2011,16 @@ export default function KitsPage() {
   // ---------------------------------------------------------------------------
 
   const renderCenter = () => {
+    // Show Server Mappings tab content
+    if (kitViewTab === 'mappings') {
+      return (
+        <ServerMappingsTab
+          savedConfigs={savedConfigs}
+          onBack={() => setKitViewTab('default')}
+        />
+      )
+    }
+
     if (!selectedKit) {
       return (
         <div className="flex-1 flex items-center justify-center p-8">
@@ -2093,25 +2109,39 @@ export default function KitsPage() {
             width="w-14"
           />
 
-          {/* Visibility dropdown */}
-          <VisibilityDropdown
-            isHidden={selectedKit.IsHidden}
-            hideWithoutPermission={selectedKit.HideWithoutPermission ?? false}
-            onChange={({ isHidden, hideWithoutPermission }) =>
-              updateKit(selectedKitId!, {
-                IsHidden: isHidden,
-                HideWithoutPermission: hideWithoutPermission,
-              })
-            }
-          />
+          {/* Visibility toggles */}
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--bg-card)]">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedKit.IsHidden}
+                onChange={(e) =>
+                  updateKit(selectedKitId!, { IsHidden: e.target.checked })
+                }
+                className="rounded"
+              />
+              <span className="text-sm text-[var(--text-secondary)]">Hidden</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedKit.HideWithoutPermission ?? false}
+                onChange={(e) =>
+                  updateKit(selectedKitId!, { HideWithoutPermission: e.target.checked })
+                }
+                className="rounded"
+              />
+              <span className="text-sm text-[var(--text-secondary)]">Hide w/o Permission</span>
+            </label>
+          </div>
 
           {/* Category assignment */}
           <CategoryDropdown
-            categoryId={selectedKit.Category}
-            subcategoryId={selectedKit.Subcategory}
+            categoryId={selectedKit.Category ?? null}
+            subcategoryId={selectedKit.Subcategory ?? null}
             categories={kitsData._categories || {}}
             onChange={(catId, subId) =>
-              assignKitToCategory(selectedKitId!, catId, subId)
+              assignKitToCategory(selectedKitId!, catId ?? undefined, subId ?? undefined)
             }
           />
 
@@ -2171,23 +2201,6 @@ export default function KitsPage() {
             <span>Store Kit</span>
           </button>
 
-          {/* Kit ID with copy */}
-          <button
-            onClick={copyKitIdToClipboard}
-            className="flex items-center gap-2 px-2 py-1 rounded-md text-xs transition-colors hover:bg-[var(--bg-card-hover)] group shrink-0"
-            title="Click to copy kit ID"
-          >
-            <span className="text-[var(--text-muted)] font-medium">ID:</span>
-            <code className="text-[var(--text-secondary)] font-mono text-[10px] max-w-[140px] truncate">
-              {selectedKitId}
-            </code>
-            {copiedKitId ? (
-              <Check className="w-3 h-3 text-[var(--status-success)]" />
-            ) : (
-              <Copy className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
-            )}
-          </button>
-
           {/* Spacer to push skins toggle right */}
           <div className="flex-1" />
 
@@ -2196,7 +2209,7 @@ export default function KitsPage() {
             checked={showSkins}
             onChange={setShowSkins}
             label="Skins"
-            icon={<Paintbrush className="w-3 h-3" />}
+            leftIcon={<Paintbrush className="w-3 h-3" />}
             size="sm"
           />
         </div>
@@ -2276,7 +2289,7 @@ export default function KitsPage() {
           renderLoading()
         ) : (
           <>
-            {renderKitSidebar()}
+            {kitViewTab !== 'mappings' && renderKitSidebar()}
             {renderCenter()}
             {renderRightPanel()}
           </>

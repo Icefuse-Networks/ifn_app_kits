@@ -94,6 +94,7 @@ model KitConfig {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   gameServers GameServer[]
+  mappings    KitMapping[]
 
   // Analytics relations
   usageEvents      KitUsageEvent[]
@@ -106,26 +107,41 @@ model KitConfig {
   @@map("kit_config")
 }
 
+model KitMapping {
+  id                 Int              @id @default(autoincrement())
+  configId           String           @map("config_id") @db.VarChar(60)
+  serverIdentifierId String           @map("server_identifier_id") @db.VarChar(60)
+  isLive             Boolean          @default(false) @map("is_live")
+  minutesAfterWipe   Int?             @map("minutes_after_wipe")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  config             KitConfig        @relation(fields: [configId], references: [id], onDelete: Cascade)
+  serverIdentifier   ServerIdentifier @relation(fields: [serverIdentifierId], references: [id], onDelete: Cascade)
+
+  @@unique([serverIdentifierId, minutesAfterWipe])
+  @@index([configId])
+  @@index([serverIdentifierId])
+  @@map("kit_mappings")
+}
+
 // =============================================================================
 // Game Server - Registry of game servers for kit deployment
 // =============================================================================
 
 model GameServer {
-  id                 Int                @id @default(autoincrement())
-  categoryID         Int                @map("category_id")
-  name               String             @db.VarChar(255)
-  ip                 String             @db.VarChar(45)
-  port               Int
-  imageUrl           String             @map("image_url")
-  iconUrl            String             @map("icon_url")
-  wipeConfig         String?            @map("wipe_config")
-  botToken           String?            @map("bot_token") @db.VarChar(255)
-  kitConfigId        String?            @map("kit_config_id") @db.VarChar(60)
-  serverIdentifierId String?            @map("server_identifier_id") @db.VarChar(60)
-  kitConfig          KitConfig?         @relation(fields: [kitConfigId], references: [id])
-  serverIdentifier   ServerIdentifier?  @relation(fields: [serverIdentifierId], references: [id])
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
+  id          Int        @id @default(autoincrement())
+  categoryID  Int        @map("category_id")
+  name        String     @db.VarChar(255)
+  ip          String     @db.VarChar(45)
+  port        Int
+  imageUrl    String     @map("image_url")
+  iconUrl     String     @map("icon_url")
+  wipeConfig  String?    @map("wipe_config")
+  botToken    String?    @map("bot_token") @db.VarChar(255)
+  kitConfigId String?    @map("kit_config_id") @db.VarChar(60)
+  kitConfig   KitConfig? @relation(fields: [kitConfigId], references: [id])
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   // Analytics relations
   wipes            ServerWipe[]
@@ -134,7 +150,6 @@ model GameServer {
   usageHourlyStats KitUsageHourlyStats[]
 
   @@index([kitConfigId])
-  @@index([serverIdentifierId])
   @@map("game_server")
 }
 
@@ -202,7 +217,7 @@ model ServerIdentifier {
   usageEvents   KitUsageEvent[]
   lootMappings  LootMapping[]
   basesMappings BasesMapping[]
-  gameServers   GameServer[]
+  kitMappings   KitMapping[]
 
   @@unique([ip, port])
   @@index([hashedId])

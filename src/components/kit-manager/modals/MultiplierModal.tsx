@@ -55,7 +55,7 @@ export function MultiplierModal({
       isOpen={true}
       onClose={onClose}
       title="Multiplier"
-      icon={<Percent className="h-5 w-5" />}
+      leftIcon={<Percent className="h-5 w-5" />}
       size="md"
       footer={
         <>

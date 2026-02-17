@@ -268,7 +268,7 @@ export default function PerksPage() {
             Define perks that clans can unlock based on level and prestige.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
           New Perk
         </Button>
       </div>
@@ -486,11 +486,11 @@ export default function PerksPage() {
       ) : perks.length === 0 ? (
         /* Empty State */
         <EmptyState
-          icon={<Gift />}
+          leftIcon={<Gift />}
           title="No Perks Defined"
           description="Create perk definitions that clans can unlock as they level up."
           action={
-            <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+            <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
               Create Perk
             </Button>
           }
@@ -539,7 +539,7 @@ export default function PerksPage() {
                       <Button
                         variant="outline"
                         onClick={() => setEditingPerk(perk)}
-                        icon={<Edit3 />}
+                        leftIcon={<Edit3 />}
                         size="sm"
                         className="flex-1"
                       >
@@ -557,7 +557,7 @@ export default function PerksPage() {
                         </>
                       ) : (
                         <IconButton
-                          icon={<Trash2 />}
+                          leftIcon={<Trash2 />}
                           onClick={() => setDeleteConfirm(perk.id)}
                           title="Delete perk"
                           variant="danger"

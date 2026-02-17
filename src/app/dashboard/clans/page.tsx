@@ -204,7 +204,7 @@ export default function ClansPage() {
             Manage clans, banned names, and perks definitions.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
           New Clan
         </Button>
       </div>
@@ -330,12 +330,12 @@ export default function ClansPage() {
       ) : clans.length === 0 ? (
         /* Empty State */
         <EmptyState
-          icon={<Shield />}
+          leftIcon={<Shield />}
           title={search ? 'No clans found' : 'No Clans Yet'}
           description={search ? 'Try adjusting your search terms.' : 'Create your first clan to get started.'}
           action={
             !search ? (
-              <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+              <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
                 Create Clan
               </Button>
             ) : undefined
@@ -402,7 +402,7 @@ export default function ClansPage() {
 
                   <div className="flex items-center gap-2">
                     <Link href={`/dashboard/clans/${clan.id}`}>
-                      <IconButton icon={<ChevronRight />} title="View details" />
+                      <IconButton leftIcon={<ChevronRight />} title="View details" />
                     </Link>
 
                     {deleteConfirm === clan.id ? (
@@ -416,7 +416,7 @@ export default function ClansPage() {
                       </>
                     ) : (
                       <IconButton
-                        icon={<Trash2 />}
+                        leftIcon={<Trash2 />}
                         onClick={() => setDeleteConfirm(clan.id)}
                         title="Disband clan"
                         variant="danger"

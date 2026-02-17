@@ -357,7 +357,7 @@ export default function GiveawaysPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard">
-            <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
+            <IconButton leftIcon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -443,7 +443,7 @@ export default function GiveawaysPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             {giveaways.length === 0 ? (
               <EmptyState
-                icon={<Gift className="w-12 h-12" />}
+                leftIcon={<Gift className="w-12 h-12" />}
                 title="No Giveaways"
                 description="Create your first giveaway to get started."
               />
@@ -682,7 +682,7 @@ export default function GiveawaysPage() {
               </table>
               {filteredPlayers.length === 0 && (
                 <EmptyState
-                  icon={<Users className="w-10 h-10" />}
+                  leftIcon={<Users className="w-10 h-10" />}
                   title={search ? "No players found" : "No entries yet"}
                   description={search ? "No players found matching your search" : undefined}
                 />
@@ -779,7 +779,7 @@ export default function GiveawaysPage() {
           isOpen={showCreateForm}
           onClose={resetCreateForm}
           title="Create Giveaway"
-          icon={<Gift className="w-5 h-5" />}
+          leftIcon={<Gift className="w-5 h-5" />}
           size="lg"
           footer={
             <>

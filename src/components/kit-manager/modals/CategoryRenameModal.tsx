@@ -54,7 +54,7 @@ export function CategoryRenameModal({
       isOpen={true}
       onClose={onClose}
       title="Edit Category"
-      icon={<Edit3 className="h-5 w-5" />}
+      leftIcon={<Edit3 className="h-5 w-5" />}
       size="md"
       footer={
         <>

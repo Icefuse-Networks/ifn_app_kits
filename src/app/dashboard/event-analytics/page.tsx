@@ -416,7 +416,7 @@ export default function EventAnalyticsPage() {
                 </>
               ) : (
                 <EmptyState
-                  icon={<Trophy className="h-12 w-12" />}
+                  leftIcon={<Trophy className="h-12 w-12" />}
                   title="No event data available"
                 />
               )}
@@ -548,7 +548,7 @@ export default function EventAnalyticsPage() {
 
                   {events.length === 0 && (
                     <EmptyState
-                      icon={<Trophy className="h-12 w-12" />}
+                      leftIcon={<Trophy className="h-12 w-12" />}
                       title="No events found"
                     />
                   )}

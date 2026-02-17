@@ -48,7 +48,7 @@ export function SaveModal({
       isOpen={true}
       onClose={onClose}
       title="Save Configuration"
-      icon={<Save className="h-5 w-5 text-[var(--status-success)]" />}
+      leftIcon={<Save className="h-5 w-5 text-[var(--status-success)]" />}
       size="md"
       footer={
         <>

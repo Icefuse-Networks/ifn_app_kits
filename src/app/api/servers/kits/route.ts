@@ -74,22 +74,26 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true, kitData: true },
           })
         } else {
-          // Server identifier lookup - find via ServerIdentifier -> GameServer -> KitConfig
+          // Server identifier lookup - find via ServerIdentifier -> KitMapping -> KitConfig
           const serverIdentifier = await prisma.serverIdentifier.findFirst({
             where: { OR: [{ id: idParam }, { hashedId: idParam }] },
             select: { id: true },
           })
 
           if (serverIdentifier) {
-            // Find GameServer by serverIdentifierId (single source of truth)
-            const gameServer = await prisma.gameServer.findFirst({
-              where: { serverIdentifierId: serverIdentifier.id },
-              select: { kitConfigId: true },
+            // Find live kit mapping for this server (single source of truth)
+            const mapping = await prisma.kitMapping.findFirst({
+              where: {
+                serverIdentifierId: serverIdentifier.id,
+                isLive: true,
+                minutesAfterWipe: null // Base config only (no scheduled configs)
+              },
+              select: { configId: true },
             })
 
-            if (gameServer?.kitConfigId) {
+            if (mapping?.configId) {
               kitConfig = await prisma.kitConfig.findUnique({
-                where: { id: gameServer.kitConfigId },
+                where: { id: mapping.configId },
                 select: { id: true, name: true, kitData: true },
               })
             }

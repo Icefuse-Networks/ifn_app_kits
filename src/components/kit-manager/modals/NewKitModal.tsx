@@ -48,7 +48,7 @@ export function NewKitModal({
       isOpen={isOpen}
       onClose={onClose}
       title="New Kit"
-      icon={<Plus className="w-5 h-5" />}
+      leftIcon={<Plus className="w-5 h-5" />}
       size="md"
       footer={
         <>

@@ -391,7 +391,7 @@ export default function TokensPage() {
         isOpen={!!newToken}
         onClose={() => setNewToken(null)}
         title="Token Created"
-        icon={<Check className="w-5 h-5 text-[var(--status-success)]" />}
+        leftIcon={<Check className="w-5 h-5 text-[var(--status-success)]" />}
         size="lg"
         footer={
           <Button variant="secondary" onClick={() => setNewToken(null)} fullWidth>
@@ -442,7 +442,7 @@ export default function TokensPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Create API Token"
-        icon={<Key className="h-5 w-5" />}
+        leftIcon={<Key className="h-5 w-5" />}
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
@@ -509,7 +509,7 @@ export default function TokensPage() {
         isOpen={showEditModal && !!editToken}
         onClose={() => setShowEditModal(false)}
         title="Edit Token"
-        icon={<Edit className="h-5 w-5" />}
+        leftIcon={<Edit className="h-5 w-5" />}
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
@@ -569,7 +569,7 @@ export default function TokensPage() {
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
         title="Create Category"
-        icon={<FolderOpen className="h-5 w-5" />}
+        leftIcon={<FolderOpen className="h-5 w-5" />}
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowCategoryModal(false)}>
@@ -616,7 +616,7 @@ export default function TokensPage() {
         <Loading text="Loading tokens..." />
       ) : tokens.length === 0 ? (
         <EmptyState
-          icon={<Key className="w-12 h-12" />}
+          leftIcon={<Key className="w-12 h-12" />}
           title="No API Tokens"
           description="Create your first token to enable programmatic access."
           action={{

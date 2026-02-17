@@ -257,11 +257,11 @@ export default function FeedbackPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="warning" size="sm" icon={<Clock className="w-3 h-3" />}>Pending</Badge>
+        return <Badge variant="warning" size="sm" leftIcon={<Clock className="w-3 h-3" />}>Pending</Badge>
       case "accepted":
-        return <Badge variant="success" size="sm" icon={<CheckCircle2 className="w-3 h-3" />}>Accepted</Badge>
+        return <Badge variant="success" size="sm" leftIcon={<CheckCircle2 className="w-3 h-3" />}>Accepted</Badge>
       case "denied":
-        return <Badge variant="error" size="sm" icon={<XCircle className="w-3 h-3" />}>Denied</Badge>
+        return <Badge variant="error" size="sm" leftIcon={<XCircle className="w-3 h-3" />}>Denied</Badge>
       default:
         return <Badge variant="secondary" size="sm">{status}</Badge>
     }
@@ -270,9 +270,9 @@ export default function FeedbackPage() {
   const categoryBadge = (category: string) => {
     switch (category) {
       case "server_feedback":
-        return <Badge variant="info" size="sm" icon={<MessageSquare className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
+        return <Badge variant="info" size="sm" leftIcon={<MessageSquare className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
       case "bug_report":
-        return <Badge variant="warning" size="sm" icon={<Bug className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
+        return <Badge variant="warning" size="sm" leftIcon={<Bug className="w-3 h-3" />}>{CATEGORY_LABELS[category]}</Badge>
       default:
         return <Badge variant="secondary" size="sm">{category}</Badge>
     }
@@ -622,7 +622,7 @@ export default function FeedbackPage() {
         ) : feedbackList.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <EmptyState
-              icon={<MessageCircle className="w-12 h-12" />}
+              leftIcon={<MessageCircle className="w-12 h-12" />}
               title="No Feedback Found"
               description={
                 statusFilter !== "all" || categoryFilter !== "all"

@@ -181,7 +181,7 @@ export default function ConfigManager({
                 Publish
               </Button>
               <IconButton
-                icon={<History className="h-3 w-3" />}
+                leftIcon={<History className="h-3 w-3" />}
                 onClick={handleOpenVersionHistory}
                 label="Version history"
                 size="sm"
@@ -259,7 +259,7 @@ export default function ConfigManager({
                   <p className="text-xs text-zinc-500">v{config.currentVersion} {config.publishedVersion !== null && `(pub v${config.publishedVersion})`}</p>
                 </button>
                 <IconButton
-                  icon={<Trash2 className="h-3.5 w-3.5" />}
+                  leftIcon={<Trash2 className="h-3.5 w-3.5" />}
                   onClick={() => handleDelete(config.id)}
                   label="Delete config"
                   size="sm"

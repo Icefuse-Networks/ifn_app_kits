@@ -32,7 +32,7 @@ export function UnsavedChangesModal({
       isOpen={true}
       onClose={onClose}
       title="Unsaved Changes"
-      icon={<AlertCircle className="h-5 w-5 text-[var(--status-warning)]" />}
+      leftIcon={<AlertCircle className="h-5 w-5 text-[var(--status-warning)]" />}
       size="sm"
     >
       <div className="space-y-4">

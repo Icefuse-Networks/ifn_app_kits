@@ -259,14 +259,14 @@ export default function ServerMappingEditor({
                       </div>
                     </div>
                     <IconButton
-                      icon={<Pencil className="h-3.5 w-3.5" />}
+                      leftIcon={<Pencil className="h-3.5 w-3.5" />}
                       onClick={() => handleEditMapping(m)}
                       label="Edit mapping"
                       size="sm"
                       className="text-zinc-500 hover:text-white"
                     />
                     <IconButton
-                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                      leftIcon={<Trash2 className="h-3.5 w-3.5" />}
                       onClick={() => handleDeleteMapping(m.id)}
                       label="Delete mapping"
                       size="sm"

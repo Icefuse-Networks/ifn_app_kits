@@ -128,7 +128,7 @@ export function Modal({
             </div>
             {showCloseButton && (
               <IconButton
-                icon={<X className="w-5 h-5" />}
+                leftIcon={<X className="w-5 h-5" />}
                 onClick={onClose}
                 label="Close"
                 size="sm"

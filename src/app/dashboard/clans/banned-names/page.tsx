@@ -176,7 +176,7 @@ export default function BannedNamesPage() {
             Manage patterns that are not allowed for clan tags.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+        <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
           Add Pattern
         </Button>
       </div>
@@ -253,7 +253,7 @@ export default function BannedNamesPage() {
             <Button
               variant={newIsRegex ? 'primary' : 'outline'}
               onClick={() => setNewIsRegex(!newIsRegex)}
-              icon={<Code />}
+              leftIcon={<Code />}
               size="sm"
             >
               Regex
@@ -294,11 +294,11 @@ export default function BannedNamesPage() {
       ) : bannedNames.length === 0 ? (
         /* Empty State */
         <EmptyState
-          icon={<Ban />}
+          leftIcon={<Ban />}
           title="No Banned Patterns"
           description="Add patterns to prevent certain clan tags from being used."
           action={
-            <Button onClick={() => setShowCreateModal(true)} icon={<Plus />}>
+            <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus />}>
               Add Pattern
             </Button>
           }
@@ -359,7 +359,7 @@ export default function BannedNamesPage() {
                     </>
                   ) : (
                     <IconButton
-                      icon={<Trash2 />}
+                      leftIcon={<Trash2 />}
                       onClick={() => setDeleteConfirm(banned.id)}
                       title="Delete pattern"
                       variant="danger"

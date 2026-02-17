@@ -408,7 +408,7 @@ export default function BasesAnalyticsPage() {
                 </>
               ) : (
                 <EmptyState
-                  icon={<Castle className="h-12 w-12" />}
+                  leftIcon={<Castle className="h-12 w-12" />}
                   title="No raid data available"
                 />
               )}
@@ -526,7 +526,7 @@ export default function BasesAnalyticsPage() {
 
                   {raids.length === 0 && (
                     <EmptyState
-                      icon={<Castle className="h-12 w-12" />}
+                      leftIcon={<Castle className="h-12 w-12" />}
                       title="No raids found"
                     />
                   )}

@@ -466,7 +466,7 @@ export default function ShopPurchasesPage() {
                 </>
               ) : (
                 <EmptyState
-                  icon={<BarChart3 className="h-12 w-12" />}
+                  leftIcon={<BarChart3 className="h-12 w-12" />}
                   title="No analytics data"
                   description="No analytics data available"
                 />
@@ -565,7 +565,7 @@ export default function ShopPurchasesPage() {
 
                   {purchases.length === 0 && (
                     <EmptyState
-                      icon={<ShoppingCart className="h-12 w-12" />}
+                      leftIcon={<ShoppingCart className="h-12 w-12" />}
                       title="No transactions found"
                     />
                   )}
