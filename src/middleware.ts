@@ -33,6 +33,8 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/skins',
   '/api/events',
   '/api/lootmanager/download',
+  '/api/bases/download',
+  '/api/bases/stats',
   '/api/rust-servers',
   '/api/announcements',
   '/api/giveaway',
