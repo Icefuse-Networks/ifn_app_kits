@@ -1,7 +1,7 @@
 import {
   Package, Settings, BarChart2, Shield, Key, HardDrive,
-  MessageSquare, MessageCircle, Box, ShoppingCart, ArrowRightLeft, TrendingUp,
-  Gift, Trophy, Castle, Hammer, LucideIcon
+  MessageSquare, MessageCircle, Box, ArrowRightLeft,
+  Gift, Castle, LucideIcon
 } from 'lucide-react'
 
 export interface NavItem {
@@ -45,11 +45,6 @@ export const dashboardSections: NavSection[] = [
     description: 'View server and player analytics',
     items: [
       { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics Hub', desc: 'Central analytics dashboard', gradient: 'from-purple-500 to-pink-500' },
-      { href: '/dashboard/player-analytics', icon: BarChart2, label: 'Player Analytics', desc: 'Server population and usage stats', gradient: 'from-emerald-500 to-teal-500' },
-      { href: '/dashboard/shop-purchases', icon: ShoppingCart, label: 'Shop Analytics', desc: 'Shop purchase analytics and insights', gradient: 'from-green-500 to-emerald-500' },
-      { href: '/dashboard/event-analytics', icon: Trophy, label: 'Event Analytics', desc: 'KOTH and Maze event statistics', gradient: 'from-amber-500 to-red-500' },
-      { href: '/dashboard/bases-analytics', icon: Hammer, label: 'Base Raids', desc: 'Raid statistics and leaderboards', gradient: 'from-red-500 to-orange-500' },
-      { href: '/dashboard/server-stats', icon: TrendingUp, label: 'Global Stats', desc: 'Global Rust server analytics', gradient: 'from-purple-500 to-pink-500' },
     ]
   },
   {

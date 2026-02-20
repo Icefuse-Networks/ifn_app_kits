@@ -34,15 +34,25 @@ interface BasesLootTable {
 interface CrateTypeData {
   Weight: number;
   "Loot Table": string;
+  "Min Items": number;
+  "Max Items": number;
+}
+
+interface ContainerMappingData {
+  "Loot Table": string;
+  "Min Items": number;
+  "Max Items": number;
 }
 
 interface BaseData {
   Buildings: string[];
+  "Spawn Count": number;
 }
 
 interface BasesPluginConfig {
   "Bases Data": Record<string, BaseData>;
   "Crate Types": Record<string, CrateTypeData>;
+  "Container Mappings": Record<string, ContainerMappingData>;
   "Loot Multiplier": number;
   "Wipe Progression Enabled": boolean;
   "Wipe Progression Min Scale": number;
@@ -65,14 +75,11 @@ interface BasesFileRecord {
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_CRATE_TYPES: Record<string, CrateTypeData> = {
-  Armor: { Weight: 15, "Loot Table": "armor" },
-  Components: { Weight: 20, "Loot Table": "components" },
-  Building: { Weight: 15, "Loot Table": "building" },
-  Weapons: { Weight: 15, "Loot Table": "weapons" },
-  Medical: { Weight: 10, "Loot Table": "medical" },
-  Resources: { Weight: 10, "Loot Table": "resources" },
-  Mixed: { Weight: 15, "Loot Table": "mixed" },
-  ToolCupboard: { Weight: 0, "Loot Table": "toolcupboard" },
+  Armor: { Weight: 15, "Loot Table": "armor", "Min Items": 5, "Max Items": 15 },
+  Components: { Weight: 20, "Loot Table": "components", "Min Items": 5, "Max Items": 15 },
+  Weapons: { Weight: 15, "Loot Table": "weapons", "Min Items": 5, "Max Items": 15 },
+  Mixed: { Weight: 15, "Loot Table": "mixed", "Min Items": 5, "Max Items": 15 },
+  ToolCupboard: { Weight: 0, "Loot Table": "toolcupboard", "Min Items": 3, "Max Items": 6 },
 };
 
 const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
@@ -85,11 +92,16 @@ const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
 const DEFAULT_CONFIG: BasesConfigData = {
   pluginConfig: {
     "Bases Data": {
-      Small: { Buildings: [] },
-      Medium: { Buildings: [] },
-      Large: { Buildings: [] },
+      Small: { Buildings: [], "Spawn Count": 20 },
+      Medium: { Buildings: [], "Spawn Count": 15 },
+      Large: { Buildings: [], "Spawn Count": 10 },
     },
     "Crate Types": { ...DEFAULT_CRATE_TYPES },
+    "Container Mappings": {
+      "box.wooden.large": { "Loot Table": "", "Min Items": 5, "Max Items": 15 },
+      "box.wooden": { "Loot Table": "smallbox", "Min Items": 3, "Max Items": 8 },
+      "locker.deployed": { "Loot Table": "locker", "Min Items": 4, "Max Items": 8 },
+    },
     "Loot Multiplier": 1.0,
     "Wipe Progression Enabled": true,
     "Wipe Progression Min Scale": 0.3,
@@ -157,6 +169,15 @@ export default function BasesPage() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const pasteFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  // Container mapping state
+  const [newMappingPrefab, setNewMappingPrefab] = useState("");
+
+  // Loot table management state
+  const [newTableName, setNewTableName] = useState("");
+
   // ─── Keyboard shortcuts ───────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -223,7 +244,7 @@ export default function BasesPage() {
     const allBuildings = Object.values(data.pluginConfig["Bases Data"]).flatMap(bd => bd.Buildings);
     if (allBuildings.length > 0) return; // already has data
 
-    const basesData: Record<string, BaseData> = { Small: { Buildings: [] }, Medium: { Buildings: [] }, Large: { Buildings: [] } };
+    const basesData: Record<string, BaseData> = { Small: { Buildings: [], "Spawn Count": 20 }, Medium: { Buildings: [], "Spawn Count": 15 }, Large: { Buildings: [], "Spawn Count": 10 } };
     for (const file of basesFiles) {
       const cat = categorizeBaseName(file.name);
       if (cat && basesData[cat]) {
@@ -237,13 +258,12 @@ export default function BasesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basesFiles, currentConfigId]);
 
-  const handleUploadPasteFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const uploadPasteFiles = async (fileList: File[]) => {
+    if (fileList.length === 0) return;
     setIsUploadingFile(true);
 
     const uploadedNames: string[] = [];
-    for (const file of Array.from(files)) {
+    for (const file of fileList) {
       const name = file.name.replace(/\.data$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
       try {
         const buffer = await file.arrayBuffer();
@@ -283,7 +303,7 @@ export default function BasesPage() {
           if (allAssigned.has(name)) continue;
           const category = categorizeBaseName(name);
           if (category && basesData[category]) {
-            basesData[category] = { Buildings: [...basesData[category].Buildings, name] };
+            basesData[category] = { ...basesData[category], Buildings: [...basesData[category].Buildings, name] };
             autoAssigned++;
           }
         }
@@ -294,7 +314,26 @@ export default function BasesPage() {
       });
     }
     setIsUploadingFile(false);
+  };
+
+  const handleUploadPasteFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadPasteFiles(Array.from(files));
     if (pasteFileInputRef.current) pasteFileInputRef.current.value = "";
+  };
+
+  const handleFileDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+    dragCounterRef.current = 0;
+    const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith(".data"));
+    if (files.length === 0) {
+      toast.error("Only .data files are supported");
+      return;
+    }
+    await uploadPasteFiles(files);
   };
 
   const handleDeletePasteFile = async (name: string) => {
@@ -317,6 +356,13 @@ export default function BasesPage() {
     const crateTypes = data.pluginConfig["Crate Types"];
     for (const ct of Object.values(crateTypes)) {
       if (ct["Loot Table"]) names.add(ct["Loot Table"]);
+    }
+    // Include tables from container mappings
+    const containerMappings = data.pluginConfig["Container Mappings"];
+    if (containerMappings) {
+      for (const mapping of Object.values(containerMappings)) {
+        if (mapping["Loot Table"]) names.add(mapping["Loot Table"]);
+      }
     }
     // Also include any extra tables in lootTables that aren't in crateTypes
     for (const name of Object.keys(data.lootTables)) {
@@ -579,7 +625,7 @@ export default function BasesPage() {
       const basesData = { ...prev.pluginConfig["Bases Data"] };
       const buildings = [...(basesData[baseType]?.Buildings || [])];
       buildings[index] = value;
-      basesData[baseType] = { Buildings: buildings };
+      basesData[baseType] = { ...basesData[baseType], Buildings: buildings };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
     });
   }, [setData]);
@@ -588,7 +634,7 @@ export default function BasesPage() {
     setData(prev => {
       const basesData = { ...prev.pluginConfig["Bases Data"] };
       const buildings = [...(basesData[baseType]?.Buildings || []), fileName || ""];
-      basesData[baseType] = { Buildings: buildings };
+      basesData[baseType] = { ...basesData[baseType], Buildings: buildings };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
     });
   }, [setData]);
@@ -597,17 +643,90 @@ export default function BasesPage() {
     setData(prev => {
       const basesData = { ...prev.pluginConfig["Bases Data"] };
       const buildings = (basesData[baseType]?.Buildings || []).filter((_, i) => i !== index);
-      basesData[baseType] = { Buildings: buildings };
+      basesData[baseType] = { ...basesData[baseType], Buildings: buildings };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
     });
   }, [setData]);
 
-  const handleUpdateCrateWeight = useCallback((crateType: string, weight: number) => {
+  const handleChangeFileCategory = useCallback((fileName: string, oldCategory: string, newCategory: string) => {
+    setData(prev => {
+      const basesData = { ...prev.pluginConfig["Bases Data"] };
+      // Remove from old category
+      if (oldCategory && basesData[oldCategory]) {
+        basesData[oldCategory] = {
+          ...basesData[oldCategory],
+          Buildings: basesData[oldCategory].Buildings.filter(b => b !== fileName),
+        };
+      }
+      // Add to new category
+      if (newCategory && basesData[newCategory]) {
+        basesData[newCategory] = {
+          ...basesData[newCategory],
+          Buildings: [...basesData[newCategory].Buildings, fileName],
+        };
+      }
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
+    });
+  }, [setData]);
+
+  const handleUpdateSpawnCount = useCallback((baseType: string, count: number) => {
+    setData(prev => {
+      const basesData = { ...prev.pluginConfig["Bases Data"] };
+      basesData[baseType] = { ...basesData[baseType], "Spawn Count": count };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
+    });
+  }, [setData]);
+
+  const handleUpdateCrateType = useCallback((crateType: string, field: keyof CrateTypeData, value: number) => {
     setData(prev => {
       const crateTypes = { ...prev.pluginConfig["Crate Types"] };
-      crateTypes[crateType] = { ...crateTypes[crateType], Weight: weight };
+      crateTypes[crateType] = { ...crateTypes[crateType], [field]: value };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Crate Types": crateTypes } };
     });
+  }, [setData]);
+
+  const handleUpdateContainerMapping = useCallback((prefab: string, field: keyof ContainerMappingData, value: string | number) => {
+    setData(prev => {
+      const mappings = { ...prev.pluginConfig["Container Mappings"] };
+      mappings[prefab] = { ...mappings[prefab], [field]: value };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
+    });
+  }, [setData]);
+
+  const handleAddContainerMapping = useCallback((prefab: string) => {
+    if (!prefab.trim()) return;
+    setData(prev => {
+      const mappings = { ...prev.pluginConfig["Container Mappings"] };
+      if (prefab in mappings) return prev;
+      mappings[prefab] = { "Loot Table": "", "Min Items": 3, "Max Items": 15 };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
+    });
+  }, [setData]);
+
+  const handleRemoveContainerMapping = useCallback((prefab: string) => {
+    setData(prev => {
+      const mappings = { ...prev.pluginConfig["Container Mappings"] };
+      delete mappings[prefab];
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
+    });
+  }, [setData]);
+
+  const handleAddLootTable = useCallback((name: string) => {
+    const key = name.trim().toLowerCase();
+    if (!key) return;
+    setData(prev => {
+      if (prev.lootTables[key]) return prev;
+      return { ...prev, lootTables: { ...prev.lootTables, [key]: { "Min items": 3, "Max Items": 15, Items: [] } } };
+    });
+  }, [setData]);
+
+  const handleRemoveLootTable = useCallback((name: string) => {
+    setData(prev => {
+      const lootTables = { ...prev.lootTables };
+      delete lootTables[name];
+      return { ...prev, lootTables };
+    });
+    setSelectedTable(prev => prev === name ? null : prev);
   }, [setData]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -664,21 +783,54 @@ export default function BasesPage() {
                 const table = data.lootTables[name];
                 const itemCount = table?.Items?.length || 0;
                 return (
-                  <button
+                  <div
                     key={name}
-                    onClick={() => { setSelectedTable(name); setSelectedSection("table"); }}
-                    className={`w-full text-left px-3 py-2 border-b border-white/5 transition-colors ${
+                    className={`flex items-center border-b border-white/5 transition-colors ${
                       selectedTable === name ? "bg-emerald-500/10 text-emerald-400 border-l-2 border-l-emerald-500" : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
                     }`}
                   >
-                    <div className="text-sm font-medium capitalize">{name === "npcloadout" ? "NPC Loadout" : name}</div>
-                    <div className="text-xs text-zinc-600">{itemCount} items{name === "npcloadout" ? " · sleeping NPC gear" : ""}</div>
-                  </button>
+                    <button
+                      onClick={() => { setSelectedTable(name); setSelectedSection("table"); }}
+                      className="flex-1 text-left px-3 py-2 min-w-0"
+                    >
+                      <div className="text-sm font-medium capitalize truncate">{name === "npcloadout" ? "NPC Loadout" : name}</div>
+                      <div className="text-xs text-zinc-600">{itemCount} items{name === "npcloadout" ? " · sleeping NPC gear" : ""}</div>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemoveLootTable(name); }}
+                      className="p-1.5 mr-1 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+                      title={`Remove ${name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                 );
               })}
               {lootTableNames.length === 0 && (
                 <div className="px-3 py-4 text-xs text-zinc-600 text-center">No loot tables configured</div>
               )}
+              <div className="flex items-center gap-1 px-2 py-2 border-b border-white/5">
+                <input
+                  type="text"
+                  value={newTableName}
+                  onChange={(e) => setNewTableName(e.target.value)}
+                  placeholder="New table name..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newTableName.trim()) {
+                      handleAddLootTable(newTableName.trim());
+                      setNewTableName("");
+                    }
+                  }}
+                  className="flex-1 min-w-0 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                />
+                <button
+                  onClick={() => { if (newTableName.trim()) { handleAddLootTable(newTableName.trim()); setNewTableName(""); } }}
+                  className="p-1.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+                  title="Add loot table"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Config manager */}
@@ -760,15 +912,80 @@ export default function BasesPage() {
                 <h3 className="text-sm font-semibold text-white mb-4">Crate Types</h3>
                 <div className="space-y-2">
                   {Object.entries(data.pluginConfig["Crate Types"]).map(([name, ct]) => (
-                    <div key={name} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
-                      <span className="text-sm text-white font-medium w-32">{name}</span>
+                    <div key={name} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02]">
+                      <span className="text-sm text-white font-medium w-28">{name}</span>
                       <label className="text-xs text-zinc-400 flex items-center gap-1">
                         Weight
-                        <input type="number" value={ct.Weight} onChange={(e) => handleUpdateCrateWeight(name, parseFloat(e.target.value) || 0)} min={0} step={0.5} className="w-16 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
+                        <input type="number" value={ct.Weight} onChange={(e) => handleUpdateCrateType(name, "Weight", parseFloat(e.target.value) || 0)} min={0} step={0.5} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
                       </label>
-                      <span className="text-xs text-zinc-500">Table: <span className="text-zinc-300">{ct["Loot Table"]}</span></span>
+                      <input type="number" value={ct["Min Items"]} onChange={(e) => handleUpdateCrateType(name, "Min Items", parseInt(e.target.value) || 0)} min={0} title="Min Items" className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
+                      <span className="text-zinc-600 text-xs">-</span>
+                      <input type="number" value={ct["Max Items"]} onChange={(e) => handleUpdateCrateType(name, "Max Items", parseInt(e.target.value) || 0)} min={0} title="Max Items" className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
+                      <span className="text-xs text-zinc-500 truncate">→ <span className="text-zinc-300">{ct["Loot Table"]}</span></span>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Container Mappings */}
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
+                <h3 className="text-sm font-semibold text-white mb-1">Container Mappings</h3>
+                <p className="text-xs text-zinc-500 mb-4">Map container prefabs to specific loot tables. Empty value uses random weighted Crate Type selection.</p>
+                <div className="space-y-2">
+                  {Object.entries(data.pluginConfig["Container Mappings"] || {}).map(([prefab, mapping]) => (
+                    <div key={prefab} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02]">
+                      <span className="text-sm text-white font-medium min-w-0 truncate flex-1" title={prefab}>{prefab}</span>
+                      <input
+                        type="text"
+                        value={mapping["Loot Table"]}
+                        onChange={(e) => handleUpdateContainerMapping(prefab, "Loot Table", e.target.value)}
+                        placeholder="(random)"
+                        title="Loot Table"
+                        className="w-24 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        value={mapping["Min Items"]}
+                        onChange={(e) => handleUpdateContainerMapping(prefab, "Min Items", parseInt(e.target.value) || 0)}
+                        min={0}
+                        title="Min Items"
+                        className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
+                      />
+                      <span className="text-zinc-600 text-xs">-</span>
+                      <input
+                        type="number"
+                        value={mapping["Max Items"]}
+                        onChange={(e) => handleUpdateContainerMapping(prefab, "Max Items", parseInt(e.target.value) || 0)}
+                        min={0}
+                        title="Max Items"
+                        className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
+                      />
+                      <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <input
+                    type="text"
+                    value={newMappingPrefab}
+                    onChange={(e) => setNewMappingPrefab(e.target.value)}
+                    placeholder="prefab.name"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newMappingPrefab.trim()) {
+                        handleAddContainerMapping(newMappingPrefab.trim());
+                        setNewMappingPrefab("");
+                      }
+                    }}
+                    className="flex-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => { if (newMappingPrefab.trim()) { handleAddContainerMapping(newMappingPrefab.trim()); setNewMappingPrefab(""); } }}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" /> Add
+                  </button>
                 </div>
               </div>
 
@@ -788,7 +1005,13 @@ export default function BasesPage() {
                   return (
                     <div key={baseType} className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-emerald-400">{baseType} <span className="text-zinc-600 font-normal">({baseData.Buildings.length})</span></h4>
+                        <h4 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                          {baseType} <span className="text-zinc-600 font-normal">({baseData.Buildings.length})</span>
+                          <label className="text-xs text-zinc-400 flex items-center gap-1 ml-2">
+                            Spawn
+                            <input type="number" value={baseData["Spawn Count"] ?? 10} onChange={(e) => handleUpdateSpawnCount(baseType, parseInt(e.target.value) || 0)} min={0} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
+                          </label>
+                        </h4>
                         {unassignedFiles.length > 0 && (
                           <Dropdown
                             value={null}
@@ -871,11 +1094,25 @@ export default function BasesPage() {
           accentColor="emerald"
         />
       ) : (
-        <div className="flex-1 overflow-y-auto p-6">
+        <div
+          className="flex-1 overflow-y-auto p-6 relative"
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragCounterRef.current++; setIsDraggingFiles(true); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounterRef.current--; if (dragCounterRef.current <= 0) { dragCounterRef.current = 0; setIsDraggingFiles(false); } }}
+          onDrop={handleFileDrop}
+        >
+          {isDraggingFiles && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 border-2 border-dashed border-emerald-400 rounded-xl pointer-events-none">
+              <div className="text-center">
+                <Upload className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
+                <p className="text-lg font-medium text-emerald-400">Drop .data files here</p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-semibold text-white">Base Paste Files</h2>
-              <p className="text-sm text-zinc-500 mt-1">CopyPaste .data files downloaded by the plugin. Building names in config must match file names.</p>
+              <p className="text-sm text-zinc-500 mt-1">CopyPaste .data files downloaded by the plugin. Drag & drop or click upload.</p>
             </div>
             <button
               onClick={() => pasteFileInputRef.current?.click()}
@@ -888,10 +1125,10 @@ export default function BasesPage() {
           </div>
 
           {basesFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+            <div className="flex flex-col items-center justify-center py-20 text-zinc-600 border-2 border-dashed border-white/5 rounded-xl">
               <File className="h-10 w-10 mb-3" />
               <p className="text-sm">No base files uploaded yet</p>
-              <p className="text-xs mt-1">Upload CopyPaste .data files to make them available to the plugin</p>
+              <p className="text-xs mt-1">Drag & drop .data files here or click Upload</p>
             </div>
           ) : (
             <div className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden">
@@ -899,13 +1136,18 @@ export default function BasesPage() {
                 <thead>
                   <tr className="border-b border-white/5">
                     <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Name</th>
+                    <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Category</th>
                     <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Size</th>
                     <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Updated</th>
                     <th className="text-right text-xs text-zinc-500 font-medium px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {basesFiles.map(file => (
+                  {basesFiles.map(file => {
+                    const assignedCategory = Object.entries(data.pluginConfig["Bases Data"]).find(
+                      ([, bd]) => bd.Buildings.includes(file.name)
+                    )?.[0] || "";
+                    return (
                     <tr key={file.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -913,6 +1155,18 @@ export default function BasesPage() {
                           <span className="text-sm text-white font-medium">{file.name}</span>
                           <span className="text-xs text-zinc-600">.data</span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={assignedCategory}
+                          onChange={(e) => handleChangeFileCategory(file.name, assignedCategory, e.target.value)}
+                          className="rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none"
+                        >
+                          <option value="" className="bg-zinc-900">Unassigned</option>
+                          {Object.keys(data.pluginConfig["Bases Data"]).map(cat => (
+                            <option key={cat} value={cat} className="bg-zinc-900">{cat}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-4 py-3 text-sm text-zinc-400">
                         {file.fileSize > 1024 * 1024
@@ -934,7 +1188,8 @@ export default function BasesPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

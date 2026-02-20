@@ -231,9 +231,9 @@ export function UserProfileCard({
         },
         {
           id: 'analytics',
-          label: 'Player Analytics',
+          label: 'Analytics Hub',
           icon: <BarChart2 className="w-4 h-4" />,
-          href: '/dashboard/player-analytics',
+          href: '/dashboard/analytics',
         },
       )
     }
