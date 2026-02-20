@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2 } from "lucide-react";
+import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2, X } from "lucide-react";
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import {
@@ -31,15 +31,8 @@ interface BasesLootTable {
   Items: BasesLootItem[];
 }
 
-interface CrateTypeData {
-  Weight: number;
-  "Loot Table": string;
-  "Min Items": number;
-  "Max Items": number;
-}
-
 interface ContainerMappingData {
-  "Loot Table": string;
+  "Loot Tables": string[];
   "Min Items": number;
   "Max Items": number;
 }
@@ -51,7 +44,6 @@ interface BaseData {
 
 interface BasesPluginConfig {
   "Bases Data": Record<string, BaseData>;
-  "Crate Types": Record<string, CrateTypeData>;
   "Container Mappings": Record<string, ContainerMappingData>;
   "Loot Multiplier": number;
   "Wipe Progression Enabled": boolean;
@@ -74,18 +66,14 @@ interface BasesFileRecord {
 
 // ─── Default data ─────────────────────────────────────────────────────────────
 
-const DEFAULT_CRATE_TYPES: Record<string, CrateTypeData> = {
-  Armor: { Weight: 15, "Loot Table": "armor", "Min Items": 5, "Max Items": 15 },
-  Components: { Weight: 20, "Loot Table": "components", "Min Items": 5, "Max Items": 15 },
-  Weapons: { Weight: 15, "Loot Table": "weapons", "Min Items": 5, "Max Items": 15 },
-  Mixed: { Weight: 15, "Loot Table": "mixed", "Min Items": 5, "Max Items": 15 },
-  ToolCupboard: { Weight: 0, "Loot Table": "toolcupboard", "Min Items": 3, "Max Items": 6 },
-};
-
 const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
-  ...Object.fromEntries(
-    Object.values(DEFAULT_CRATE_TYPES).map(ct => [ct["Loot Table"], { "Min items": 3, "Max Items": 15, Items: [] }])
-  ),
+  weapons: { "Min items": 3, "Max Items": 15, Items: [] },
+  armor: { "Min items": 3, "Max Items": 15, Items: [] },
+  components: { "Min items": 3, "Max Items": 15, Items: [] },
+  mixed: { "Min items": 3, "Max Items": 15, Items: [] },
+  toolcupboard: { "Min items": 3, "Max Items": 6, Items: [] },
+  smallbox: { "Min items": 3, "Max Items": 8, Items: [] },
+  locker: { "Min items": 6, "Max Items": 12, Items: [] },
   npcloadout: { "Min items": 6, "Max Items": 10, Items: [] },
 };
 
@@ -96,11 +84,16 @@ const DEFAULT_CONFIG: BasesConfigData = {
       Medium: { Buildings: [], "Spawn Count": 15 },
       Large: { Buildings: [], "Spawn Count": 10 },
     },
-    "Crate Types": { ...DEFAULT_CRATE_TYPES },
     "Container Mappings": {
-      "box.wooden.large": { "Loot Table": "", "Min Items": 5, "Max Items": 15 },
-      "box.wooden": { "Loot Table": "smallbox", "Min Items": 3, "Max Items": 8 },
-      "locker.deployed": { "Loot Table": "locker", "Min Items": 4, "Max Items": 8 },
+      "box.wooden.large": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 12, "Max Items": 24 },
+      "woodbox_deployed": { "Loot Tables": ["smallbox"], "Min Items": 3, "Max Items": 8 },
+      "locker.deployed": { "Loot Tables": ["locker"], "Min Items": 6, "Max Items": 12 },
+      "coffinstorage": { "Loot Tables": ["weapons", "components"], "Min Items": 12, "Max Items": 24 },
+      "storage_barrel_c": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 6, "Max Items": 14 },
+      "storage_barrel_b": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 6, "Max Items": 14 },
+      "wicker_barrel": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 6, "Max Items": 14 },
+      "bamboo_barrel": { "Loot Tables": ["armor", "locker"], "Min Items": 4, "Max Items": 8 },
+      "cupboard.tool.deployed": { "Loot Tables": ["toolcupboard"], "Min Items": 3, "Max Items": 6 },
     },
     "Loot Multiplier": 1.0,
     "Wipe Progression Enabled": true,
@@ -353,18 +346,14 @@ export default function BasesPage() {
   // ─── Loot table list from config ──────────────────────────────────────────
   const lootTableNames = useMemo(() => {
     const names = new Set<string>();
-    const crateTypes = data.pluginConfig["Crate Types"];
-    for (const ct of Object.values(crateTypes)) {
-      if (ct["Loot Table"]) names.add(ct["Loot Table"]);
-    }
     // Include tables from container mappings
     const containerMappings = data.pluginConfig["Container Mappings"];
     if (containerMappings) {
       for (const mapping of Object.values(containerMappings)) {
-        if (mapping["Loot Table"]) names.add(mapping["Loot Table"]);
+        if (mapping["Loot Tables"]) mapping["Loot Tables"].forEach(t => { if (t) names.add(t); });
       }
     }
-    // Also include any extra tables in lootTables that aren't in crateTypes
+    // Also include any extra tables in lootTables
     for (const name of Object.keys(data.lootTables)) {
       names.add(name);
     }
@@ -424,18 +413,6 @@ export default function BasesPage() {
       };
     });
     toast.success(`Added ${shortname}`);
-  }, [selectedTable, setData]);
-
-  const handleUpdateTableSettings = useCallback((updates: { minItems?: number; maxItems?: number }) => {
-    if (!selectedTable) return;
-    setData(prev => {
-      const table = prev.lootTables[selectedTable];
-      if (!table) return prev;
-      const newTable = { ...table };
-      if (updates.minItems !== undefined) newTable["Min items"] = updates.minItems;
-      if (updates.maxItems !== undefined) newTable["Max Items"] = updates.maxItems;
-      return { ...prev, lootTables: { ...prev.lootTables, [selectedTable]: newTable } };
-    });
   }, [selectedTable, setData]);
 
   // ─── Config save/load ─────────────────────────────────────────────────────
@@ -559,7 +536,7 @@ export default function BasesPage() {
           return;
         }
         // Single loot table file
-        if (json.Items && json["Min items"] !== undefined) {
+        if (json.Items && Array.isArray(json.Items)) {
           const tableName = file.name.replace(/\.json$/i, "");
           setData(prev => ({
             ...prev,
@@ -583,7 +560,7 @@ export default function BasesPage() {
       try {
         const text = await file.text();
         const json = JSON.parse(text);
-        if (json.Items && json["Min items"] !== undefined) {
+        if (json.Items && Array.isArray(json.Items)) {
           const tableName = file.name.replace(/\.json$/i, "");
           newTables[tableName] = json;
           imported++;
@@ -677,18 +654,30 @@ export default function BasesPage() {
     });
   }, [setData]);
 
-  const handleUpdateCrateType = useCallback((crateType: string, field: keyof CrateTypeData, value: number) => {
-    setData(prev => {
-      const crateTypes = { ...prev.pluginConfig["Crate Types"] };
-      crateTypes[crateType] = { ...crateTypes[crateType], [field]: value };
-      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Crate Types": crateTypes } };
-    });
-  }, [setData]);
-
-  const handleUpdateContainerMapping = useCallback((prefab: string, field: keyof ContainerMappingData, value: string | number) => {
+  const handleUpdateContainerMapping = useCallback((prefab: string, field: "Min Items" | "Max Items", value: number) => {
     setData(prev => {
       const mappings = { ...prev.pluginConfig["Container Mappings"] };
       mappings[prefab] = { ...mappings[prefab], [field]: value };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
+    });
+  }, [setData]);
+
+  const handleAddTableToMapping = useCallback((prefab: string, table: string) => {
+    if (!table) return;
+    setData(prev => {
+      const mappings = { ...prev.pluginConfig["Container Mappings"] };
+      const current = mappings[prefab]?.["Loot Tables"] || [];
+      if (current.includes(table)) return prev;
+      mappings[prefab] = { ...mappings[prefab], "Loot Tables": [...current, table] };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
+    });
+  }, [setData]);
+
+  const handleRemoveTableFromMapping = useCallback((prefab: string, table: string) => {
+    setData(prev => {
+      const mappings = { ...prev.pluginConfig["Container Mappings"] };
+      const current = mappings[prefab]?.["Loot Tables"] || [];
+      mappings[prefab] = { ...mappings[prefab], "Loot Tables": current.filter(t => t !== table) };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
     });
   }, [setData]);
@@ -698,7 +687,7 @@ export default function BasesPage() {
     setData(prev => {
       const mappings = { ...prev.pluginConfig["Container Mappings"] };
       if (prefab in mappings) return prev;
-      mappings[prefab] = { "Loot Table": "", "Min Items": 3, "Max Items": 15 };
+      mappings[prefab] = { "Loot Tables": [], "Min Items": 3, "Max Items": 15 };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Container Mappings": mappings } };
     });
   }, [setData]);
@@ -907,62 +896,56 @@ export default function BasesPage() {
                 </div>
               </div>
 
-              {/* Crate Types */}
-              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
-                <h3 className="text-sm font-semibold text-white mb-4">Crate Types</h3>
-                <div className="space-y-2">
-                  {Object.entries(data.pluginConfig["Crate Types"]).map(([name, ct]) => (
-                    <div key={name} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02]">
-                      <span className="text-sm text-white font-medium w-28">{name}</span>
-                      <label className="text-xs text-zinc-400 flex items-center gap-1">
-                        Weight
-                        <input type="number" value={ct.Weight} onChange={(e) => handleUpdateCrateType(name, "Weight", parseFloat(e.target.value) || 0)} min={0} step={0.5} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
-                      </label>
-                      <input type="number" value={ct["Min Items"]} onChange={(e) => handleUpdateCrateType(name, "Min Items", parseInt(e.target.value) || 0)} min={0} title="Min Items" className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
-                      <span className="text-zinc-600 text-xs">-</span>
-                      <input type="number" value={ct["Max Items"]} onChange={(e) => handleUpdateCrateType(name, "Max Items", parseInt(e.target.value) || 0)} min={0} title="Max Items" className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none" />
-                      <span className="text-xs text-zinc-500 truncate">→ <span className="text-zinc-300">{ct["Loot Table"]}</span></span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Container Mappings */}
               <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
                 <h3 className="text-sm font-semibold text-white mb-1">Container Mappings</h3>
-                <p className="text-xs text-zinc-500 mb-4">Map container prefabs to specific loot tables. Empty value uses random weighted Crate Type selection.</p>
+                <p className="text-xs text-zinc-500 mb-4">Map container prefabs to loot tables. Multiple tables = random pick per spawn. Unmapped containers are skipped.</p>
                 <div className="space-y-2">
                   {Object.entries(data.pluginConfig["Container Mappings"] || {}).map(([prefab, mapping]) => (
-                    <div key={prefab} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.02]">
-                      <span className="text-sm text-white font-medium min-w-0 truncate flex-1" title={prefab}>{prefab}</span>
-                      <input
-                        type="text"
-                        value={mapping["Loot Table"]}
-                        onChange={(e) => handleUpdateContainerMapping(prefab, "Loot Table", e.target.value)}
-                        placeholder="(random)"
-                        title="Loot Table"
-                        className="w-24 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
-                      />
-                      <input
-                        type="number"
-                        value={mapping["Min Items"]}
-                        onChange={(e) => handleUpdateContainerMapping(prefab, "Min Items", parseInt(e.target.value) || 0)}
-                        min={0}
-                        title="Min Items"
-                        className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
-                      />
-                      <span className="text-zinc-600 text-xs">-</span>
-                      <input
-                        type="number"
-                        value={mapping["Max Items"]}
-                        onChange={(e) => handleUpdateContainerMapping(prefab, "Max Items", parseInt(e.target.value) || 0)}
-                        min={0}
-                        title="Max Items"
-                        className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
-                      />
-                      <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                    <div key={prefab} className="p-2 rounded-lg bg-white/[0.02] space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white font-medium min-w-0 truncate flex-1" title={prefab}>{prefab}</span>
+                        <input
+                          type="number"
+                          value={mapping["Min Items"]}
+                          onChange={(e) => handleUpdateContainerMapping(prefab, "Min Items", parseInt(e.target.value) || 0)}
+                          min={0}
+                          title="Min Items"
+                          className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
+                        />
+                        <span className="text-zinc-600 text-xs">-</span>
+                        <input
+                          type="number"
+                          value={mapping["Max Items"]}
+                          onChange={(e) => handleUpdateContainerMapping(prefab, "Max Items", parseInt(e.target.value) || 0)}
+                          min={0}
+                          title="Max Items"
+                          className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
+                        />
+                        <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(mapping["Loot Tables"] || []).map((table) => (
+                          <span key={table} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
+                            {table}
+                            <button onClick={() => handleRemoveTableFromMapping(prefab, table)} className="hover:text-red-400 transition-colors">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                        <select
+                          value=""
+                          onChange={(e) => { if (e.target.value) handleAddTableToMapping(prefab, e.target.value); }}
+                          className="rounded bg-white/5 border border-white/5 px-1.5 py-0.5 text-xs text-zinc-400 focus:outline-none cursor-pointer"
+                        >
+                          <option value="">+ table</option>
+                          {lootTableNames.filter(n => !(mapping["Loot Tables"] || []).includes(n)).map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1053,14 +1036,11 @@ export default function BasesPage() {
             <LootTableEditor
               tableName={selectedTable}
               items={currentItems}
-              minItems={currentLootTable["Min items"]}
-              maxItems={currentLootTable["Max Items"]}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onUpdateItem={handleUpdateItem}
               onRemoveItem={handleRemoveItem}
               onAddItem={handleAddItem}
-              onUpdateTableSettings={handleUpdateTableSettings}
               extraFields={BASES_EXTRA_FIELDS}
               accentColor="emerald"
             />

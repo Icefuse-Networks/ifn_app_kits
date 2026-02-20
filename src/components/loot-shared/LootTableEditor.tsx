@@ -11,14 +11,14 @@ import { CheckboxSwitch } from "@/components/ui/Switch";
 interface LootTableEditorProps {
   tableName: string;
   items: GenericLootItem[];
-  minItems: number;
-  maxItems: number;
+  minItems?: number;
+  maxItems?: number;
   viewMode: "grid" | "list";
   onViewModeChange: (mode: "grid" | "list") => void;
   onUpdateItem: (index: number, updates: Partial<GenericLootItem>) => void;
   onRemoveItem: (index: number) => void;
   onAddItem: (shortname: string) => void;
-  onUpdateTableSettings: (updates: { minItems?: number; maxItems?: number }) => void;
+  onUpdateTableSettings?: (updates: { minItems?: number; maxItems?: number }) => void;
   extraFields?: ExtraFieldDef[];
   accentColor?: string;
 }
@@ -81,24 +81,28 @@ export default function LootTableEditor({
 
       {/* Table settings */}
       <div className="shrink-0 flex items-center gap-4 px-4 py-2 border-b border-white/5 bg-white/[0.01]">
-        <Input
-          label="Min Items"
-          type="number"
-          value={minItems}
-          onChange={(e) => onUpdateTableSettings({ minItems: parseInt(e.target.value) || 1 })}
-          min={1}
-          size="sm"
-          className="w-28"
-        />
-        <Input
-          label="Max Items"
-          type="number"
-          value={maxItems}
-          onChange={(e) => onUpdateTableSettings({ maxItems: parseInt(e.target.value) || 1 })}
-          min={1}
-          size="sm"
-          className="w-28"
-        />
+        {minItems !== undefined && maxItems !== undefined && onUpdateTableSettings && (
+          <>
+            <Input
+              label="Min Items"
+              type="number"
+              value={minItems}
+              onChange={(e) => onUpdateTableSettings({ minItems: parseInt(e.target.value) || 1 })}
+              min={1}
+              size="sm"
+              className="w-28"
+            />
+            <Input
+              label="Max Items"
+              type="number"
+              value={maxItems}
+              onChange={(e) => onUpdateTableSettings({ maxItems: parseInt(e.target.value) || 1 })}
+              min={1}
+              size="sm"
+              className="w-28"
+            />
+          </>
+        )}
         <Button
           onClick={() => setShowAddItem(true)}
           variant="primary"

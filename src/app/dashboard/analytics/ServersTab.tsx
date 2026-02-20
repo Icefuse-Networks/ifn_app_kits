@@ -2,12 +2,13 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-  BarChart3, Server, Users, TrendingUp, RefreshCw, Clock, Activity, Zap, ChevronDown, Check
+  BarChart3, Server, Users, TrendingUp, RefreshCw, Clock, Activity, Zap, ChevronDown, Check, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, Column,
 } from "@/components/analytics";
+import { EChartWrapper } from "@/components/analytics/EChartWrapper";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Button } from "@/components/ui/Button";
 import { Tabs } from "@/components/ui/Tabs";
@@ -35,6 +36,27 @@ const TIME_PRESETS: Record<TimeRange, { label: string; hours?: number }> = {
   "30d": { label: "30 Days", hours: 720 }, "custom": { label: "Custom" },
 };
 const COLORS = ["#a855f7", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#8b5cf6", "#14b8a6"];
+
+/** Removes outlier spikes AND dips by replacing values that deviate too far from rolling median */
+function removeSpikes<T>(data: T[], getValue: (item: T) => number, setValue: (item: T, v: number) => T, windowSize = 7): T[] {
+  if (data.length < 3) return data;
+  return data.map((item, i) => {
+    const val = getValue(item);
+    const start = Math.max(0, i - windowSize);
+    const end = Math.min(data.length, i + windowSize + 1);
+    const neighbors = data.slice(start, end).map(getValue).filter((_, j) => start + j !== i).sort((a, b) => a - b);
+    // Use trimmed mean (drop top/bottom 20%) for more robust baseline
+    const trimCount = Math.max(1, Math.floor(neighbors.length * 0.2));
+    const trimmed = neighbors.slice(trimCount, -trimCount);
+    const baseline = trimmed.length > 0 ? trimmed.reduce((a, b) => a + b, 0) / trimmed.length : (neighbors[Math.floor(neighbors.length / 2)] || val);
+    if (baseline <= 0) return item;
+    // Spike: value is more than 80% above baseline
+    if (val > baseline * 1.8) return setValue(item, Math.round(baseline));
+    // Dip: value drops below 40% of baseline
+    if (val < baseline * 0.4) return setValue(item, Math.round(baseline));
+    return item;
+  });
+}
 
 const getServerKey = (o: ServerOption) => `${o.server_ip}::${o.server_name}`;
 
@@ -103,7 +125,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder = "Selec
 
 export default function ServersTab() {
   const [timeRange, setTimeRange] = useState<TimeRange>("24h");
-  const [groupBy, setGroupBy] = useState<GroupBy>("minute");
+  const [groupBy, setGroupBy] = useState<GroupBy>("hour");
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [servers, setServers] = useState<ServerOption[]>([]);
   const [timeseries, setTimeseries] = useState<TimeSeriesPoint[]>([]);
@@ -128,16 +150,22 @@ export default function ServersTab() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const baseParams = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&server=all&groupBy=${groupBy}&timezone=${encodeURIComponent(timezone)}`;
     try {
+      const opts = { credentials: 'include' as const };
       const [serversRes, timeseriesRes, totalsRes, aggregateRes, heatmapRes, currentRes] = await Promise.all([
-        fetch(`/api/analytics/server-stats?type=servers`),
-        fetch(`/api/analytics/server-stats?type=timeseries&${baseParams}`),
-        fetch(`/api/analytics/server-stats?type=totals&${baseParams}`),
-        fetch(`/api/analytics/server-stats?type=aggregate&${baseParams}`),
-        fetch(`/api/analytics/server-stats?type=heatmap&${baseParams}`),
-        fetch(`/api/analytics/server-stats?type=current`),
+        fetch(`/api/analytics/server-stats?type=servers`, opts),
+        fetch(`/api/analytics/server-stats?type=timeseries&${baseParams}`, opts),
+        fetch(`/api/analytics/server-stats?type=totals&${baseParams}`, opts),
+        fetch(`/api/analytics/server-stats?type=aggregate&${baseParams}`, opts),
+        fetch(`/api/analytics/server-stats?type=heatmap&${baseParams}`, opts),
+        fetch(`/api/analytics/server-stats?type=current`, opts),
       ]);
       const [serversData, timeseriesData, totalsData, aggregateData, heatmapData, currentData] = await Promise.all([
-        serversRes.json(), timeseriesRes.json(), totalsRes.json(), aggregateRes.json(), heatmapRes.json(), currentRes.json(),
+        serversRes.ok ? serversRes.json() : { servers: [] },
+        timeseriesRes.ok ? timeseriesRes.json() : { data: [] },
+        totalsRes.ok ? totalsRes.json() : { data: [] },
+        aggregateRes.ok ? aggregateRes.json() : { data: [] },
+        heatmapRes.ok ? heatmapRes.json() : { data: [] },
+        currentRes.ok ? currentRes.json() : { totalPlayers: 0, totalCapacity: 0, serverCount: 0 },
       ]);
       setServers(serversData.servers || []); setTimeseries(timeseriesData.data || []);
       setTotals(totalsData.data || []); setAggregate(aggregateData.data || []);
@@ -150,7 +178,7 @@ export default function ServersTab() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const totalPlayersData = useMemo(() => {
-    return totals.map((t) => {
+    const raw = totals.map((t) => {
       const parts = t.time_bucket.split(/[\s:-]/);
       const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3] || '0'), parseInt(parts[4] || '0'), parseInt(parts[5] || '0'));
       const dateStr = groupBy === "minute" || groupBy === "hour"
@@ -158,6 +186,7 @@ export default function ServersTab() {
         : d.toLocaleDateString([], { month: "short", day: "numeric" });
       return { date: dateStr, total_players: Number(t.total_players) };
     });
+    return removeSpikes(raw, d => d.total_players, (d, v) => ({ ...d, total_players: v }));
   }, [totals, groupBy]);
 
   const heatmapGrid = useMemo(() => {
@@ -190,7 +219,7 @@ export default function ServersTab() {
     });
     const serverNames = Array.from(serverGroups.keys()).slice(0, 8);
     const allBuckets = [...new Set(filteredTimeseries.map(t => t.time_bucket))].sort();
-    const data = allBuckets.map((bucket) => {
+    let data = allBuckets.map((bucket) => {
       const parts = bucket.split(/[\s:-]/);
       const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3] || '0'), parseInt(parts[4] || '0'), parseInt(parts[5] || '0'));
       const dateStr = groupBy === "minute" || groupBy === "hour"
@@ -202,6 +231,10 @@ export default function ServersTab() {
         row[name] = point ? Number(point.avg_players) : 0;
       });
       return row;
+    });
+    // Remove spikes per server series
+    serverNames.forEach((name) => {
+      data = removeSpikes(data, d => Number(d[name] || 0), (d, v) => ({ ...d, [name]: v }));
     });
     const series = serverNames.map((name, i) => ({
       key: name, name: name.length > 20 ? name.substring(0, 18) + "…" : name,
@@ -223,6 +256,222 @@ export default function ServersTab() {
     }},
     { key: "data_points", header: "Data Points", align: "right" as const, className: "text-zinc-500" },
   ], []);
+
+  // --- Population Forecast ---
+  const [forecastData, setForecastData] = useState<{ date: string; predicted: number; low: number; high: number; event: string }[]>([]);
+  const [forecastLoading, setForecastLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setForecastLoading(true);
+      try {
+        const now = new Date();
+        const from90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const opts = { credentials: 'include' as const };
+
+        // Fetch 90-day hourly totals for pattern building
+        const [heatmapRes, totalsRes] = await Promise.all([
+          fetch(`/api/analytics/server-stats?type=heatmap&from=${encodeURIComponent(from90)}&to=${encodeURIComponent(now.toISOString())}&server=all&groupBy=hour&timezone=${encodeURIComponent(tz)}`, opts),
+          fetch(`/api/analytics/server-stats?type=totals&from=${encodeURIComponent(from90)}&to=${encodeURIComponent(now.toISOString())}&server=all&groupBy=hour&timezone=${encodeURIComponent(tz)}`, opts),
+        ]);
+        const heatmapData = heatmapRes.ok ? await heatmapRes.json() : { data: [] };
+        const totalsData = totalsRes.ok ? await totalsRes.json() : { data: [] };
+
+        // Build day-of-week + hour pattern from heatmap (avg players per dow+hour)
+        const pattern: Record<string, number> = {};
+        (heatmapData.data || []).forEach((h: HeatmapPoint) => {
+          pattern[`${Number(h.day_of_week)}-${Number(h.hour)}`] = Number(h.avg_players);
+        });
+
+        // Calculate stddev from hourly totals to build confidence bands
+        const hourlyByDow: Record<string, number[]> = {};
+        (totalsData.data || []).forEach((t: TotalsPoint) => {
+          const parts = t.time_bucket.split(/[\s:-]/);
+          const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3] || '0'));
+          const dow = d.getDay() === 0 ? 7 : d.getDay(); // 1=Mon .. 7=Sun (ClickHouse convention)
+          const hour = d.getHours();
+          const key = `${dow}-${hour}`;
+          if (!hourlyByDow[key]) hourlyByDow[key] = [];
+          hourlyByDow[key].push(Number(t.total_players));
+        });
+
+        const stddevMap: Record<string, number> = {};
+        Object.entries(hourlyByDow).forEach(([key, values]) => {
+          const mean = values.reduce((a, b) => a + b, 0) / values.length;
+          const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+          stddevMap[key] = Math.sqrt(variance);
+        });
+
+        // US holidays and school events for Eastern time (2025-2026 school year)
+        const getEvents = (date: Date): { modifier: number; label: string }[] => {
+          const m = date.getMonth() + 1;
+          const d = date.getDate();
+          const dow = date.getDay();
+          const events: { modifier: number; label: string }[] = [];
+
+          // Federal holidays (higher player count - kids off school)
+          if (m === 1 && d === 1) events.push({ modifier: 1.35, label: "New Year's Day" });
+          if (m === 1 && d >= 15 && d <= 21 && dow === 1) events.push({ modifier: 1.2, label: "MLK Day" });
+          if (m === 2 && d >= 15 && d <= 21 && dow === 1) events.push({ modifier: 1.2, label: "Presidents' Day" });
+          if (m === 5 && d >= 25 && d <= 31 && dow === 1) events.push({ modifier: 1.25, label: "Memorial Day" });
+          if (m === 6 && d === 19) events.push({ modifier: 1.15, label: "Juneteenth" });
+          if (m === 7 && d === 4) events.push({ modifier: 1.3, label: "Independence Day" });
+          if (m === 9 && d >= 1 && d <= 7 && dow === 1) events.push({ modifier: 1.2, label: "Labor Day" });
+          if (m === 10 && d >= 8 && d <= 14 && dow === 1) events.push({ modifier: 1.1, label: "Columbus Day" });
+          if (m === 11 && d === 11) events.push({ modifier: 1.15, label: "Veterans Day" });
+          if (m === 11 && d >= 22 && d <= 28 && dow === 4) events.push({ modifier: 1.3, label: "Thanksgiving" });
+          if (m === 11 && d >= 23 && d <= 29 && dow === 5) events.push({ modifier: 1.25, label: "Black Friday" });
+          if (m === 12 && d >= 24 && d <= 26) events.push({ modifier: 1.4, label: "Christmas" });
+          if (m === 12 && d >= 27 && d <= 31) events.push({ modifier: 1.3, label: "Holiday Break" });
+
+          // School calendar (Eastern US typical)
+          // Summer break: ~Jun 15 - Aug 25 → more players
+          if ((m === 6 && d >= 15) || m === 7 || (m === 8 && d <= 25))
+            events.push({ modifier: 1.25, label: "Summer Break" });
+          // Winter break: ~Dec 20 - Jan 3
+          if ((m === 12 && d >= 20) || (m === 1 && d <= 3))
+            events.push({ modifier: 1.3, label: "Winter Break" });
+          // Spring break: ~Mar 10-21 or Apr 7-18 (varies by district, use mid-March)
+          if (m === 3 && d >= 10 && d <= 21)
+            events.push({ modifier: 1.2, label: "Spring Break" });
+          // School start: ~Aug 26 - Sep 5 → dip in players
+          if ((m === 8 && d >= 26) || (m === 9 && d <= 5))
+            events.push({ modifier: 0.85, label: "School Start" });
+          // School end: ~Jun 10-14 → slight bump (excitement)
+          if (m === 6 && d >= 10 && d <= 14)
+            events.push({ modifier: 1.1, label: "School Ending" });
+
+          // Weekend boost
+          if (dow === 0 || dow === 6) events.push({ modifier: 1.15, label: "Weekend" });
+          // Friday evening boost handled by hourly pattern already
+
+          return events;
+        };
+
+        // Generate 7-day hourly forecast
+        const forecast: typeof forecastData = [];
+        for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+          for (let hour = 0; hour < 24; hour += 3) { // every 3 hours for readability
+            const futureDate = new Date(now.getTime() + (dayOffset * 24 + hour) * 60 * 60 * 1000);
+            const dow = futureDate.getDay() === 0 ? 7 : futureDate.getDay();
+            const key = `${dow}-${hour}`;
+            let baseline = pattern[key] || 0;
+
+            // Apply event modifiers (multiply them together)
+            const events = getEvents(futureDate);
+            let combinedModifier = 1;
+            events.forEach(e => { combinedModifier *= e.modifier; });
+            // Cap combined modifier
+            combinedModifier = Math.min(combinedModifier, 1.6);
+
+            const predicted = Math.round(baseline * combinedModifier);
+            const sd = stddevMap[key] || predicted * 0.15;
+            const low = Math.max(0, Math.round(predicted - sd));
+            const high = Math.round(predicted + sd);
+
+            const eventLabels = events.filter(e => e.label !== "Weekend").map(e => e.label);
+            const dateLabel = futureDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+              + ' ' + futureDate.toLocaleTimeString('en-US', { hour: '2-digit', hour12: true });
+
+            forecast.push({
+              date: dateLabel,
+              predicted,
+              low,
+              high,
+              event: eventLabels.join(', '),
+            });
+          }
+        }
+
+        if (!cancelled) setForecastData(forecast);
+      } catch (err) { console.error("Failed to build forecast:", err); }
+      finally { if (!cancelled) setForecastLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const forecastOption = useMemo(() => {
+    if (!forecastData.length) return null;
+    const dates = forecastData.map(f => f.date);
+    const predicted = forecastData.map(f => f.predicted);
+    const lowVals = forecastData.map(f => f.low);
+    const bandWidth = forecastData.map(f => f.high - f.low);
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "rgba(0,0,0,0.85)",
+        borderColor: "rgba(16,185,129,0.5)",
+        textStyle: { color: "#fff" },
+        formatter: (params: { dataIndex: number; seriesName: string; value: number; marker: string }[]) => {
+          const idx = params[0]?.dataIndex ?? 0;
+          const f = forecastData[idx];
+          if (!f) return '';
+          let html = `<div style="font-weight:600;margin-bottom:4px">${f.date}</div>`;
+          html += `<div>Predicted: <b style="color:#10b981">${f.predicted}</b> players</div>`;
+          html += `<div style="color:#888">Range: ${f.low} - ${f.high}</div>`;
+          if (f.event) html += `<div style="color:#f59e0b;margin-top:4px">${f.event}</div>`;
+          return html;
+        },
+      },
+      legend: {
+        data: ["Predicted", "Confidence Range"],
+        textStyle: { color: "#888", fontSize: 10 },
+        top: 0,
+      },
+      grid: { left: 60, right: 20, top: 50, bottom: 80 },
+      xAxis: {
+        type: "category",
+        data: dates,
+        axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+        axisLabel: { color: "#888", rotate: 45, fontSize: 9 },
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+        axisLabel: { color: "#888" },
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
+      },
+      series: [
+        // Invisible low boundary (base for the band)
+        {
+          name: "Low",
+          type: "line",
+          data: lowVals,
+          lineStyle: { opacity: 0 },
+          areaStyle: { opacity: 0 },
+          stack: "band",
+          symbol: "none",
+          tooltip: { show: false },
+        },
+        // Band between low and high
+        {
+          name: "Confidence Range",
+          type: "line",
+          data: bandWidth,
+          lineStyle: { opacity: 0 },
+          areaStyle: { color: "rgba(16,185,129,0.15)" },
+          stack: "band",
+          symbol: "none",
+          tooltip: { show: false },
+        },
+        // Main prediction line
+        {
+          name: "Predicted",
+          type: "line",
+          data: predicted,
+          smooth: true,
+          lineStyle: { color: "#10b981", width: 3 },
+          itemStyle: { color: "#10b981" },
+          symbol: "circle",
+          symbolSize: 4,
+          z: 2,
+        },
+      ],
+    };
+  }, [forecastData]);
 
   return (
     <>
@@ -279,6 +528,30 @@ export default function ServersTab() {
         </ChartCard>
         <ChartCard title="Activity Heatmap" icon={Clock} iconColor="text-pink-400" delay={0.6}>
           <div className="h-64 overflow-auto"><ActivityHeatmap data={heatmapGrid} tooltipPrefix="players" cellHeight={20} /></div>
+        </ChartCard>
+      </div>
+
+      {/* 7-Day Population Forecast */}
+      <div className="mb-6">
+        <ChartCard title="7-Day Population Forecast" icon={Sparkles} iconColor="text-emerald-400" delay={0.65}>
+          {forecastLoading ? (
+            <div className="h-80 flex items-center justify-center"><Loading /></div>
+          ) : forecastData.length > 0 ? (
+            <>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {forecastData.filter(f => f.event).reduce<string[]>((acc, f) => {
+                  f.event.split(', ').forEach(e => { if (e && !acc.includes(e)) acc.push(e); });
+                  return acc;
+                }, []).map(e => (
+                  <span key={e} className="px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-medium">{e}</span>
+                ))}
+              </div>
+              <div className="h-80"><EChartWrapper option={forecastOption} height="100%" /></div>
+              <p className="text-xs text-zinc-600 mt-2">Based on 90-day historical patterns. Adjusted for US holidays, school calendar (Eastern), and weekend patterns. Shaded area shows confidence range.</p>
+            </>
+          ) : (
+            <div className="h-40 flex items-center justify-center text-zinc-500 text-sm">Not enough historical data to generate forecast</div>
+          )}
         </ChartCard>
       </div>
 

@@ -123,12 +123,12 @@ export async function GET(request: NextRequest) {
             server_id,
             argMax(server_ip, timestamp) as server_ip,
             argMax(server_name, timestamp) as server_name,
-            ROUND(argMax(players, timestamp)) as avg_players,
+            ROUND(quantileExact(0.5)(players)) as avg_players,
             MAX(players) as peak_players,
             MIN(players) as min_players,
-            ROUND(argMax(max_players, timestamp)) as capacity
+            ROUND(quantileExact(0.5)(max_players)) as capacity
           FROM server_population_stats
-          ${whereClause}
+          ${whereClause} AND players > 0
           GROUP BY time_bucket, server_id
           ORDER BY time_bucket ASC
         `,
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
             MIN(players) as min_players,
             ROUND(AVG(max_players)) as avg_capacity,
             COUNT(*) as data_points,
-            ROUND(AVG(players / max_players * 100)) as avg_utilization
+            ROUND(AVG(if(max_players > 0, players / max_players * 100, 0))) as avg_utilization
           FROM server_population_stats
           ${whereClause}
           GROUP BY server_id
@@ -184,10 +184,10 @@ export async function GET(request: NextRequest) {
             SELECT
               ${groupByExpr} as time_bucket,
               server_id,
-              argMax(players, timestamp) as latest_players,
-              argMax(max_players, timestamp) as latest_capacity
+              quantileExact(0.5)(players) as latest_players,
+              quantileExact(0.5)(max_players) as latest_capacity
             FROM server_population_stats
-            ${whereClause}
+            ${whereClause} AND players > 0
             GROUP BY time_bucket, server_id
           )
           GROUP BY time_bucket
