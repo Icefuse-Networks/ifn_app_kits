@@ -28,12 +28,15 @@ interface RaidEvent {
 interface AnalyticsData {
   overview: {
     totalRaids: number; completedRaids: number; completionRate: number; avgDuration: number;
-    uniqueRaiders: number; totalEntitiesDestroyed: number; totalNpcsKilled: number;
+    uniqueRaiders: number; totalEntitiesDestroyed: number; totalContainersDestroyed: number;
+    totalNpcsKilled: number; avgRaidersPerRaid: number;
   };
   timeSeries: { date: string; raids: number; completed: number; abandoned: number }[];
   topRaiders: { steam_id: string; name: string; raids: number; entities: number; completed: number }[];
   baseTypes: { name: string; value: number }[];
   gradeDistribution: { name: string; value: number }[];
+  buildingNames: { name: string; value: number }[];
+  serverDistribution: { name: string; value: number }[];
   hourlyHeatmap: { hour: number; dayOfWeek: number; count: number }[];
 }
 
@@ -44,9 +47,10 @@ interface BasesTabProps {
   serverFilter: string;
   servers: string[];
   onServersFound: (servers: string[]) => void;
+  serverNameMap: Record<string, string>;
 }
 
-export default function BasesTab({ timeFilter, serverFilter, servers, onServersFound }: BasesTabProps) {
+export default function BasesTab({ timeFilter, serverFilter, servers, onServersFound, serverNameMap }: BasesTabProps) {
   const [raids, setRaids] = useState<RaidEvent[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,13 +103,16 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
       const uniqueRaiderSet = new Set<string>();
       raidList.forEach(r => r.raider_steam_ids?.forEach(id => uniqueRaiderSet.add(id)));
 
+      const totalRaiderCount = raidList.reduce((sum, r) => sum + (r.raider_steam_ids?.length || 0), 0);
       const overview = {
         totalRaids: raidList.length, completedRaids,
         completionRate: raidList.length > 0 ? Math.round((completedRaids / raidList.length) * 100) : 0,
         avgDuration: raidList.length > 0 ? Math.round(raidList.reduce((sum, r) => sum + r.raid_duration_seconds, 0) / raidList.length) : 0,
         uniqueRaiders: uniqueRaiderSet.size,
         totalEntitiesDestroyed: raidList.reduce((sum, r) => sum + r.total_entities_destroyed, 0),
+        totalContainersDestroyed: raidList.reduce((sum, r) => sum + r.total_containers_destroyed, 0),
         totalNpcsKilled: raidList.reduce((sum, r) => sum + r.total_npcs_killed, 0),
+        avgRaidersPerRaid: raidList.length > 0 ? +(totalRaiderCount / raidList.length).toFixed(1) : 0,
       };
 
       const dateMap = new Map<string, { raids: number; completed: number; abandoned: number }>();
@@ -139,6 +146,17 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
       raidList.forEach(r => gradeMap.set(r.building_grade, (gradeMap.get(r.building_grade) || 0) + 1));
       const gradeDistribution = Array.from(gradeMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
+      const buildingMap = new Map<string, number>();
+      raidList.forEach(r => buildingMap.set(r.building_name, (buildingMap.get(r.building_name) || 0) + 1));
+      const buildingNames = Array.from(buildingMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 15);
+
+      const serverMap = new Map<string, number>();
+      raidList.forEach(r => {
+        const label = serverNameMap[r.server_id] || r.server_id;
+        serverMap.set(label, (serverMap.get(label) || 0) + 1);
+      });
+      const serverDistribution = Array.from(serverMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
       const heatmapMap = new Map<string, number>();
       raidList.forEach(r => {
         const date = new Date(r.timestamp_str.replace(' ', 'T'));
@@ -151,10 +169,10 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
         return { dayOfWeek: dow, hour: hr, count };
       });
 
-      setAnalytics({ overview, timeSeries, topRaiders, baseTypes, gradeDistribution, hourlyHeatmap });
+      setAnalytics({ overview, timeSeries, topRaiders, baseTypes, gradeDistribution, buildingNames, serverDistribution, hourlyHeatmap });
     } catch (err) { console.error("Analytics fetch error:", err); }
     finally { setAnalyticsLoading(false); }
-  }, [timeFilter, serverFilter, baseTypeFilter]);
+  }, [timeFilter, serverFilter, baseTypeFilter, serverNameMap]);
 
   useEffect(() => { fetchRaids(); }, [fetchRaids]);
   useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
@@ -209,14 +227,17 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
         <>
           {analyticsLoading ? <Loading size="lg" text="Loading analytics..." /> : analytics ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <StatCard icon={Castle} label="Total Raids" value={analytics.overview.totalRaids} delay={0.05} />
                 <StatCard icon={CheckCircle2} label="Completed" value={analytics.overview.completedRaids} delay={0.1} />
                 <StatCard icon={Target} label="Completion %" value={`${analytics.overview.completionRate}%`} delay={0.15} />
                 <StatCard icon={Clock} label="Avg Duration" value={formatDuration(analytics.overview.avgDuration)} delay={0.2} />
                 <StatCard icon={Users} label="Unique Raiders" value={analytics.overview.uniqueRaiders} delay={0.25} />
-                <StatCard icon={Hammer} label="Entities Destroyed" value={analytics.overview.totalEntitiesDestroyed} delay={0.3} />
-                <StatCard icon={Skull} label="NPCs Killed" value={analytics.overview.totalNpcsKilled} delay={0.35} />
+                <StatCard icon={Hammer} label="Entities Destroyed" value={analytics.overview.totalEntitiesDestroyed.toLocaleString()} delay={0.3} />
+                <StatCard icon={Box} label="Containers Looted" value={analytics.overview.totalContainersDestroyed.toLocaleString()} delay={0.35} />
+                <StatCard icon={Skull} label="NPCs Killed" value={analytics.overview.totalNpcsKilled.toLocaleString()} delay={0.4} />
+                <StatCard icon={Users} label="Avg Raiders/Raid" value={analytics.overview.avgRaidersPerRaid} delay={0.45} />
+                <StatCard icon={Shield} label="Most Raided Grade" value={analytics.gradeDistribution[0]?.name || "N/A"} delay={0.5} />
               </div>
 
               <ChartCard title="Raids Over Time" icon={TrendingUp} className="lg:col-span-2" delay={0.4}>
@@ -239,6 +260,14 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                     { name: 'Abandoned', value: analytics.overview.totalRaids - analytics.overview.completedRaids },
                   ].filter(d => d.value > 0)} height="100%" colors={['#22c55e', '#ef4444']} /></div>
                 </ChartCard>
+                <ChartCard title="Most Raided Buildings" icon={Castle} delay={0.52}>
+                  <div className="h-72"><BarChart data={analytics.buildingNames.slice(0, 10).map(b => ({ label: b.name, value: b.value }))} height="100%" colors={COLORS} /></div>
+                </ChartCard>
+                {analytics.serverDistribution.length > 1 && (
+                  <ChartCard title="Raids by Server" icon={Castle} delay={0.54}>
+                    <div className="h-72"><PieChart data={analytics.serverDistribution} height="100%" colors={COLORS} /></div>
+                  </ChartCard>
+                )}
                 <ChartCard title="Base Types" icon={Castle} delay={0.55}>
                   <div className="h-64"><PieChart data={analytics.baseTypes} height="100%" colors={COLORS} /></div>
                 </ChartCard>
@@ -286,7 +315,10 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                             <Badge variant="secondary" size="sm">{raid.building_grade}</Badge>
                             <span className="text-xs text-zinc-500">{raid.building_name}</span>
                           </div>
-                          <div className="text-xs text-zinc-500 mt-1"><Clock className="inline h-3 w-3 mr-1" />{raid.timestamp_str} &bull; {formatDuration(raid.raid_duration_seconds)}</div>
+                          <div className="text-xs text-zinc-500 mt-1">
+                            <Clock className="inline h-3 w-3 mr-1" />{raid.timestamp_str} &bull; {formatDuration(raid.raid_duration_seconds)}
+                            {raid.server_id && <span className="ml-2 text-zinc-600">&bull; {serverNameMap[raid.server_id] || raid.server_id}</span>}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-6">

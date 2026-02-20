@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger'
 const queueRedirectSchema = z.object({
   sourceServerId: z.string().min(1).max(60),
   targetServerId: z.string().min(1).max(60),
+  reason: z.string().max(50).optional(),
   players: z.array(z.object({
     steamId: z.string().min(1).max(20),
     playerName: z.string().max(100).optional(),
@@ -23,6 +24,10 @@ const completeRedirectSchema = z.object({
   ids: z.array(z.string().min(1).max(60)).min(1).max(100),
   status: z.enum(['completed', 'failed']),
   failureReason: z.string().max(200).optional(),
+})
+
+const cancelRedirectSchema = z.object({
+  ids: z.array(z.string().min(1).max(60)).min(1).max(100),
 })
 
 export async function POST(request: NextRequest) {
@@ -45,7 +50,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { sourceServerId, targetServerId, players } = parsed.data
+    const { sourceServerId, targetServerId, players, reason } = parsed.data
 
     const [sourceServer, targetServer] = await Promise.all([
       prisma.serverIdentifier.findFirst({ where: { hashedId: sourceServerId }, select: { id: true, hashedId: true, ip: true, port: true } }),
@@ -73,6 +78,7 @@ export async function POST(request: NextRequest) {
       steamId: p.steamId,
       playerName: p.playerName || null,
       status: 'pending',
+      reason: reason || null,
       createdBy: authResult.context.actorId,
     }))
 
@@ -164,6 +170,7 @@ export async function GET(request: NextRequest) {
         id: r.id,
         steamId: r.steamId,
         playerName: r.playerName,
+        reason: r.reason || null,
         targetIp: target?.ip || null,
         targetPort: target?.port || null,
         targetName: target?.name || null,
@@ -229,6 +236,50 @@ export async function PATCH(request: NextRequest) {
     logger.admin.error('Failed to update redirect queue', error as Error)
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to update queue' } },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const authResult = await requireSession(request)
+  if (!authResult.success) {
+    return NextResponse.json(
+      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+      { status: authResult.status }
+    )
+  }
+
+  try {
+    const body = await request.json()
+    const parsed = cancelRedirectSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details: parsed.error.flatten() } },
+        { status: 400 }
+      )
+    }
+
+    const { ids } = parsed.data
+
+    const result = await prisma.redirectQueue.deleteMany({
+      where: {
+        id: { in: ids },
+        status: 'pending',
+      },
+    })
+
+    logger.admin.info('Redirect queue entries cancelled', {
+      count: result.count,
+      actor: authResult.context.actorId,
+    })
+
+    return NextResponse.json({ success: true, data: { cancelled: result.count } })
+  } catch (error) {
+    logger.admin.error('Failed to cancel redirect queue', error as Error)
+    return NextResponse.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to cancel redirects' } },
       { status: 500 }
     )
   }

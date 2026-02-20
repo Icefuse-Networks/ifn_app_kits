@@ -120,6 +120,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
   const [availableServers, setAvailableServers] = useState<ServerOption[]>([])
   const [redirecting, setRedirecting] = useState(false)
   const [redirectMode, setRedirectMode] = useState<'single' | 'multi' | 'all'>('single')
+  const [redirectReason, setRedirectReason] = useState<string>('Admin Redirect')
   const [singlePlayerTarget, setSinglePlayerTarget] = useState<PlayerData | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editName, setEditName] = useState('')
@@ -211,6 +212,11 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     if (server?.hashedId) {
       fetchPendingQueue()
       fetchRecentHistory()
+      const queueInterval = setInterval(() => {
+        fetchPendingQueue()
+        fetchRecentHistory()
+      }, 5000)
+      return () => clearInterval(queueInterval)
     }
   }, [server?.hashedId, fetchPendingQueue, fetchRecentHistory])
 
@@ -224,6 +230,22 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         .catch(() => setAvailableServers([]))
     }
   }, [redirectModalOpen, server?.hashedId])
+
+  async function cancelRedirect(queueId: string) {
+    try {
+      const res = await fetch('/api/identifiers/redirect-queue', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ids: [queueId] }),
+      })
+      if (res.ok) {
+        setPendingQueue(prev => prev.filter(q => q.id !== queueId))
+      }
+    } catch (err) {
+      console.error('Failed to cancel redirect:', err)
+    }
+  }
 
   function copyToClipboard(text: string, key: string) {
     navigator.clipboard.writeText(text)
@@ -378,6 +400,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         body: JSON.stringify({
           sourceServerId: server.hashedId,
           targetServerId: redirectTarget,
+          reason: redirectReason,
           players,
         }),
       })
@@ -386,6 +409,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         setRedirectModalOpen(false)
         setSelectedPlayers(new Set())
         setRedirectAllConfirmText('')
+        setRedirectReason('Admin Redirect')
         // Refresh queue
         fetchPendingQueue()
       }
@@ -616,6 +640,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Steam ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Status</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">Queued</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase"></th>
                 </tr>
               </thead>
               <tbody>
@@ -641,6 +666,17 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-[var(--text-muted)]">
                       {formatLastUpdate(item.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {item.status === 'pending' && (
+                        <button
+                          onClick={() => cancelRedirect(item.id)}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Cancel redirect"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -930,6 +966,25 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                   ))
                 )}
               </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                Reason
+              </label>
+              <select
+                value={redirectReason}
+                onChange={(e) => setRedirectReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm text-[var(--text-primary)] focus:outline-none appearance-none"
+                style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+              >
+                <option value="Admin Redirect">Admin Redirect</option>
+                <option value="Server Maintenance">Server Maintenance</option>
+                <option value="Server Wipe">Server Wipe</option>
+                <option value="Population Balance">Population Balance</option>
+                <option value="Event">Event</option>
+                <option value="Testing">Testing</option>
+              </select>
             </div>
 
             <div className="flex gap-3">

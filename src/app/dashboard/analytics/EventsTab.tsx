@@ -45,9 +45,10 @@ interface EventsTabProps {
   serverFilter: string;
   servers: string[];
   onServersFound: (servers: string[]) => void;
+  serverNameMap: Record<string, string>;
 }
 
-export default function EventsTab({ timeFilter, serverFilter, servers, onServersFound }: EventsTabProps) {
+export default function EventsTab({ timeFilter, serverFilter, servers, onServersFound, serverNameMap }: EventsTabProps) {
   const [events, setEvents] = useState<EventCompletion[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);

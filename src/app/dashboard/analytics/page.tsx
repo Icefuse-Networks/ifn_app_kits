@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   BarChart3, Castle, Trophy, ShoppingCart, TrendingUp,
   Server as ServerIcon
@@ -16,11 +16,35 @@ import GlobalStatsTab from "./GlobalStatsTab";
 
 type Category = 'overview' | 'bases' | 'events' | 'servers' | 'shop' | 'global';
 
+interface ServerIdentifier {
+  id: string;
+  name: string;
+  hashedId: string;
+  ip: string | null;
+  port: number | null;
+}
+
 export default function CentralAnalyticsPage() {
   const [activeCategory, setActiveCategory] = useState<Category>('overview');
   const [timeFilter, setTimeFilter] = useState<{ type: 'hours' | 'days'; value: number }>({ type: 'days', value: 30 });
   const [serverFilter, setServerFilter] = useState("");
   const [servers, setServers] = useState<string[]>([]);
+  const [serverIdentifiers, setServerIdentifiers] = useState<ServerIdentifier[]>([]);
+
+  // Fetch server identifiers for name resolution
+  useEffect(() => {
+    fetch("/api/identifiers", { credentials: "include" })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => { if (Array.isArray(data)) setServerIdentifiers(data); })
+      .catch(() => {});
+  }, []);
+
+  // Build a map from hashedId → name for display
+  const serverNameMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    serverIdentifiers.forEach(s => { map[s.hashedId] = s.name; });
+    return map;
+  }, [serverIdentifiers]);
 
   const handleServersFound = useCallback((newServers: string[]) => {
     setServers(prev => [...new Set([...prev, ...newServers])].sort() as string[]);
@@ -90,7 +114,7 @@ export default function CentralAnalyticsPage() {
                     value={serverFilter}
                     options={[
                       { value: '', label: 'All Servers' },
-                      ...servers.map(s => ({ value: s, label: s }))
+                      ...servers.map(s => ({ value: s, label: serverNameMap[s] || s }))
                     ]}
                     onChange={(val) => setServerFilter(val || '')}
                   />
@@ -125,10 +149,10 @@ export default function CentralAnalyticsPage() {
 
           {/* Tab Content */}
           {activeCategory === 'bases' && (
-            <BasesTab timeFilter={timeFilter} serverFilter={serverFilter} servers={servers} onServersFound={handleServersFound} />
+            <BasesTab timeFilter={timeFilter} serverFilter={serverFilter} servers={servers} onServersFound={handleServersFound} serverNameMap={serverNameMap} />
           )}
           {activeCategory === 'events' && (
-            <EventsTab timeFilter={timeFilter} serverFilter={serverFilter} servers={servers} onServersFound={handleServersFound} />
+            <EventsTab timeFilter={timeFilter} serverFilter={serverFilter} servers={servers} onServersFound={handleServersFound} serverNameMap={serverNameMap} />
           )}
           {activeCategory === 'servers' && <ServersTab />}
           {activeCategory === 'shop' && <ShopTab timeFilter={timeFilter} serverFilter={serverFilter} />}
