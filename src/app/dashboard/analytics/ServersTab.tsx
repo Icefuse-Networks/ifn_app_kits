@@ -9,6 +9,7 @@ import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, Column,
 } from "@/components/analytics";
 import { EChartWrapper } from "@/components/analytics/EChartWrapper";
+import type { EChartsOption } from "echarts";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Button } from "@/components/ui/Button";
 import { Tabs } from "@/components/ui/Tabs";
@@ -392,7 +393,7 @@ export default function ServersTab() {
     return () => { cancelled = true; };
   }, []);
 
-  const forecastOption = useMemo(() => {
+  const forecastOption = useMemo<EChartsOption | null>(() => {
     if (!forecastData.length) return null;
     const dates = forecastData.map(f => f.date);
     const predicted = forecastData.map(f => f.predicted);
@@ -405,8 +406,9 @@ export default function ServersTab() {
         backgroundColor: "rgba(0,0,0,0.85)",
         borderColor: "rgba(16,185,129,0.5)",
         textStyle: { color: "#fff" },
-        formatter: (params: { dataIndex: number; seriesName: string; value: number; marker: string }[]) => {
-          const idx = params[0]?.dataIndex ?? 0;
+        formatter: (params: unknown) => {
+          const arr = Array.isArray(params) ? params : [params];
+          const idx = (arr[0] as { dataIndex?: number })?.dataIndex ?? 0;
           const f = forecastData[idx];
           if (!f) return '';
           let html = `<div style="font-weight:600;margin-bottom:4px">${f.date}</div>`;
