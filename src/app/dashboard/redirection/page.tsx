@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, NumberInput } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
@@ -284,9 +285,11 @@ export default function RedirectionPage() {
 
   const fetchServers = useCallback(async () => {
     try {
-      const res = await fetch("/api/identifiers");
+      const res = await fetch("/api/identifiers", { credentials: "include" });
       const data = await res.json();
-      if (data.success) {
+      if (Array.isArray(data)) {
+        setServers(data);
+      } else if (data.success && Array.isArray(data.data)) {
         setServers(data.data);
       }
     } catch (err) {
@@ -492,7 +495,7 @@ export default function RedirectionPage() {
               </div>
               Redirection
             </h1>
-            <p className="text-zinc-500 mt-2">Configure staff AFK redirects and wipe redirects</p>
+            <p className="text-zinc-500 mt-2">Configure AFK redirects, wipe redirects, and player management</p>
           </div>
 
           <Button
@@ -529,27 +532,27 @@ export default function RedirectionPage() {
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Shield className="h-5 w-5 text-orange-400" />
-                  Staff AFK Redirect
+                  AFK Redirect
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">Monitors staff members and redirects them to empty servers when AFK</p>
+                <p className="text-sm text-zinc-500 mb-4">Monitors players in configured groups and redirects them to empty servers when AFK</p>
 
                 <div className="space-y-6">
                   <div className="p-3 rounded-lg bg-white/5">
                     <Switch
                       checked={config.enableAFKRedirect}
                       onChange={(checked) => setConfig({ ...config, enableAFKRedirect: checked })}
-                      label="Enable Staff AFK Redirect"
-                      description="When enabled, monitors staff for AFK and redirects them"
+                      label="Enable AFK Redirect"
+                      description="When enabled, monitors players in the configured groups for AFK and redirects them"
                     />
                   </div>
 
                   <div className="bg-white/5 rounded-lg p-4">
                     <ListManager
-                      label="Staff Groups to Monitor"
-                      description="Permission groups that will be monitored for AFK (e.g., admin, moderator)"
+                      label="Groups to Monitor"
+                      description="Permission groups that will be monitored for AFK (e.g., developer, admin, default)"
                       items={config.staffGroups}
                       onChange={(items) => setConfig({ ...config, staffGroups: items })}
-                      placeholder="e.g., admin, moderator"
+                      placeholder="e.g., developer, admin, default"
                     />
                   </div>
 
@@ -582,7 +585,7 @@ export default function RedirectionPage() {
                   <Users className="h-5 w-5 text-blue-400" />
                   Population Thresholds
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">AFK redirects only trigger when server population is within these limits</p>
+                <p className="text-sm text-zinc-500 mb-4">AFK redirects only target servers with population within these limits</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SettingInput
@@ -641,37 +644,50 @@ export default function RedirectionPage() {
                     <p className="text-xs text-[var(--text-muted)] mb-2">Forces all redirects (AFK and wipe) to this server, bypassing population checks</p>
                     <Dropdown
                       value={config.overrideRedirectServer}
-                      options={[
-                        ...servers.map((s): DropdownOption => ({
-                          value: s.hashedId,
-                          label: s.name,
-                          icon: <Server className="h-4 w-4" />,
-                        })),
-                      ]}
+                      options={servers.map((s): DropdownOption => ({
+                        value: s.hashedId,
+                        label: s.name,
+                        icon: <Server className="h-4 w-4" />,
+                      }))}
                       onChange={(val) => setConfig({ ...config, overrideRedirectServer: val })}
                       placeholder="None (use population-based selection)"
                       emptyOption="None (use population-based selection)"
                       clearable
+                      searchable
                     />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white/5 rounded-lg p-4">
-                      <ListManager
-                        label="Preferred Empty Servers"
-                        description="Server identifiers to prioritize when no override set"
-                        items={config.preferredEmptyServers}
-                        onChange={(items) => setConfig({ ...config, preferredEmptyServers: items })}
-                        placeholder="Server identifier"
+                      <label className="text-sm font-medium text-[var(--text-primary)] block mb-1">Preferred Empty Servers</label>
+                      <p className="text-xs text-[var(--text-muted)] mb-2">Servers to prioritize as redirect targets when no override is set</p>
+                      <MultiSelect
+                        value={config.preferredEmptyServers}
+                        options={servers.map(s => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        }))}
+                        onChange={(vals) => setConfig({ ...config, preferredEmptyServers: vals })}
+                        placeholder="Select preferred servers..."
+                        searchable
+                        showSelectAll={false}
                       />
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
-                      <ListManager
-                        label="Excluded Servers"
-                        description="Server identifiers to never redirect to"
-                        items={config.excludedServers}
-                        onChange={(items) => setConfig({ ...config, excludedServers: items })}
-                        placeholder="Server identifier to exclude"
+                      <label className="text-sm font-medium text-[var(--text-primary)] block mb-1">Excluded Servers</label>
+                      <p className="text-xs text-[var(--text-muted)] mb-2">Servers to never redirect players to</p>
+                      <MultiSelect
+                        value={config.excludedServers}
+                        options={servers.map(s => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        }))}
+                        onChange={(vals) => setConfig({ ...config, excludedServers: vals })}
+                        placeholder="Select excluded servers..."
+                        searchable
+                        showSelectAll={false}
                       />
                     </div>
                   </div>
@@ -950,6 +966,7 @@ export default function RedirectionPage() {
                   placeholder="All servers"
                   emptyOption="All servers"
                   clearable
+                  searchable
                 />
               </div>
 

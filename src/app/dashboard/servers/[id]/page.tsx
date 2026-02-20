@@ -863,10 +863,10 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
 
       {/* Redirect Modal */}
       {redirectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div
             className="w-full max-w-md rounded-xl p-6"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--glass-border)' }}
+            style={{ background: '#1a1a2e', border: '1px solid var(--glass-border)' }}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">

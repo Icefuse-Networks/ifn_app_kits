@@ -161,15 +161,12 @@ export function hasScope(scopes: ApiScope[], required: ApiScope): boolean {
     return true
   }
 
-  // Write implies read
-  if (required === 'kits:read' && scopes.includes('kits:write')) {
-    return true
-  }
-  if (required === 'servers:read' && scopes.includes('servers:write')) {
-    return true
-  }
-  if (required === 'analytics:read' && scopes.includes('analytics:write')) {
-    return true
+  // Write implies read for all resource types
+  if (required.endsWith(':read')) {
+    const writeScope = required.replace(':read', ':write') as ApiScope
+    if (scopes.includes(writeScope)) {
+      return true
+    }
   }
 
   return false
