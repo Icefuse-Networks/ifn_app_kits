@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireSession } from '@/services/api-auth'
+import { authenticateWithScope, requireSession } from '@/services/api-auth'
 import { auditCreate } from '@/services/audit'
 import { createServerIdentifierSchema } from '@/lib/validations/kit'
 import { id } from '@/lib/id'
@@ -18,7 +18,7 @@ import { logger } from '@/lib/logger'
  * List all server identifiers with usage counts
  */
 export async function GET(request: NextRequest) {
-  const authResult = await requireSession(request)
+  const authResult = await authenticateWithScope(request, 'servers:read')
 
   if (!authResult.success) {
     return NextResponse.json(

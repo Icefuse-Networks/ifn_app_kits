@@ -90,6 +90,19 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Auto-cleanup: delete denied feedback older than 30 days (fire and forget)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  prisma.feedback.deleteMany({
+    where: {
+      status: 'denied',
+      reviewedAt: { lt: thirtyDaysAgo },
+    },
+  }).then((result) => {
+    if (result.count > 0) {
+      logger.admin.info('Auto-cleaned denied feedback', { deleted: result.count })
+    }
+  }).catch(() => {})
+
   try {
     const { searchParams } = new URL(request.url)
     const parsed = listFeedbackQuerySchema.safeParse({
