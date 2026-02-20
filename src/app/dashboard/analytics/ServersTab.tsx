@@ -423,13 +423,13 @@ export default function ServersTab() {
       },
       grid: { left: 60, right: 20, top: 50, bottom: 80 },
       xAxis: {
-        type: "category",
+        type: "category" as const,
         data: dates,
         axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
         axisLabel: { color: "#888", rotate: 45, fontSize: 9 },
       },
       yAxis: {
-        type: "value",
+        type: "value" as const,
         axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
         axisLabel: { color: "#888" },
         splitLine: { lineStyle: { color: "rgba(255,255,255,0.05)" } },
