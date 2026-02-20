@@ -22,6 +22,7 @@ const pollQueueSchema = z.object({
 const completeRedirectSchema = z.object({
   ids: z.array(z.string().min(1).max(60)).min(1).max(100),
   status: z.enum(['completed', 'failed']),
+  failureReason: z.string().max(200).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -199,7 +200,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { ids, status } = parsed.data
+    const { ids, status, failureReason } = parsed.data
 
     const result = await prisma.redirectQueue.updateMany({
       where: {
@@ -208,6 +209,7 @@ export async function PATCH(request: NextRequest) {
       },
       data: {
         status,
+        failureReason: failureReason || null,
         processedAt: new Date(),
       },
     })

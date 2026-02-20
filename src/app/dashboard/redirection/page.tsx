@@ -5,18 +5,22 @@ import {
   ArrowRightLeft, Settings, Activity, RefreshCw, Save,
   Users, Clock, AlertTriangle,
   Search, Shield, Server, Zap,
-  Calendar
+  Calendar, BarChart3, Download, CheckCircle, XCircle, Timer
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, NumberInput } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
-import { Tabs, Tab } from "@/components/ui/Tabs";
+import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Loading";
 import { SimplePagination } from "@/components/ui/Pagination";
+import { PieChart } from "@/components/analytics/PieChart";
+import { TimeSeriesChart } from "@/components/analytics/TimeSeriesChart";
+import { BarChart } from "@/components/analytics/BarChart";
+import { ChartCard } from "@/components/analytics/ChartCard";
 
 interface RedirectConfig {
   id?: string;
@@ -51,6 +55,10 @@ interface RedirectLog {
   redirectReason: string;
   sourceIdentifier: string;
   targetIdentifier: string | null;
+  sourceName: string | null;
+  targetName: string | null;
+  outcome: string | null;
+  failureReason: string | null;
   players: number | null;
   timestamp: string;
 }
@@ -61,6 +69,21 @@ interface LogStats {
   wipeRedirects: number;
   afkRedirects: number;
   avgAfkTime: number;
+}
+
+interface AnalyticsData {
+  summary: {
+    total: number;
+    success: number;
+    failed: number;
+    timeout: number;
+    successRate: number;
+    pendingQueue: number;
+    period: string;
+  };
+  byReason: Array<{ reason: string; count: number }>;
+  byServer: Array<{ serverId: string; serverName: string; count: number; successRate: number }>;
+  trend: Array<{ date: string; total: number; success: number; failed: number }>;
 }
 
 const defaultConfig: RedirectConfig = {
@@ -79,7 +102,9 @@ const defaultConfig: RedirectConfig = {
   overrideRedirectServer: null
 };
 
-type TabType = "settings" | "logs";
+type TabType = "settings" | "logs" | "analytics";
+type AnalyticsPeriod = "7d" | "30d" | "90d";
+type OutcomeFilter = "all" | "success" | "failed" | "timeout";
 
 function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
   useEffect(() => {
@@ -117,6 +142,8 @@ function StatCard({ label, value, icon: Icon, subtitle, color = "purple" }: {
     blue: { icon: "text-blue-400", bg: "bg-blue-500/20" },
     green: { icon: "text-green-400", bg: "bg-green-500/20" },
     yellow: { icon: "text-yellow-400", bg: "bg-yellow-500/20" },
+    red: { icon: "text-red-400", bg: "bg-red-500/20" },
+    cyan: { icon: "text-cyan-400", bg: "bg-cyan-500/20" },
   };
   const colors = colorClasses[color] || colorClasses.purple;
 
@@ -192,12 +219,11 @@ function ListManager({ label, description, items, onChange, placeholder }: {
   );
 }
 
-function SettingInput({ label, description, value, onChange, type = "number", step }: {
+function SettingInput({ label, description, value, onChange, step }: {
   label: string;
   description?: string;
   value: number;
   onChange: (val: number) => void;
-  type?: string;
   step?: string;
 }) {
   return (
@@ -212,6 +238,12 @@ function SettingInput({ label, description, value, onChange, type = "number", st
   );
 }
 
+function OutcomeBadge({ outcome }: { outcome: string | null }) {
+  if (!outcome) return null;
+  const variant = outcome === "success" ? "success" : outcome === "failed" ? "error" : "warning";
+  return <Badge variant={variant} size="sm">{outcome}</Badge>;
+}
+
 export default function RedirectionPage() {
   const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [config, setConfig] = useState<RedirectConfig>(defaultConfig);
@@ -220,11 +252,21 @@ export default function RedirectionPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  // Log state
   const [logPage, setLogPage] = useState(1);
   const [logTotal, setLogTotal] = useState(0);
   const [logFilter, setLogFilter] = useState<"all" | "player" | "wipe">("all");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("all");
   const [searchSteamId, setSearchSteamId] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const logLimit = 25;
+
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("30d");
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsServerId, setAnalyticsServerId] = useState("");
 
   const [servers, setServers] = useState<ServerIdentifier[]>([]);
 
@@ -261,6 +303,9 @@ export default function RedirectionPage() {
         logType: logFilter
       });
       if (searchSteamId) params.set("steamId", searchSteamId);
+      if (outcomeFilter !== "all") params.set("outcome", outcomeFilter);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
 
       const res = await fetch(`/api/redirect/logs?${params}`);
       const data = await res.json();
@@ -273,7 +318,25 @@ export default function RedirectionPage() {
     } finally {
       setLoading(false);
     }
-  }, [logPage, logFilter, searchSteamId]);
+  }, [logPage, logFilter, searchSteamId, outcomeFilter, dateFrom, dateTo]);
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const params = new URLSearchParams({ period: analyticsPeriod });
+      if (analyticsServerId) params.set("serverId", analyticsServerId);
+
+      const res = await fetch(`/api/redirect/analytics?${params}`);
+      const data = await res.json();
+      if (data.success) {
+        setAnalyticsData(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [analyticsPeriod, analyticsServerId]);
 
   useEffect(() => {
     fetchConfig();
@@ -285,6 +348,12 @@ export default function RedirectionPage() {
       fetchLogs();
     }
   }, [activeTab, fetchLogs]);
+
+  useEffect(() => {
+    if (activeTab === "analytics") {
+      fetchAnalytics();
+    }
+  }, [activeTab, fetchAnalytics]);
 
   const saveConfig = async () => {
     setSaving(true);
@@ -305,6 +374,54 @@ export default function RedirectionPage() {
       setToast({ message: "Failed to save configuration", type: "error" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const exportCsv = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "10000",
+        logType: logFilter
+      });
+      if (searchSteamId) params.set("steamId", searchSteamId);
+      if (outcomeFilter !== "all") params.set("outcome", outcomeFilter);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+
+      const res = await fetch(`/api/redirect/logs?${params}`);
+      const data = await res.json();
+      if (!data.success) return;
+
+      const rows: string[] = [
+        "Timestamp,Type,Player,SteamID,Rank,Reason,Outcome,FailureReason,Source,Target,AFKTime"
+      ];
+      for (const log of data.data as RedirectLog[]) {
+        rows.push([
+          log.timestamp,
+          log.logType,
+          `"${(log.playerName || "").replace(/"/g, '""')}"`,
+          log.steamId || "",
+          log.rank || "",
+          log.redirectReason,
+          log.outcome || "",
+          `"${(log.failureReason || "").replace(/"/g, '""')}"`,
+          log.sourceName || log.sourceIdentifier,
+          log.targetName || log.targetIdentifier || "",
+          log.afkTimeSeconds?.toString() || "",
+        ].join(","));
+      }
+
+      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redirect-logs-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setToast({ message: `Exported ${data.data.length} logs`, type: "success" });
+    } catch {
+      setToast({ message: "Failed to export logs", type: "error" });
     }
   };
 
@@ -335,6 +452,35 @@ export default function RedirectionPage() {
 
   const totalPages = Math.ceil(logTotal / logLimit);
 
+  const handleRefresh = () => {
+    if (activeTab === "settings") fetchConfig();
+    else if (activeTab === "logs") fetchLogs();
+    else fetchAnalytics();
+  };
+
+  // Analytics chart data
+  const outcomeChartData = useMemo(() => {
+    if (!analyticsData) return [];
+    return [
+      { name: "Success", value: analyticsData.summary.success },
+      { name: "Failed", value: analyticsData.summary.failed },
+      { name: "Timeout", value: analyticsData.summary.timeout },
+    ].filter(d => d.value > 0);
+  }, [analyticsData]);
+
+  const reasonChartData = useMemo(() => {
+    if (!analyticsData) return [];
+    return analyticsData.byReason.map(r => ({
+      label: r.reason,
+      value: r.count,
+    }));
+  }, [analyticsData]);
+
+  const trendSeries = useMemo(() => [
+    { key: "success", name: "Success", type: "bar" as const, color: "#22c55e", barRadius: [4, 4, 0, 0] as [number, number, number, number] },
+    { key: "failed", name: "Failed", type: "bar" as const, color: "#ef4444", barRadius: [4, 4, 0, 0] as [number, number, number, number] },
+  ], []);
+
   return (
     <div className="p-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -350,11 +496,11 @@ export default function RedirectionPage() {
           </div>
 
           <Button
-            onClick={() => activeTab === "settings" ? fetchConfig() : fetchLogs()}
+            onClick={handleRefresh}
             variant="secondary"
             size="md"
           >
-            <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-5 w-5 ${loading || analyticsLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
@@ -362,6 +508,7 @@ export default function RedirectionPage() {
           tabs={[
             { id: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
             { id: "logs", label: "Logs", icon: <Activity className="h-4 w-4" /> },
+            { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-4 w-4" /> },
           ]}
           activeTab={activeTab}
           onChange={(tab) => setActiveTab(tab as TabType)}
@@ -370,7 +517,7 @@ export default function RedirectionPage() {
         />
 
         <AnimatePresence mode="wait">
-          {activeTab === "settings" ? (
+          {activeTab === "settings" && (
             <motion.div
               key="settings"
               initial={{ opacity: 0, x: -20 }}
@@ -563,7 +710,9 @@ export default function RedirectionPage() {
                 </Button>
               </div>
             </motion.div>
-          ) : (
+          )}
+
+          {activeTab === "logs" && (
             <motion.div
               key="logs"
               initial={{ opacity: 0, x: 20 }}
@@ -608,7 +757,53 @@ export default function RedirectionPage() {
                         </button>
                       ))}
                     </div>
+                    <div className="flex rounded-lg overflow-hidden border border-white/10">
+                      {(["all", "success", "failed", "timeout"] as const).map((o) => (
+                        <button
+                          key={o}
+                          onClick={() => { setOutcomeFilter(o); setLogPage(1); }}
+                          className={`px-3 py-2 text-sm transition-colors capitalize ${
+                            outcomeFilter === o ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"
+                          }`}
+                        >
+                          {o}
+                        </button>
+                      ))}
+                    </div>
+                    <Button onClick={exportCsv} variant="secondary" size="sm" icon={<Download className="h-4 w-4" />}>
+                      CSV
+                    </Button>
                   </div>
+                </div>
+
+                {/* Date range filters */}
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-400">From:</span>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => { setDateFrom(e.target.value); setLogPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-400">To:</span>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => { setDateTo(e.target.value); setLogPage(1); }}
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  {(dateFrom || dateTo) && (
+                    <button
+                      onClick={() => { setDateFrom(""); setDateTo(""); setLogPage(1); }}
+                      className="text-sm text-purple-400 hover:text-purple-300"
+                    >
+                      Clear dates
+                    </button>
+                  )}
                 </div>
 
                 {loading ? (
@@ -628,6 +823,7 @@ export default function RedirectionPage() {
                           <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Type</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Player</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Reason</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Outcome</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Source → Target</th>
                           <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Time</th>
                         </tr>
@@ -668,15 +864,23 @@ export default function RedirectionPage() {
                               )}
                             </td>
                             <td className="py-3 px-4">
+                              <OutcomeBadge outcome={log.outcome} />
+                              {log.failureReason && (
+                                <div className="text-xs text-red-400 mt-1" title={log.failureReason}>
+                                  {log.failureReason.length > 30 ? log.failureReason.slice(0, 28) + "..." : log.failureReason}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-zinc-400 truncate max-w-[120px]" title={log.sourceIdentifier}>
-                                  {log.sourceIdentifier}
+                                  {log.sourceName || log.sourceIdentifier}
                                 </span>
-                                {log.targetIdentifier && (
+                                {(log.targetIdentifier || log.targetName) && (
                                   <>
                                     <span className="text-purple-400">→</span>
-                                    <span className="text-white truncate max-w-[120px]" title={log.targetIdentifier}>
-                                      {log.targetIdentifier}
+                                    <span className="text-white truncate max-w-[120px]" title={log.targetIdentifier || ""}>
+                                      {log.targetName || log.targetIdentifier}
                                     </span>
                                   </>
                                 )}
@@ -708,6 +912,198 @@ export default function RedirectionPage() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === "analytics" && (
+            <motion.div
+              key="analytics"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Controls */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex rounded-lg overflow-hidden border border-white/10">
+                  {(["7d", "30d", "90d"] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setAnalyticsPeriod(p)}
+                      className={`px-4 py-2 text-sm transition-colors ${
+                        analyticsPeriod === p ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {p === "7d" ? "7 Days" : p === "30d" ? "30 Days" : "90 Days"}
+                    </button>
+                  ))}
+                </div>
+                <Dropdown
+                  value={analyticsServerId || null}
+                  options={servers.map((s): DropdownOption => ({
+                    value: s.hashedId,
+                    label: s.name,
+                    icon: <Server className="h-4 w-4" />,
+                  }))}
+                  onChange={(val) => setAnalyticsServerId(val || "")}
+                  placeholder="All servers"
+                  emptyOption="All servers"
+                  clearable
+                />
+              </div>
+
+              {analyticsLoading ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} height="5rem" variant="rectangular" />)}
+                  </div>
+                  <Skeleton height="20rem" variant="rectangular" />
+                </div>
+              ) : !analyticsData ? (
+                <EmptyState
+                  icon={<BarChart3 className="h-12 w-12" />}
+                  title="No analytics data"
+                  description="Analytics data will appear once redirects are processed"
+                />
+              ) : (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <StatCard
+                      label="Total Redirects"
+                      value={analyticsData.summary.total.toLocaleString()}
+                      icon={ArrowRightLeft}
+                      color="purple"
+                    />
+                    <StatCard
+                      label="Success Rate"
+                      value={`${analyticsData.summary.successRate}%`}
+                      icon={CheckCircle}
+                      color="green"
+                      subtitle={`${analyticsData.summary.success.toLocaleString()} successful`}
+                    />
+                    <StatCard
+                      label="Failed"
+                      value={analyticsData.summary.failed.toLocaleString()}
+                      icon={XCircle}
+                      color="red"
+                    />
+                    <StatCard
+                      label="Timeouts"
+                      value={analyticsData.summary.timeout.toLocaleString()}
+                      icon={Timer}
+                      color="yellow"
+                    />
+                    <StatCard
+                      label="Pending Queue"
+                      value={analyticsData.summary.pendingQueue}
+                      icon={Clock}
+                      color="cyan"
+                    />
+                  </div>
+
+                  {/* Charts row */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <ChartCard title="Outcome Breakdown" icon={BarChart3} iconColor="text-green-400" className="lg:col-span-1">
+                      <div style={{ height: 250 }}>
+                        {outcomeChartData.length > 0 ? (
+                          <PieChart
+                            data={outcomeChartData}
+                            height={250}
+                            colors={["#22c55e", "#ef4444", "#f59e0b"]}
+                            innerRadius="50%"
+                            outerRadius="80%"
+                            showLegend
+                            legendPosition="bottom"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-zinc-500 text-sm">No outcome data</div>
+                        )}
+                      </div>
+                    </ChartCard>
+
+                    <ChartCard title="Daily Trend" icon={Activity} iconColor="text-purple-400" className="lg:col-span-2">
+                      <div style={{ height: 250 }}>
+                        {analyticsData.trend.length > 0 ? (
+                          <TimeSeriesChart
+                            data={analyticsData.trend}
+                            series={trendSeries}
+                            height={250}
+                            xAxisKey="date"
+                            xAxisRotate={45}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-zinc-500 text-sm">No trend data</div>
+                        )}
+                      </div>
+                    </ChartCard>
+                  </div>
+
+                  {/* Reason breakdown */}
+                  {reasonChartData.length > 0 && (
+                    <ChartCard title="Redirects by Reason" icon={AlertTriangle} iconColor="text-yellow-400">
+                      <div style={{ height: Math.max(200, reasonChartData.length * 40) }}>
+                        <BarChart
+                          data={reasonChartData}
+                          height="100%"
+                          horizontal
+                          labelWidth={160}
+                          maxItems={15}
+                        />
+                      </div>
+                    </ChartCard>
+                  )}
+
+                  {/* Per-server table */}
+                  {analyticsData.byServer.length > 0 && (
+                    <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                        <Server className="h-5 w-5 text-blue-400" />
+                        Per-Server Breakdown
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-white/10">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Server</th>
+                              <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Total Redirects</th>
+                              <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Success Rate</th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400 w-1/3">Rate</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analyticsData.byServer.map((srv) => (
+                              <tr key={srv.serverId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <td className="py-3 px-4">
+                                  <div className="text-white font-medium">{srv.serverName}</div>
+                                  <div className="text-xs text-zinc-500">{srv.serverId}</div>
+                                </td>
+                                <td className="py-3 px-4 text-right text-white">{srv.count.toLocaleString()}</td>
+                                <td className="py-3 px-4 text-right">
+                                  <span className={srv.successRate >= 90 ? "text-green-400" : srv.successRate >= 70 ? "text-yellow-400" : "text-red-400"}>
+                                    {srv.successRate}%
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="w-full bg-white/10 rounded-full h-2">
+                                    <div
+                                      className={`h-2 rounded-full ${
+                                        srv.successRate >= 90 ? "bg-green-500" : srv.successRate >= 70 ? "bg-yellow-500" : "bg-red-500"
+                                      }`}
+                                      style={{ width: `${srv.successRate}%` }}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, use, useCallback } from 'react'
-import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square, Edit3, Trash2, Calendar, Plus } from 'lucide-react'
+import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square, Edit3, Trash2, Calendar, Plus, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Dropdown } from '@/components/ui/Dropdown'
@@ -53,6 +53,31 @@ interface WipeSchedule {
   minute: number
   wipeType: string
   createdAt: string
+}
+
+interface QueueItem {
+  id: string
+  steamId: string
+  playerName: string | null
+  status: string
+  failureReason: string | null
+  createdAt: string
+  processedAt: string | null
+}
+
+interface RedirectLogEntry {
+  id: string
+  logType: string
+  playerName: string | null
+  steamId: string | null
+  redirectReason: string
+  outcome: string | null
+  failureReason: string | null
+  sourceName: string | null
+  targetName: string | null
+  sourceIdentifier: string
+  targetIdentifier: string | null
+  timestamp: string
 }
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -107,6 +132,13 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
   const [newSchedule, setNewSchedule] = useState({ dayOfWeek: 4, hour: 14, minute: 0, wipeType: "regular" })
   const [addingSchedule, setAddingSchedule] = useState(false)
 
+  // Redirect-all confirmation
+  const [redirectAllConfirmText, setRedirectAllConfirmText] = useState('')
+
+  // Pending redirects & history
+  const [pendingQueue, setPendingQueue] = useState<QueueItem[]>([])
+  const [recentHistory, setRecentHistory] = useState<RedirectLogEntry[]>([])
+
   const fetchServer = useCallback(async () => {
     try {
       const res = await fetch(`/api/identifiers/${serverId}`, { credentials: 'include' })
@@ -130,6 +162,40 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     }
   }, [serverId])
 
+  const fetchPendingQueue = useCallback(async () => {
+    if (!server?.hashedId) return
+    try {
+      const res = await fetch(`/api/identifiers/redirect-queue?serverId=${server.hashedId}`, { credentials: 'include' })
+      const data = await res.json()
+      if (data.success && data.data?.redirects) {
+        setPendingQueue(data.data.redirects.map((r: { id: string; steamId: string; playerName: string | null }) => ({
+          id: r.id,
+          steamId: r.steamId,
+          playerName: r.playerName,
+          status: 'pending',
+          failureReason: null,
+          createdAt: new Date().toISOString(),
+          processedAt: null,
+        })))
+      } else {
+        setPendingQueue([])
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending queue:', err)
+    }
+  }, [server?.hashedId])
+
+  const fetchRecentHistory = useCallback(async () => {
+    if (!server?.hashedId) return
+    try {
+      const res = await fetch(`/api/redirect/logs?sourceIdentifier=${server.hashedId}&limit=10&page=1`, { credentials: 'include' })
+      const data = await res.json()
+      if (data.success) setRecentHistory(data.data || [])
+    } catch (err) {
+      console.error('Failed to fetch history:', err)
+    }
+  }, [server?.hashedId])
+
   useEffect(() => {
     fetchServer()
     fetchWipeSchedules()
@@ -140,6 +206,13 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     const interval = setInterval(fetchServer, 30000)
     return () => clearInterval(interval)
   }, [fetchServer, fetchWipeSchedules])
+
+  useEffect(() => {
+    if (server?.hashedId) {
+      fetchPendingQueue()
+      fetchRecentHistory()
+    }
+  }, [server?.hashedId, fetchPendingQueue, fetchRecentHistory])
 
   useEffect(() => {
     if (redirectModalOpen) {
@@ -180,6 +253,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
     setRedirectMode(mode)
     setSinglePlayerTarget(player || null)
     setRedirectTarget(null)
+    setRedirectAllConfirmText('')
     setRedirectModalOpen(true)
   }
 
@@ -278,6 +352,9 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
   async function executeRedirect() {
     if (!server || !redirectTarget) return
 
+    // Block redirect-all unless confirmation typed
+    if (redirectMode === 'all' && redirectAllConfirmText !== 'REDIRECT') return
+
     let players: { steamId: string; playerName?: string }[] = []
     if (redirectMode === 'single' && singlePlayerTarget) {
       players = [{ steamId: singlePlayerTarget.steamId, playerName: singlePlayerTarget.playerName }]
@@ -308,6 +385,9 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
       if (res.ok) {
         setRedirectModalOpen(false)
         setSelectedPlayers(new Set())
+        setRedirectAllConfirmText('')
+        // Refresh queue
+        fetchPendingQueue()
       }
     } catch (err) {
       console.error('Redirect failed:', err)
@@ -509,8 +589,70 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
+      {/* Pending Redirects */}
+      {pendingQueue.length > 0 && (
+        <div
+          className="rounded-xl overflow-hidden mb-8"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="px-6 py-4 border-b border-[var(--glass-border)]">
+            <div className="flex items-center gap-2">
+              <Timer className="w-5 h-5 text-yellow-400" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Pending Redirects</h2>
+              <span
+                className="px-2 py-0.5 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(234, 179, 8, 0.2)', color: 'rgb(234, 179, 8)' }}
+              >
+                {pendingQueue.length}
+              </span>
+            </div>
+            <p className="text-sm text-[var(--text-muted)]">Queued redirects waiting to be processed by the plugin</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--glass-border)]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Player</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Steam ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">Queued</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingQueue.map((item) => (
+                  <tr key={item.id} className="border-b border-[var(--glass-border)] last:border-0">
+                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">{item.playerName || 'Unknown'}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-[var(--text-secondary)]">{item.steamId}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className="px-2 py-0.5 rounded text-xs font-medium"
+                        style={{
+                          background: item.status === 'pending' ? 'rgba(234, 179, 8, 0.2)' :
+                            item.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                          color: item.status === 'pending' ? 'rgb(234, 179, 8)' :
+                            item.status === 'completed' ? 'rgb(34, 197, 94)' : 'rgb(248, 113, 113)',
+                        }}
+                      >
+                        {item.status}
+                      </span>
+                      {item.failureReason && (
+                        <div className="text-xs text-red-400 mt-1">{item.failureReason}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-[var(--text-muted)]">
+                      {formatLastUpdate(item.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Online Players */}
       <div
-        className="rounded-xl overflow-hidden"
+        className="rounded-xl overflow-hidden mb-8"
         style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
       >
         <div className="px-6 py-4 border-b border-[var(--glass-border)] flex items-center justify-between">
@@ -626,6 +768,100 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         )}
       </div>
 
+      {/* Recent Redirect History */}
+      {recentHistory.length > 0 && (
+        <div
+          className="rounded-xl overflow-hidden mb-8"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          <div className="px-6 py-4 border-b border-[var(--glass-border)]">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-purple-400" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent Redirect History</h2>
+            </div>
+            <p className="text-sm text-[var(--text-muted)]">Last 10 redirects from this server</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--glass-border)]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Player</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Reason</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Outcome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">Target</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentHistory.map((log) => (
+                  <tr key={log.id} className="border-b border-[var(--glass-border)] last:border-0 hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      {log.playerName ? (
+                        <div>
+                          <div className="font-medium text-[var(--text-primary)]">{log.playerName}</div>
+                          <div className="text-xs text-[var(--text-muted)]">{log.steamId}</div>
+                        </div>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">{log.logType === 'wipe' ? 'All players' : 'Unknown'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className="px-2 py-0.5 rounded text-xs font-medium"
+                        style={{
+                          background: log.redirectReason === 'AFK_TIMEOUT' ? 'rgba(234, 179, 8, 0.2)' :
+                            log.redirectReason.includes('WIPE') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                          color: log.redirectReason === 'AFK_TIMEOUT' ? 'rgb(234, 179, 8)' :
+                            log.redirectReason.includes('WIPE') ? 'rgb(248, 113, 113)' : 'rgb(96, 165, 250)',
+                        }}
+                      >
+                        {log.redirectReason}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {log.outcome ? (
+                        <div className="flex items-center gap-1">
+                          {log.outcome === 'success' ? (
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          ) : log.outcome === 'failed' ? (
+                            <XCircle className="w-4 h-4 text-red-400" />
+                          ) : (
+                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                          )}
+                          <span
+                            className="text-xs font-medium"
+                            style={{
+                              color: log.outcome === 'success' ? 'rgb(34, 197, 94)' :
+                                log.outcome === 'failed' ? 'rgb(248, 113, 113)' : 'rgb(234, 179, 8)',
+                            }}
+                          >
+                            {log.outcome}
+                          </span>
+                          {log.failureReason && (
+                            <span className="text-xs text-red-400 ml-1" title={log.failureReason}>
+                              ({log.failureReason.length > 20 ? log.failureReason.slice(0, 18) + '...' : log.failureReason})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--text-muted)]">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
+                      {log.targetName || log.targetIdentifier || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-[var(--text-muted)]">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Redirect Modal */}
       {redirectModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div
@@ -647,6 +883,26 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                 <X className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
+
+            {redirectMode === 'all' && (
+              <div className="mb-4 p-3 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <span className="text-sm font-medium text-red-400">This will redirect ALL players</span>
+                </div>
+                <p className="text-xs text-[var(--text-muted)] mb-2">
+                  Type <span className="font-mono font-bold text-red-400">REDIRECT</span> to confirm
+                </p>
+                <input
+                  type="text"
+                  value={redirectAllConfirmText}
+                  onChange={(e) => setRedirectAllConfirmText(e.target.value)}
+                  placeholder="Type REDIRECT to confirm"
+                  className="w-full px-3 py-2 rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                />
+              </div>
+            )}
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -686,7 +942,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
               </button>
               <button
                 onClick={executeRedirect}
-                disabled={!redirectTarget || redirecting}
+                disabled={!redirectTarget || redirecting || (redirectMode === 'all' && redirectAllConfirmText !== 'REDIRECT')}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 style={{ background: 'var(--accent-primary)', color: 'white' }}
               >
@@ -697,6 +953,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         </div>
       )}
 
+      {/* Edit Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setEditModalOpen(false)}>
           <div
