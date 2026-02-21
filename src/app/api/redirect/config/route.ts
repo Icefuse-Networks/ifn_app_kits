@@ -19,6 +19,10 @@ interface RedirectConfig {
   excludedServers: string[]
   enableWipeRedirect: boolean
   wipeRedirectMinutesBefore: number
+  wipeRedirectMode: string
+  wipeTargetServer: string | null
+  wipeHoldingServer: string | null
+  wipeServerMapping: Record<string, string>
   overrideRedirectServer: string | null
 }
 
@@ -35,6 +39,10 @@ const defaultConfig: RedirectConfig = {
   excludedServers: [],
   enableWipeRedirect: true,
   wipeRedirectMinutesBefore: 2,
+  wipeRedirectMode: 'current',
+  wipeTargetServer: null,
+  wipeHoldingServer: null,
+  wipeServerMapping: {},
   overrideRedirectServer: null
 }
 
@@ -51,6 +59,10 @@ const updateConfigSchema = z.object({
   excludedServers: z.array(z.string()).default([]),
   enableWipeRedirect: z.boolean().default(true),
   wipeRedirectMinutesBefore: z.number().min(1).max(60).default(2),
+  wipeRedirectMode: z.enum(['current', 'targeted', 'holding', 'mapping']).default('current'),
+  wipeTargetServer: z.string().nullable().default(null),
+  wipeHoldingServer: z.string().nullable().default(null),
+  wipeServerMapping: z.record(z.string(), z.string()).default({}),
   overrideRedirectServer: z.string().nullable().default(null)
 }).refine(data => data.minPlayersForEmptyServer <= data.maxPlayersForEmptyServer, {
   message: 'minPlayersForEmptyServer must be <= maxPlayersForEmptyServer'
@@ -88,6 +100,10 @@ export async function GET(request: NextRequest) {
           excludedServers: JSON.stringify(defaultConfig.excludedServers),
           enableWipeRedirect: defaultConfig.enableWipeRedirect,
           wipeRedirectMinutesBefore: defaultConfig.wipeRedirectMinutesBefore,
+          wipeRedirectMode: defaultConfig.wipeRedirectMode,
+          wipeTargetServer: defaultConfig.wipeTargetServer,
+          wipeHoldingServer: defaultConfig.wipeHoldingServer,
+          wipeServerMapping: JSON.stringify(defaultConfig.wipeServerMapping),
           overrideRedirectServer: defaultConfig.overrideRedirectServer,
           isActive: true
         }
@@ -120,6 +136,10 @@ export async function GET(request: NextRequest) {
         excludedServers: JSON.parse(config.excludedServers) as string[],
         enableWipeRedirect: config.enableWipeRedirect,
         wipeRedirectMinutesBefore: config.wipeRedirectMinutesBefore,
+        wipeRedirectMode: config.wipeRedirectMode,
+        wipeTargetServer: config.wipeTargetServer,
+        wipeHoldingServer: config.wipeHoldingServer,
+        wipeServerMapping: JSON.parse(config.wipeServerMapping) as Record<string, string>,
         overrideRedirectServer: config.overrideRedirectServer,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt
@@ -170,6 +190,10 @@ export async function PUT(request: NextRequest) {
       excludedServers: [...new Set(data.excludedServers.filter(s => s.trim() !== ''))],
       enableWipeRedirect: data.enableWipeRedirect,
       wipeRedirectMinutesBefore: data.wipeRedirectMinutesBefore,
+      wipeRedirectMode: data.wipeRedirectMode,
+      wipeTargetServer: data.wipeTargetServer?.trim() || null,
+      wipeHoldingServer: data.wipeHoldingServer?.trim() || null,
+      wipeServerMapping: data.wipeServerMapping,
       overrideRedirectServer: data.overrideRedirectServer?.trim() || null
     }
 
@@ -197,6 +221,10 @@ export async function PUT(request: NextRequest) {
         excludedServers: JSON.stringify(cleanConfig.excludedServers),
         enableWipeRedirect: cleanConfig.enableWipeRedirect,
         wipeRedirectMinutesBefore: cleanConfig.wipeRedirectMinutesBefore,
+        wipeRedirectMode: cleanConfig.wipeRedirectMode,
+        wipeTargetServer: cleanConfig.wipeTargetServer,
+        wipeHoldingServer: cleanConfig.wipeHoldingServer,
+        wipeServerMapping: JSON.stringify(cleanConfig.wipeServerMapping),
         overrideRedirectServer: cleanConfig.overrideRedirectServer,
         isActive: true
       }

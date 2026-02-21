@@ -5,7 +5,7 @@ import {
   ArrowRightLeft, Settings, Activity, RefreshCw, Save,
   Users, Clock, AlertTriangle,
   Search, Shield, Server, Zap,
-  Calendar, BarChart3, Download, CheckCircle, XCircle, Timer
+  Calendar, BarChart3, Download, CheckCircle, XCircle, Timer, Crosshair, RotateCcw, GitBranch
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, NumberInput } from "@/components/ui/Input";
@@ -37,6 +37,10 @@ interface RedirectConfig {
   excludedServers: string[];
   enableWipeRedirect: boolean;
   wipeRedirectMinutesBefore: number;
+  wipeRedirectMode: string;
+  wipeTargetServer: string | null;
+  wipeHoldingServer: string | null;
+  wipeServerMapping: Record<string, string>;
   overrideRedirectServer: string | null;
 }
 
@@ -100,6 +104,10 @@ const defaultConfig: RedirectConfig = {
   excludedServers: [],
   enableWipeRedirect: true,
   wipeRedirectMinutesBefore: 2,
+  wipeRedirectMode: "current",
+  wipeTargetServer: null,
+  wipeHoldingServer: null,
+  wipeServerMapping: {},
   overrideRedirectServer: null
 };
 
@@ -243,6 +251,61 @@ function OutcomeBadge({ outcome }: { outcome: string | null }) {
   if (!outcome) return null;
   const variant = outcome === "success" ? "success" : outcome === "failed" ? "error" : "warning";
   return <Badge variant={variant} size="sm">{outcome}</Badge>;
+}
+
+function WipeMappingAdder({ servers, existingMappings, onAdd }: {
+  servers: ServerIdentifier[];
+  existingMappings: Record<string, string>;
+  onAdd: (sourceId: string, targetId: string) => void;
+}) {
+  const [source, setSource] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
+
+  const availableSources = servers.filter(s => !(s.hashedId in existingMappings));
+
+  const handleAdd = () => {
+    if (source && target) {
+      onAdd(source, target);
+      setSource(null);
+      setTarget(null);
+    }
+  };
+
+  return (
+    <div className="flex items-end gap-3">
+      <div className="flex-1">
+        <label className="text-xs text-zinc-400 block mb-1">Source (wiping server)</label>
+        <Dropdown
+          value={source}
+          options={availableSources.map((s): DropdownOption => ({
+            value: s.hashedId,
+            label: s.name,
+            icon: <Server className="h-4 w-4" />,
+          }))}
+          onChange={(val) => setSource(val)}
+          placeholder="Select source..."
+          searchable
+        />
+      </div>
+      <div className="flex-1">
+        <label className="text-xs text-zinc-400 block mb-1">Destination</label>
+        <Dropdown
+          value={target}
+          options={servers.map((s): DropdownOption => ({
+            value: s.hashedId,
+            label: s.name,
+            icon: <Server className="h-4 w-4" />,
+          }))}
+          onChange={(val) => setTarget(val)}
+          placeholder="Select destination..."
+          searchable
+        />
+      </div>
+      <Button onClick={handleAdd} variant="primary" size="md" disabled={!source || !target}>
+        Add
+      </Button>
+    </div>
+  );
 }
 
 export default function RedirectionPage() {
@@ -628,6 +691,134 @@ export default function RedirectionPage() {
                       onChange={(v) => setConfig({ ...config, wipeRedirectMinutesBefore: v })}
                     />
                   </div>
+
+                  {/* Wipe Redirect Mode */}
+                  <div>
+                    <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">Wipe Redirect Mode</label>
+                    <p className="text-xs text-[var(--text-muted)] mb-3">How players are distributed when a server wipes</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {([
+                        { value: "current", label: "Spread", icon: Users, desc: "Spread players across servers evenly using min/max population thresholds", color: "purple" },
+                        { value: "targeted", label: "Targeted", icon: Crosshair, desc: "All players redirect to a single specific server", color: "blue" },
+                        { value: "holding", label: "Holding", icon: RotateCcw, desc: "Redirect to a holding server, then return players when original comes back online", color: "green" },
+                        { value: "mapping", label: "Mapping", icon: GitBranch, desc: "Each wiping server sends players to a specific mapped destination", color: "yellow" },
+                      ] as const).map((mode) => (
+                        <button
+                          key={mode.value}
+                          onClick={() => setConfig({ ...config, wipeRedirectMode: mode.value })}
+                          className={`p-4 rounded-xl border text-left transition-all ${
+                            config.wipeRedirectMode === mode.value
+                              ? `border-${mode.color}-500/50 bg-${mode.color}-500/10 ring-1 ring-${mode.color}-500/30`
+                              : "border-white/10 bg-white/5 hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <mode.icon className={`h-4 w-4 ${config.wipeRedirectMode === mode.value ? `text-${mode.color}-400` : "text-zinc-400"}`} />
+                            <span className={`text-sm font-medium ${config.wipeRedirectMode === mode.value ? "text-white" : "text-zinc-300"}`}>
+                              {mode.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-500">{mode.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Targeted mode: select target server */}
+                  {config.wipeRedirectMode === "targeted" && (
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">
+                        <Crosshair className="h-4 w-4 inline mr-1 text-blue-400" />
+                        Wipe Target Server
+                      </label>
+                      <p className="text-xs text-[var(--text-muted)] mb-2">All players from wiping servers will be sent here</p>
+                      <Dropdown
+                        value={config.wipeTargetServer}
+                        options={servers.map((s): DropdownOption => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        }))}
+                        onChange={(val) => setConfig({ ...config, wipeTargetServer: val })}
+                        placeholder="Select target server..."
+                        clearable
+                        searchable
+                      />
+                    </div>
+                  )}
+
+                  {/* Holding mode: select holding server */}
+                  {config.wipeRedirectMode === "holding" && (
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">
+                        <RotateCcw className="h-4 w-4 inline mr-1 text-green-400" />
+                        Holding Server
+                      </label>
+                      <p className="text-xs text-[var(--text-muted)] mb-2">Players go here temporarily and are redirected back when the wiped server comes back online</p>
+                      <Dropdown
+                        value={config.wipeHoldingServer}
+                        options={servers.map((s): DropdownOption => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        }))}
+                        onChange={(val) => setConfig({ ...config, wipeHoldingServer: val })}
+                        placeholder="Select holding server..."
+                        clearable
+                        searchable
+                      />
+                    </div>
+                  )}
+
+                  {/* Mapping mode: server-to-server mapping */}
+                  {config.wipeRedirectMode === "mapping" && (
+                    <div className="bg-white/5 rounded-lg p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-[var(--text-primary)] block mb-1">
+                          <GitBranch className="h-4 w-4 inline mr-1 text-yellow-400" />
+                          Server Wipe Mapping
+                        </label>
+                        <p className="text-xs text-[var(--text-muted)]">When a source server wipes, its players are sent to the mapped destination</p>
+                      </div>
+
+                      {Object.entries(config.wipeServerMapping).map(([sourceId, targetId]) => {
+                        const sourceName = servers.find(s => s.hashedId === sourceId)?.name || sourceId;
+                        const targetName = servers.find(s => s.hashedId === targetId)?.name || targetId;
+                        return (
+                          <div key={sourceId} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                            <div className="flex-1">
+                              <span className="text-sm text-zinc-300">{sourceName}</span>
+                            </div>
+                            <span className="text-purple-400 text-sm">→</span>
+                            <div className="flex-1">
+                              <span className="text-sm text-white">{targetName}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const updated = { ...config.wipeServerMapping };
+                                delete updated[sourceId];
+                                setConfig({ ...config, wipeServerMapping: updated });
+                              }}
+                              className="text-red-400 hover:text-red-300 p-1"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      <WipeMappingAdder
+                        servers={servers}
+                        existingMappings={config.wipeServerMapping}
+                        onAdd={(sourceId, targetId) => {
+                          setConfig({
+                            ...config,
+                            wipeServerMapping: { ...config.wipeServerMapping, [sourceId]: targetId }
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -2108,6 +2108,14 @@ export default function KitsPage() {
             }
             width="w-14"
           />
+          <PropField
+            label="Image URL"
+            value={selectedKit.KitImage ?? ''}
+            onChange={(v) =>
+              updateKit(selectedKitId!, { KitImage: v })
+            }
+            width="w-40"
+          />
 
           {/* Visibility toggles */}
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--bg-card)]">
