@@ -127,7 +127,25 @@ export async function GET(request: NextRequest) {
       }
 
       // Return flat kit array for direct plugin consumption
-      const kitList = Object.values(parsed._kits)
+      // Resolve category/subcategory IDs to human-readable names
+      const categories = parsed._categories || {}
+      const kitList = Object.values(parsed._kits).map((kit) => {
+        const resolved = { ...kit }
+        if (resolved.Category && categories[resolved.Category]) {
+          const catName = categories[resolved.Category].name
+          // Resolve subcategory name if present
+          if (resolved.Subcategory && categories[resolved.Category].subcategories?.[resolved.Subcategory]) {
+            resolved.Subcategory = categories[resolved.Category].subcategories[resolved.Subcategory].name
+          } else {
+            resolved.Subcategory = undefined
+          }
+          resolved.Category = catName
+        } else {
+          resolved.Category = undefined
+          resolved.Subcategory = undefined
+        }
+        return resolved
+      })
 
       logger.kits.info('Plugin fetched specific config', {
         actorType: authResult.context.type,
