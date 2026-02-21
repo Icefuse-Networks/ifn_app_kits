@@ -12,10 +12,8 @@
  * Designed for multi-plugin extensibility (Kits, Clans, Stats, etc.)
  * Plugins can register their own ID prefixes at startup.
  *
- * Uses Node.js built-in crypto.randomUUID() — no external dependencies.
+ * Uses crypto.randomUUID() — works in both Node.js and browsers.
  */
-
-import { randomUUID } from 'crypto'
 
 // =============================================================================
 // Prefix Registry - Extensible for Plugins
@@ -224,7 +222,7 @@ export function generateId(key: string): string {
   if (!def) {
     throw new Error(`Unknown ID type: ${key}. Register it first with registerPrefix().`)
   }
-  return `${def.prefix}_${randomUUID()}`
+  return `${def.prefix}_${globalThis.crypto.randomUUID()}`
 }
 
 /**

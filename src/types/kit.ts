@@ -98,6 +98,8 @@ export interface Kit {
   CopyPasteFile: string
   /** Kit image URL */
   KitImage: string
+  /** Kit card color (hex, e.g. "3A6DB5") */
+  KitColor: string
   /** Display order in kit list (lower = higher priority) */
   Order: number
   /** Category ID for UI organization */

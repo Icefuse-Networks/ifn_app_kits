@@ -1702,10 +1702,10 @@ export default function KitsPage() {
 
           {/* Category Tree */}
           <div className="flex-1 overflow-y-auto p-2 min-h-0">
-            {/* Add Category Button */}
+            {/* Add Group Button */}
             <button
               onClick={() => {
-                const name = prompt('Enter category name:')
+                const name = prompt('Enter group name:')
                 if (name?.trim()) createKitCategory(name.trim())
               }}
               className="w-full flex items-center gap-2 px-2 py-1.5 mb-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)] text-[var(--accent-primary)]"
@@ -1715,7 +1715,7 @@ export default function KitsPage() {
               }}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="text-xs font-medium">Add Category</span>
+              <span className="text-xs font-medium">Add Group</span>
             </button>
 
             {filteredKitList.length === 0 && sortedCategories.length === 0 ? (
@@ -1781,17 +1781,17 @@ export default function KitsPage() {
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                           <button
                             onClick={() => {
-                              const name = prompt('Add subcategory:', '')
+                              const name = prompt('Add subgroup:', '')
                               if (name?.trim()) createKitSubcategory(category.id, name.trim())
                             }}
                             className="p-1 rounded hover:bg-[var(--accent-primary)]/20"
-                            title="Add Subcategory"
+                            title="Add Subgroup"
                           >
                             <Plus className="w-3 h-3 text-[var(--accent-primary)]" />
                           </button>
                           <button
                             onClick={() => {
-                              const name = prompt('Rename category:', category.name)
+                              const name = prompt('Rename group:', category.name)
                               if (name?.trim()) renameKitCategory(category.id, name.trim())
                             }}
                             className="p-1 rounded hover:bg-[var(--bg-card)]"
@@ -1801,7 +1801,7 @@ export default function KitsPage() {
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm(`Delete category "${category.name}" and unassign all kits?`)) {
+                              if (confirm(`Delete group "${category.name}" and unassign all kits?`)) {
                                 deleteKitCategory(category.id)
                               }
                             }}
@@ -1884,7 +1884,7 @@ export default function KitsPage() {
                                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                                     <button
                                       onClick={() => {
-                                        const name = prompt('Rename subcategory:', sub.name)
+                                        const name = prompt('Rename subgroup:', sub.name)
                                         if (name?.trim()) renameKitSubcategory(category.id, sub.id, name.trim())
                                       }}
                                       className="p-0.5 rounded hover:bg-[var(--bg-card)]"
@@ -2060,156 +2060,179 @@ export default function KitsPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Kit Properties Bar */}
         <div
-          className="h-12 px-4 flex items-center gap-4 shrink-0 overflow-x-auto"
+          className="px-4 py-2 flex flex-wrap items-center gap-2 shrink-0"
           style={{
             background: 'rgba(255, 255, 255, 0.04)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
           }}
         >
-          <PropField
-            label="Permission"
-            value={selectedKit.RequiredPermission}
-            onChange={(v) =>
-              updateKit(selectedKitId!, { RequiredPermission: v })
-            }
-            width="w-28"
-          />
-          <PropField
-            label="Cooldown"
-            type="number"
-            value={selectedKit.Cooldown}
-            onChange={(v) =>
-              updateKit(selectedKitId!, {
-                Cooldown: parseInt(v) || 0,
-              })
-            }
-            width="w-16"
-            suffix="sec"
-          />
-          <PropField
-            label="Max Uses"
-            type="number"
-            value={selectedKit.MaximumUses}
-            onChange={(v) =>
-              updateKit(selectedKitId!, {
-                MaximumUses: parseInt(v) || 0,
-              })
-            }
-            width="w-14"
-          />
-          <PropField
-            label="Cost"
-            type="number"
-            value={selectedKit.Cost}
-            onChange={(v) =>
-              updateKit(selectedKitId!, {
-                Cost: parseInt(v) || 0,
-              })
-            }
-            width="w-14"
-          />
-          <PropField
-            label="Image URL"
-            value={selectedKit.KitImage ?? ''}
-            onChange={(v) =>
-              updateKit(selectedKitId!, { KitImage: v })
-            }
-            width="w-40"
-          />
-
-          {/* Visibility toggles */}
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--bg-card)]">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedKit.IsHidden}
-                onChange={(e) =>
-                  updateKit(selectedKitId!, { IsHidden: e.target.checked })
-                }
-                className="rounded"
-              />
-              <span className="text-sm text-[var(--text-secondary)]">Hidden</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedKit.HideWithoutPermission ?? false}
-                onChange={(e) =>
-                  updateKit(selectedKitId!, { HideWithoutPermission: e.target.checked })
-                }
-                className="rounded"
-              />
-              <span className="text-sm text-[var(--text-secondary)]">Hide w/o Permission</span>
-            </label>
+          {/* Group: Core Settings */}
+          <div className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <PropField
+              label="Permission"
+              value={selectedKit.RequiredPermission}
+              onChange={(v) =>
+                updateKit(selectedKitId!, { RequiredPermission: v })
+              }
+              width="w-28"
+            />
+            <div className="w-px h-5 bg-[var(--glass-border)]" />
+            <PropField
+              label="Cooldown"
+              type="number"
+              value={selectedKit.Cooldown}
+              onChange={(v) =>
+                updateKit(selectedKitId!, {
+                  Cooldown: parseInt(v) || 0,
+                })
+              }
+              width="w-16"
+              suffix="sec"
+            />
+            <div className="w-px h-5 bg-[var(--glass-border)]" />
+            <PropField
+              label="Max Uses"
+              type="number"
+              value={selectedKit.MaximumUses}
+              onChange={(v) =>
+                updateKit(selectedKitId!, {
+                  MaximumUses: parseInt(v) || 0,
+                })
+              }
+              width="w-14"
+            />
+            <div className="w-px h-5 bg-[var(--glass-border)]" />
+            <PropField
+              label="Cost"
+              type="number"
+              value={selectedKit.Cost}
+              onChange={(v) =>
+                updateKit(selectedKitId!, {
+                  Cost: parseInt(v) || 0,
+                })
+              }
+              width="w-14"
+            />
           </div>
 
-          {/* Category assignment */}
-          <CategoryDropdown
-            categoryId={selectedKit.Category ?? null}
-            subcategoryId={selectedKit.Subcategory ?? null}
-            categories={kitsData._categories || {}}
-            onChange={(catId, subId) =>
-              assignKitToCategory(selectedKitId!, catId ?? undefined, subId ?? undefined)
-            }
-          />
+          {/* Group: Appearance */}
+          <div className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <PropField
+              label="Image URL"
+              value={selectedKit.KitImage ?? ''}
+              onChange={(v) =>
+                updateKit(selectedKitId!, { KitImage: v })
+              }
+              width="w-36"
+            />
+            <div className="w-px h-5 bg-[var(--glass-border)]" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Color</span>
+              <input
+                type="color"
+                value={selectedKit.KitColor ? `#${selectedKit.KitColor}` : '#3A6DB5'}
+                onChange={(e) => {
+                  const hex = e.target.value.replace('#', '')
+                  updateKit(selectedKitId!, { KitColor: hex })
+                }}
+                className="w-6 h-6 rounded cursor-pointer border border-[var(--glass-border)]"
+                style={{ padding: 0, background: 'transparent' }}
+                title="Kit card color"
+              />
+              {selectedKit.KitColor && (
+                <button
+                  onClick={() => updateKit(selectedKitId!, { KitColor: '' })}
+                  className="text-[10px] text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
+                  title="Clear color"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
 
-          {/* Auto Kit toggle */}
-          <button
-            onClick={() => {
-              const newIsAutoKit = !(selectedKit.IsAutoKit ?? false)
-              updateKit(selectedKitId!, { IsAutoKit: newIsAutoKit })
-              // Switch tab to match so kit stays visible
-              setKitViewTab(newIsAutoKit ? 'auto' : 'default')
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedKit.IsAutoKit
-                ? 'text-[var(--status-info)]'
-                : 'text-[var(--text-muted)]'
-            }`}
-            style={{
-              background: selectedKit.IsAutoKit
-                ? 'rgba(var(--status-info-rgb), 0.15)'
-                : 'var(--glass-bg)',
-              border: selectedKit.IsAutoKit
-                ? '1px solid var(--status-info)'
-                : '1px solid var(--glass-border)',
-            }}
-            title={selectedKit.IsAutoKit ? 'Auto kit (given on spawn)' : 'Not an auto kit'}
-          >
-            <Zap className="w-3 h-3" />
-            <span>Auto Kit</span>
-          </button>
+          {/* Group: Visibility & Category */}
+          <div className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <Switch
+              checked={selectedKit.IsHidden}
+              onChange={(v) => updateKit(selectedKitId!, { IsHidden: v })}
+              label="Hidden"
+              size="sm"
+            />
+            <Switch
+              checked={selectedKit.HideWithoutPermission ?? false}
+              onChange={(v) => updateKit(selectedKitId!, { HideWithoutPermission: v })}
+              label="Perm Only"
+              size="sm"
+            />
+            <div className="w-px h-5 bg-[var(--glass-border)]" />
+            <CategoryDropdown
+              categoryId={selectedKit.Category ?? null}
+              subcategoryId={selectedKit.Subcategory ?? null}
+              categories={kitsData._categories || {}}
+              onChange={(catId, subId) =>
+                assignKitToCategory(selectedKitId!, catId ?? undefined, subId ?? undefined)
+              }
+            />
+          </div>
 
-          {/* Store Kit toggle */}
-          <button
-            onClick={() => {
-              const newIsStoreKit = !(selectedKit.IsStoreKit ?? false)
-              updateKit(selectedKitId!, { IsStoreKit: newIsStoreKit })
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
-              selectedKit.IsStoreKit
-                ? 'text-[var(--status-success)]'
-                : 'text-[var(--text-muted)]'
-            }`}
-            style={{
-              background: selectedKit.IsStoreKit
-                ? 'rgba(var(--status-success-rgb), 0.15)'
-                : 'var(--glass-bg)',
-              border: selectedKit.IsStoreKit
-                ? '1px solid var(--status-success)'
-                : '1px solid var(--glass-border)',
-            }}
-            title={
-              selectedKit.IsStoreKit
-                ? 'Store kit (available for purchase)'
-                : 'Not a store kit'
-            }
-          >
-            <ShoppingCart className="w-3 h-3" />
-            <span>Store Kit</span>
-          </button>
+          {/* Group: Kit Type Toggles */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                const newIsAutoKit = !(selectedKit.IsAutoKit ?? false)
+                updateKit(selectedKitId!, { IsAutoKit: newIsAutoKit })
+                setKitViewTab(newIsAutoKit ? 'auto' : 'default')
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+                selectedKit.IsAutoKit
+                  ? 'text-[var(--status-info)]'
+                  : 'text-[var(--text-muted)]'
+              }`}
+              style={{
+                background: selectedKit.IsAutoKit
+                  ? 'rgba(var(--status-info-rgb), 0.15)'
+                  : 'var(--glass-bg)',
+                border: selectedKit.IsAutoKit
+                  ? '1px solid var(--status-info)'
+                  : '1px solid var(--glass-border)',
+              }}
+              title={selectedKit.IsAutoKit ? 'Auto kit (given on spawn)' : 'Not an auto kit'}
+            >
+              <Zap className="w-3 h-3" />
+              <span>Auto</span>
+            </button>
 
-          {/* Spacer to push skins toggle right */}
+            <button
+              onClick={() => {
+                const newIsStoreKit = !(selectedKit.IsStoreKit ?? false)
+                updateKit(selectedKitId!, { IsStoreKit: newIsStoreKit })
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+                selectedKit.IsStoreKit
+                  ? 'text-[var(--status-success)]'
+                  : 'text-[var(--text-muted)]'
+              }`}
+              style={{
+                background: selectedKit.IsStoreKit
+                  ? 'rgba(var(--status-success-rgb), 0.15)'
+                  : 'var(--glass-bg)',
+                border: selectedKit.IsStoreKit
+                  ? '1px solid var(--status-success)'
+                  : '1px solid var(--glass-border)',
+              }}
+              title={
+                selectedKit.IsStoreKit
+                  ? 'Store kit (available for purchase)'
+                  : 'Not a store kit'
+              }
+            >
+              <ShoppingCart className="w-3 h-3" />
+              <span>Store</span>
+            </button>
+          </div>
+
+          {/* Spacer */}
           <div className="flex-1" />
 
           {/* Skins toggle */}

@@ -165,6 +165,7 @@ export function createEmptyKit(name: string, description: string = '', order: nu
     IsStoreKit: false,
     CopyPasteFile: '',
     KitImage: '',
+    KitColor: '',
     Order: order,
     Category: undefined,
     Subcategory: undefined,

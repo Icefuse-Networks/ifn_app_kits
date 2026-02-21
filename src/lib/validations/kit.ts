@@ -80,6 +80,7 @@ export const kitSchema = z.object({
   IsAutoKit: z.boolean().default(false),
   CopyPasteFile: z.string().max(200).default(''),
   KitImage: z.string().max(500).default(''),
+  KitColor: z.string().max(20).default(''),
   Order: z.number().int().min(0).default(0),
   Category: z.string().max(50).optional(),
   Subcategory: z.string().max(50).optional(),
