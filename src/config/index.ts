@@ -1,6 +1,6 @@
 export const siteConfig = {
-  name: 'Icefuse Rust Dashboard',
-  description: 'Unified management dashboard for Icefuse Networks Rust servers',
+  name: 'Rust Command Center',
+  description: 'Your central hub for Rust server stats, leaderboards, kits, and clans',
 
   brand: {
     name: 'Icefuse Networks',
