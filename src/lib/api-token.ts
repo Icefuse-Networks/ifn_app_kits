@@ -7,6 +7,7 @@
 
 import { createHash, randomBytes } from 'crypto'
 import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
 import type { ApiScope, ApiTokenInfo, ApiTokenRecord } from '@/types/api'
 
 // =============================================================================
@@ -116,8 +117,8 @@ export async function validateToken(token: string): Promise<ApiTokenRecord | nul
   prisma.apiToken.update({
     where: { id: tokenRecord.id },
     data: { lastUsedAt: new Date() },
-  }).catch(() => {
-    // Ignore errors - this is non-critical
+  }).catch((err) => {
+    logger.admin.warn('Failed to update token lastUsedAt', err)
   })
 
   return tokenRecord as ApiTokenRecord

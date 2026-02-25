@@ -116,10 +116,10 @@ export const createKitConfigSchema = z.object({
     .trim(),
   description: z.string().max(500).nullable().optional(),
   kitData: z.union([
-    z.string().min(2), // JSON string
-    kitsDataSchema,    // Already parsed object
+    z.string().min(2).max(10_000_000), // JSON string
+    kitsDataSchema,                     // Already parsed object
   ]),
-  storeData: z.string().nullable().optional(),
+  storeData: z.string().max(10_000_000).nullable().optional(),
 })
 
 /**
@@ -128,8 +128,8 @@ export const createKitConfigSchema = z.object({
 export const updateKitConfigSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
   description: z.string().max(500).nullable().optional(),
-  kitData: z.union([z.string().min(2), kitsDataSchema]).optional(),
-  storeData: z.string().nullable().optional(),
+  kitData: z.union([z.string().min(2).max(10_000_000), kitsDataSchema]).optional(),
+  storeData: z.string().max(10_000_000).nullable().optional(),
 })
 
 /**
@@ -166,7 +166,7 @@ export const createGameServerSchema = z.object({
   port: z.number().int().min(1).max(65535),
   imageUrl: z.string().url('Invalid image URL').max(191),
   iconUrl: z.string().url('Invalid icon URL').max(191),
-  wipeConfig: z.string().nullable().optional(),
+  wipeConfig: z.string().max(10_000).nullable().optional(),
   botToken: z.string().max(255).nullable().optional(),
   kitConfigId: z
     .string()

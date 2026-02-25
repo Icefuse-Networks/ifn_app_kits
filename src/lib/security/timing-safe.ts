@@ -53,7 +53,8 @@ export function safeCompare(a: string | null | undefined, b: string | null | und
     const bufB = Buffer.from(b, 'utf8')
 
     if (bufA.length !== bufB.length) {
-      timingSafeEqual(bufA, bufA)
+      // SECURITY: Constant-time dummy comparison based on expected value length to prevent length leakage
+      timingSafeEqual(Buffer.alloc(bufB.length), bufB)
       return false
     }
 
