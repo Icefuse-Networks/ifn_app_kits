@@ -16,7 +16,7 @@ export interface ModalProps {
   description?: string
   children: ReactNode
   footer?: ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full'
   closeOnBackdrop?: boolean
   closeOnEscape?: boolean
   showCloseButton?: boolean
@@ -45,6 +45,7 @@ export function Modal({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
     full: 'max-w-6xl',
   }
 

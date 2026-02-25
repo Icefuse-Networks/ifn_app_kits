@@ -59,6 +59,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     const effectiveOpen = open ?? isOpen ?? false
     const [isClosing, setIsClosing] = useState(false)
     const [shouldRender, setShouldRender] = useState(false)
+    const [isEntering, setIsEntering] = useState(true)
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     // Handle the close animation
@@ -68,7 +69,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
       closeTimeoutRef.current = setTimeout(() => {
         setIsClosing(false)
         onClose()
-      }, 200) // Animation duration
+      }, 280)
     }, [isClosing, onClose])
 
     // Handle escape key
@@ -84,17 +85,23 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     // Sync render state with open prop
     useEffect(() => {
       if (effectiveOpen) {
+        setIsEntering(true)
         setShouldRender(true)
         setIsClosing(false)
       }
     }, [effectiveOpen])
 
+    // Trigger enter animation one frame after mount so CSS transition fires
+    useEffect(() => {
+      if (!shouldRender) return
+      const frame = requestAnimationFrame(() => setIsEntering(false))
+      return () => cancelAnimationFrame(frame)
+    }, [shouldRender])
+
     // Cleanup timeout on unmount
     useEffect(() => {
       return () => {
-        if (closeTimeoutRef.current) {
-          clearTimeout(closeTimeoutRef.current)
-        }
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current)
       }
     }, [])
 
@@ -103,7 +110,6 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
         document.addEventListener('keydown', handleKeyDown)
         document.body.style.overflow = 'hidden'
       }
-
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
         document.body.style.overflow = ''
@@ -114,22 +120,25 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     useEffect(() => {
       if (!effectiveOpen && !isClosing) {
         setShouldRender(false)
+        setIsEntering(true)
       }
     }, [effectiveOpen, isClosing])
 
     if (!shouldRender) return null
 
+    const animOut = isClosing || isEntering
+
     const modalContent = (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 p-0"
         aria-modal="true"
         role="dialog"
       >
-        {/* Overlay - PERF: Removed backdrop-blur-sm for GPU performance */}
+        {/* Overlay */}
         <div
           className={cn(
-            'absolute inset-0 bg-black/80 transition-opacity duration-200',
-            isClosing ? 'opacity-0' : 'opacity-100'
+            'absolute inset-0 bg-black/75 transition-opacity',
+            animOut ? 'opacity-0 duration-200' : 'opacity-100 duration-300'
           )}
           onClick={closeOnOverlay ? handleClose : undefined}
         />
@@ -140,11 +149,11 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
           className={cn(
             'relative w-full',
             sizeStyles[size],
-            'bg-[var(--bg-secondary)] rounded-xl',
+            'bg-[var(--bg-secondary)] sm:rounded-xl rounded-t-2xl rounded-b-none sm:rounded-b-xl',
             'border border-[var(--glass-border)]',
-            'shadow-2xl shadow-black/50',
-            'transition-all duration-200',
-            isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100',
+            'shadow-[0_25px_80px_rgba(0,0,0,0.6)]',
+            'transition-all ease-[cubic-bezier(0.16,1,0.3,1)]',
+            animOut ? 'opacity-0 scale-[0.97] translate-y-4 duration-200' : 'opacity-100 scale-100 translate-y-0 duration-300',
             className
           )}
           {...props}

@@ -154,8 +154,9 @@ export function Dropdown({
         <div
           className="absolute z-50 w-full mt-1 rounded-[var(--radius-md)] overflow-hidden shadow-lg"
           style={{
-            background: "var(--bg-elevated)",
+            background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
             border: "1px solid var(--glass-border)",
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
           }}
         >
           {searchable && (

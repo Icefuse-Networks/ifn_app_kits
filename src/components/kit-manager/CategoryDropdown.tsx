@@ -68,8 +68,9 @@ export function CategoryDropdown({
           <div
             className="absolute top-full left-0 mt-1 w-full rounded-lg py-2 shadow-lg z-20 max-h-64 overflow-y-auto"
             style={{
-              background: 'var(--bg-card)',
+              background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
               border: '1px solid var(--glass-border)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
             }}
           >
             {/* Uncategorized option */}
