@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/services/api-auth";
+import { auditCreate, auditUpdate, auditDelete } from "@/services/audit";
+import { logger } from "@/lib/logger";
 
 const createMappingSchema = z.object({
   configId: z.number().int().positive(),
@@ -66,9 +68,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // SECURITY: Audit logged
+    await auditCreate('bases_mapping', String(mapping.id), authResult.context, { configId, serverIdentifierId, isLive, minutesAfterWipe: minutes }, request)
+
     return NextResponse.json(mapping, { status: 201 });
   } catch (error) {
-    console.error("Error creating bases mapping:", error);
+    logger.admin.error("Error creating bases mapping:", error as Error);
     return NextResponse.json({ error: "Failed to create mapping" }, { status: 500 });
   }
 }
@@ -87,9 +92,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.basesMapping.delete({ where: { id: parsed.data.id } });
+
+    // SECURITY: Audit logged
+    await auditDelete('bases_mapping', String(parsed.data.id), authResult.context, { id: parsed.data.id }, request)
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting bases mapping:", error);
+    logger.admin.error("Error deleting bases mapping:", error as Error);
     return NextResponse.json({ error: "Failed to delete mapping" }, { status: 500 });
   }
 }
@@ -123,9 +132,12 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
+    // SECURITY: Audit logged
+    await auditUpdate('bases_mapping', String(id), authResult.context, {}, data, request)
+
     return NextResponse.json(mapping);
   } catch (error) {
-    console.error("Error updating bases mapping:", error);
+    logger.admin.error("Error updating bases mapping:", error as Error);
     return NextResponse.json({ error: "Failed to update mapping" }, { status: 500 });
   }
 }

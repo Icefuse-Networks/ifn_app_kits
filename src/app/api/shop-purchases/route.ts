@@ -3,6 +3,7 @@ import { clickhouse } from "@/lib/clickhouse";
 import { authenticateWithScope } from "@/services/api-auth";
 import { prisma } from "@/lib/db";
 import { auditCreate, auditDelete } from "@/services/audit";
+import { id } from "@/lib/id";
 import { z } from "zod";
 
 interface CacheEntry<T> {
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
 
       await clickhouse.insert({ table: "shop_purchases", values: rows, format: "JSONEachRow" });
 
-      await auditCreate("shop_purchase_batch", `batch_${Date.now()}`, authResult.context, { count: rows.length, server: resolvedServerName || rows[0]?.server_name }, request);
+      await auditCreate("shop_purchase_batch", id.auditLog(), authResult.context, { count: rows.length, server: resolvedServerName || rows[0]?.server_name }, request);
 
       purchaseCache.clear();
       return NextResponse.json({ success: true, inserted: rows.length });
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     await clickhouse.insert({ table: "shop_purchases", values: [row], format: "JSONEachRow" });
 
-    await auditCreate("shop_purchase", `${steamid64}_${Date.now()}`, authResult.context, row, request);
+    await auditCreate("shop_purchase", id.auditLog(), authResult.context, row, request);
 
     purchaseCache.clear();
     return NextResponse.json({ success: true, inserted: 1 });

@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomInt } from 'crypto'
 import { z } from 'zod'
 import { authenticateWithScope } from '@/services/api-auth'
 import { logger } from '@/lib/logger'
 import { id } from '@/lib/id'
 import { prisma } from '@/lib/db'
+
+// SECURITY: Cryptographically secure Fisher-Yates shuffle (replaces Math.random sort)
+function cryptoShuffle<T>(array: T[]): T[] {
+  const arr = [...array]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1)
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
 
 // SECURITY: Zod validated input schemas
 const entrySchema = z.object({
@@ -72,7 +83,8 @@ async function processGiveawayLifecycle() {
 
   for (const giveaway of expiredGiveaways) {
     const winnerCount = Math.min(giveaway.maxWinners, giveaway.players.length)
-    const shuffled = [...giveaway.players].sort(() => Math.random() - 0.5)
+    // SECURITY: Crypto-secure shuffle to prevent predictable winner selection
+    const shuffled = cryptoShuffle(giveaway.players)
     const winners = shuffled.slice(0, winnerCount)
 
     if (winners.length > 0) {

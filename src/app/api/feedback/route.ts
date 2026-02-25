@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope, requireSession } from '@/services/api-auth'
-import { auditCreate, auditUpdate } from '@/services/audit'
+import { auditCreate, auditUpdate, auditDelete } from '@/services/audit'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
 import {
@@ -186,29 +187,26 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    if (existing.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: { code: 'CONFLICT', message: 'Feedback already reviewed' } },
-        { status: 409 }
-      )
-    }
-
     const now = new Date()
 
     if (action === 'accept') {
       const rewardId = id.feedbackReward()
 
-      await prisma.$transaction([
-        prisma.feedback.update({
-          where: { id: feedbackId },
+      // SECURITY: Atomic operation - status check inside transaction prevents double reward on concurrent requests
+      const result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.feedback.updateMany({
+          where: { id: feedbackId, status: 'pending' },
           data: {
             status: 'accepted',
             rewardAmount,
             reviewedBy: authResult.context.actorId,
             reviewedAt: now,
           },
-        }),
-        prisma.feedbackReward.create({
+        })
+
+        if (updated.count === 0) return null
+
+        await tx.feedbackReward.create({
           data: {
             id: rewardId,
             feedbackId,
@@ -218,32 +216,49 @@ export async function PATCH(request: NextRequest) {
             amount: rewardAmount,
             status: 'pending',
           },
-        }),
-      ])
+        })
+
+        return rewardId
+      })
+
+      if (result === null) {
+        return NextResponse.json(
+          { success: false, error: { code: 'CONFLICT', message: 'Feedback already reviewed' } },
+          { status: 409 }
+        )
+      }
 
       await auditUpdate('feedback', feedbackId, authResult.context,
         { status: 'pending' },
-        { status: 'accepted', rewardAmount, rewardId },
+        { status: 'accepted', rewardAmount, rewardId: result },
         request
       )
 
       logger.admin.info('Feedback accepted', {
         feedbackId,
-        rewardId,
+        rewardId: result,
         rewardAmount,
         actor: authResult.context.actorId,
       })
 
-      return NextResponse.json({ success: true, data: { id: feedbackId, status: 'accepted', rewardId } })
+      return NextResponse.json({ success: true, data: { id: feedbackId, status: 'accepted', rewardId: result } })
     } else {
-      await prisma.feedback.update({
-        where: { id: feedbackId },
+      // SECURITY: Atomic status check prevents concurrent duplicate review
+      const denied = await prisma.feedback.updateMany({
+        where: { id: feedbackId, status: 'pending' },
         data: {
           status: 'denied',
           reviewedBy: authResult.context.actorId,
           reviewedAt: now,
         },
       })
+
+      if (denied.count === 0) {
+        return NextResponse.json(
+          { success: false, error: { code: 'CONFLICT', message: 'Feedback already reviewed' } },
+          { status: 409 }
+        )
+      }
 
       await auditUpdate('feedback', feedbackId, authResult.context,
         { status: 'pending' },
@@ -278,14 +293,15 @@ export async function DELETE(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const feedbackId = searchParams.get('id')
-
-    if (!feedbackId) {
+    // SECURITY: Zod validated
+    const idParsed = z.string().min(1).max(60).safeParse(searchParams.get('id'))
+    if (!idParsed.success) {
       return NextResponse.json(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Feedback ID is required' } },
         { status: 400 }
       )
     }
+    const feedbackId = idParsed.data
 
     const existing = await prisma.feedback.findUnique({
       where: { id: feedbackId },
@@ -308,6 +324,12 @@ export async function DELETE(request: NextRequest) {
     await prisma.feedback.delete({
       where: { id: feedbackId },
     })
+
+    // SECURITY: Audit logged
+    await auditDelete('feedback', feedbackId, authResult.context,
+      { steamId: existing.steamId, playerName: existing.playerName, status: existing.status },
+      request
+    )
 
     logger.admin.info('Feedback deleted', {
       feedbackId,

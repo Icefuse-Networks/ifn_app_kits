@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope } from '@/services/api-auth'
 import { pluginConfigQuerySchema, updateKitConfigSchema } from '@/lib/validations/kit'
@@ -104,15 +105,24 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    if (!body.id || !body.kitData) {
+    // SECURITY: Zod validated - id and kitData
+    const syncSchema = z.object({
+      id: z.string().min(1).max(100),
+      kitData: z.union([z.string().min(2).max(10_000_000), z.record(z.unknown())]),
+    })
+
+    const syncParsed = syncSchema.safeParse(body)
+    if (!syncParsed.success) {
       return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'id and kitData are required' } },
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'id and kitData are required', details: syncParsed.error.flatten() } },
         { status: 400 }
       )
     }
 
-    // SECURITY: Zod validated
-    const parsed = updateKitConfigSchema.safeParse({ kitData: body.kitData })
+    const { id: configId, kitData: rawKitData } = syncParsed.data
+
+    // Validate kitData structure
+    const parsed = updateKitConfigSchema.safeParse({ kitData: rawKitData })
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid kit data', details: parsed.error.flatten() } },
@@ -121,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     const existing = await prisma.kitConfig.findUnique({
-      where: { id: body.id },
+      where: { id: configId },
     })
 
     if (!existing) {
@@ -136,7 +146,7 @@ export async function POST(request: NextRequest) {
       : JSON.stringify(parsed.data.kitData)
 
     const config = await prisma.kitConfig.update({
-      where: { id: body.id },
+      where: { id: configId },
       data: { kitData: kitDataString },
       select: {
         id: true,

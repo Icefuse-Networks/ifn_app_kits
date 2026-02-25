@@ -101,7 +101,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching Battlemetrics data:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch server data", message: error instanceof Error ? error.message : "Unknown error" },
+      { success: false, error: "Failed to fetch server data" },
       { status: 500 }
     );
   }

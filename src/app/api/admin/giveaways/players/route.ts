@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { authenticateWithScope, requireSession } from '@/services/api-auth'
-import { auditCreate, auditDelete } from '@/services/audit'
+import { auditCreate, auditUpdate, auditDelete } from '@/services/audit'
 import { logger } from '@/lib/logger'
 import { id } from '@/lib/id'
 import { prisma } from '@/lib/db'
@@ -148,10 +148,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
     }
 
+    const existing = await prisma.giveawayPlayer.findUnique({
+      where: { id: playerId },
+      select: { isWinner: true, playerName: true, playerSteamId64: true },
+    })
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Player not found' }, { status: 404 })
+    }
+
     const player = await prisma.giveawayPlayer.update({
       where: { id: playerId },
       data: parsed.data,
     })
+
+    // SECURITY: Audit logged - isWinner flag changes must be tracked
+    await auditUpdate('giveaway_player', playerId, authResult.context,
+      { isWinner: existing.isWinner },
+      parsed.data,
+      request
+    )
 
     return NextResponse.json({ success: true, data: player })
   } catch (error) {

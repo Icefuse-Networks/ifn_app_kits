@@ -8,7 +8,7 @@ export const maxDuration = 30;
 
 const uploadSchema = z.object({
   name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, "Name must be alphanumeric with underscores/dashes"),
-  fileData: z.string().min(1),
+  fileData: z.string().min(1).max(10_000_000),
 });
 
 const deleteSchema = z.object({

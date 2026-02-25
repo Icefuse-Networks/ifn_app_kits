@@ -9,7 +9,7 @@ const MAX_VERSIONS = 50;
 const updateSchema = z.object({
   name: z.string().min(1).max(255).trim().optional(),
   description: z.string().max(1000).trim().nullable().optional(),
-  configData: z.string().min(1).optional(),
+  configData: z.string().min(1).max(10_000_000).optional(),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

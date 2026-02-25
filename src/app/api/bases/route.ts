@@ -6,7 +6,7 @@ import { requireSession } from "@/services/api-auth";
 const createSchema = z.object({
   name: z.string().min(1).max(255).trim(),
   description: z.string().max(1000).trim().nullable().optional(),
-  configData: z.string().min(1),
+  configData: z.string().min(1).max(10_000_000),
 });
 
 export async function GET(request: NextRequest) {
