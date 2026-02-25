@@ -117,13 +117,13 @@ export default function ConfigManager({
       {currentConfigId && (
         <div className="px-3 py-2 border-t border-white/5 bg-white/[0.02]">
           <div className="flex items-center gap-2">
-            <FileText className="h-3.5 w-3.5 text-zinc-500" />
+            <FileText className="h-3.5 w-3.5 text-[var(--text-muted)]" />
             <span className="text-xs text-white font-medium truncate">{currentConfigName}</span>
           </div>
-          <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
+          <div className="flex items-center gap-2 mt-1 text-xs text-[var(--text-muted)]">
             <span>v{currentVersion}</span>
             {publishedVersion !== null && (
-              <span className={publishedVersion === currentVersion ? "text-green-400" : "text-yellow-400"}>
+              <span className={publishedVersion === currentVersion ? "text-[var(--status-success)]" : "text-[var(--status-warning)]"}>
                 {publishedVersion === currentVersion ? "Published" : `Published v${publishedVersion}`}
               </span>
             )}
@@ -142,7 +142,7 @@ export default function ConfigManager({
             fullWidth
              icon={<Save className="h-3.5 w-3.5" />}
             loading={isSaving}
-            className={`bg-${accentColor}-500 hover:bg-${accentColor}-600`}
+            className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)]"
           >
             Save
           </Button>
@@ -249,21 +249,21 @@ export default function ConfigManager({
         size="md"
       >
         {savedConfigs.length === 0 ? (
-          <p className="text-sm text-zinc-500 text-center py-4">No saved configurations</p>
+          <p className="text-sm text-[var(--text-muted)] text-center py-4">No saved configurations</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {savedConfigs.map((config) => (
               <div key={config.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
                 <button onClick={() => { onLoad(config); setShowLoadModal(false); }} className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-white truncate">{config.name}</p>
-                  <p className="text-xs text-zinc-500">v{config.currentVersion} {config.publishedVersion !== null && `(pub v${config.publishedVersion})`}</p>
+                  <p className="text-xs text-[var(--text-muted)]">v{config.currentVersion} {config.publishedVersion !== null && `(pub v${config.publishedVersion})`}</p>
                 </button>
                 <IconButton
                   icon={<Trash2 className="h-3.5 w-3.5" />}
                   onClick={() => handleDelete(config.id)}
                   label="Delete config"
                   size="sm"
-                  className="text-zinc-600 hover:text-red-400"
+                  className="text-[var(--text-muted)] hover:text-[var(--status-error)]"
                 />
               </div>
             ))}
@@ -281,17 +281,17 @@ export default function ConfigManager({
         {loadingVersions ? (
           <Loading text="Loading versions..." size="sm" className="py-4" />
         ) : versions.length === 0 ? (
-          <p className="text-sm text-zinc-500 text-center py-4">No version history</p>
+          <p className="text-sm text-[var(--text-muted)] text-center py-4">No version history</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {versions.map((v) => (
               <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white">Version {v.version}</p>
-                  <p className="text-xs text-zinc-500">{new Date(v.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{new Date(v.createdAt).toLocaleString()}</p>
                 </div>
                 {v.version === currentVersion ? (
-                  <span className="text-xs text-green-400 flex items-center gap-1"><Check className="h-3 w-3" /> Current</span>
+                  <span className="text-xs text-[var(--status-success)] flex items-center gap-1"><Check className="h-3 w-3" /> Current</span>
                 ) : (
                   <Button
                     onClick={() => { onRestoreVersion(v.version); setShowVersionModal(false); }}
@@ -325,7 +325,7 @@ export default function ConfigManager({
             <div key={config.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5">
               <div className="flex-1">
                 <p className="text-sm font-medium text-white">{config.name}</p>
-                <p className="text-xs text-zinc-500">v{config.currentVersion} (published: {config.publishedVersion ?? "never"})</p>
+                <p className="text-xs text-[var(--text-muted)]">v{config.currentVersion} (published: {config.publishedVersion ?? "never"})</p>
               </div>
               <Button
                 onClick={() => handlePublish(config.id)}

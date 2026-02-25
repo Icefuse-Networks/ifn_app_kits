@@ -202,7 +202,7 @@ export function CategorySelector({
           <div className="mt-2 px-1">
             <button
               onClick={onOpenMappings}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm transition-colors bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 hover:bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]"
             >
               <Server className="w-4 h-4" />
               <span>Mappings</span>

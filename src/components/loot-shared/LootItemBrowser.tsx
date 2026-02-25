@@ -35,9 +35,9 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
     ...ITEM_CATEGORIES.map(cat => ({ value: cat, label: cat }))
   ];
 
-  const hoverBorder = `hover:border-${accentColor}-500/50`;
-  const hoverBg = `hover:bg-${accentColor}-500/10`;
-  const iconColor = `text-${accentColor}-400`;
+  const hoverBorder = "hover:border-[var(--accent-primary)]/50";
+  const hoverBg = "hover:bg-[var(--accent-primary)]/10";
+  const iconColor = "text-[var(--accent-primary)]";
 
   return (
     <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${isOpen ? "w-72" : "w-10"}`}>
@@ -45,7 +45,7 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
         icon={<ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
         onClick={onToggle}
         label={isOpen ? "Hide item browser" : "Show item browser"}
-        className="p-2 text-zinc-500 hover:text-white border-b border-white/5 flex items-center justify-center"
+        className="p-2 text-[var(--text-muted)] hover:text-white border-b border-white/5 flex items-center justify-center"
       />
       {isOpen && (
         <>
@@ -69,7 +69,7 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
             {rustItems.length === 0 ? (
               <Loading text="Loading items..." size="sm" className="py-8" />
             ) : filteredItems.length === 0 ? (
-              <div className="text-center py-8 text-zinc-600">
+              <div className="text-center py-8 text-[var(--text-muted)]">
                 <p className="text-xs">No items found</p>
               </div>
             ) : (
@@ -96,7 +96,7 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
               </div>
             )}
             {filteredItems.length >= 100 && (
-              <p className="text-xs text-zinc-500 text-center mt-2">Showing first 100 results</p>
+              <p className="text-xs text-[var(--text-muted)] text-center mt-2">Showing first 100 results</p>
             )}
           </div>
         </>

@@ -79,7 +79,7 @@ export function CategoryDropdown({
                 setIsOpen(false)
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--bg-card-hover)] transition-colors ${
-                !categoryId ? 'bg-purple-500/20 text-purple-400' : 'text-[var(--text-primary)]'
+                !categoryId ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'
               }`}
             >
               <Folder className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function CategoryDropdown({
                     }}
                     className={`flex-1 flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--bg-card-hover)] transition-colors ${
                       categoryId === catId && !subcategoryId
-                        ? 'bg-purple-500/20 text-purple-400'
+                        ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
                         : 'text-[var(--text-primary)]'
                     }`}
                   >
@@ -131,7 +131,7 @@ export function CategoryDropdown({
                       }}
                       className={`w-full flex items-center gap-2 px-3 py-2 pl-12 text-left text-sm hover:bg-[var(--bg-card-hover)] transition-colors ${
                         categoryId === catId && subcategoryId === subId
-                          ? 'bg-purple-500/20 text-purple-400'
+                          ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
                           : 'text-[var(--text-secondary)]'
                       }`}
                     >

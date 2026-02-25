@@ -166,7 +166,7 @@ export default function ServerMappingEditor({
       <div className="w-64 border-r border-white/5 flex flex-col">
         <div className="p-3 border-b border-white/5">
           <h3 className="text-sm font-semibold text-white">Servers</h3>
-          <p className="text-xs text-zinc-500 mt-1">{servers.length} registered</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{servers.length} registered</p>
         </div>
         <div className="flex-1 overflow-y-auto">
           {serversWithMappings.map((server) => (
@@ -174,21 +174,21 @@ export default function ServerMappingEditor({
               key={server.id}
               onClick={() => setSelectedServerId(server.id)}
               className={`w-full text-left px-3 py-2 border-b border-white/5 transition-colors ${
-                selectedServerId === server.id ? `bg-${accentColor}-500/10 border-l-2 border-l-${accentColor}-500` : "hover:bg-white/[0.03]"
+                selectedServerId === server.id ? "bg-[var(--accent-primary)]/10 border-l-2 border-l-[var(--accent-primary)]" : "hover:bg-white/[0.03]"
               }`}
             >
               <div className="flex items-center gap-2">
-                <Server className="h-3.5 w-3.5 text-zinc-500 flex-shrink-0" />
+                <Server className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
                 <span className="text-sm text-white truncate">{server.name}</span>
               </div>
-              <div className="text-xs text-zinc-500 mt-0.5 ml-5.5">
+              <div className="text-xs text-[var(--text-muted)] mt-0.5 ml-5.5">
                 {(serverGroups[server.id] || []).length} mapping(s)
               </div>
             </button>
           ))}
           {serversWithoutMappings.length > 0 && (
             <>
-              <div className="px-3 py-2 text-xs text-zinc-600 font-medium uppercase tracking-wider">Unassigned</div>
+              <div className="px-3 py-2 text-xs text-[var(--text-muted)] font-medium uppercase tracking-wider">Unassigned</div>
               {serversWithoutMappings.map((server) => (
                 <button
                   key={server.id}
@@ -196,8 +196,8 @@ export default function ServerMappingEditor({
                   className="w-full text-left px-3 py-2 border-b border-white/5 hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Server className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
-                    <span className="text-sm text-zinc-400 truncate">{server.name}</span>
+                    <Server className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
+                    <span className="text-sm text-[var(--text-muted)] truncate">{server.name}</span>
                   </div>
                 </button>
               ))}
@@ -209,7 +209,7 @@ export default function ServerMappingEditor({
       {/* Mapping details */}
       <div className="flex-1 flex flex-col min-w-0">
         {!selectedServerId ? (
-          <div className="flex-1 flex items-center justify-center text-zinc-600">
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
             <div className="text-center">
               <Link2 className="h-8 w-8 mx-auto mb-2" />
               <p className="text-sm">Select a server to manage mappings</p>
@@ -226,14 +226,14 @@ export default function ServerMappingEditor({
                 variant="primary"
                 size="sm"
                 icon={<Plus className="h-3 w-3" />}
-                className={`text-${accentColor}-400 bg-${accentColor}-500/10 border border-${accentColor}-500/20 hover:bg-${accentColor}-500/20`}
+                className="text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 hover:bg-[var(--accent-primary)]/20"
               >
                 Add to Rotation
               </Button>
             </div>
 
             {selectedServerMappings.length === 0 ? (
-              <div className="text-center py-12 text-zinc-600">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <p className="text-sm">No mappings for this server</p>
                 <p className="text-xs mt-1">Click &quot;Add to Rotation&quot; to assign a config</p>
               </div>
@@ -250,10 +250,10 @@ export default function ServerMappingEditor({
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-white">{m.config.name}</span>
                         {m.config.publishedVersion === null && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">Unpublished</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--status-warning)]/20 text-[var(--status-warning)]">Unpublished</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mt-0.5">
                         <Clock className="h-3 w-3" />
                         {m.minutesAfterWipe !== null ? `After ${formatDuration(m.minutesAfterWipe)}` : "Wipe Day (default)"}
                       </div>
@@ -263,14 +263,14 @@ export default function ServerMappingEditor({
                       onClick={() => handleEditMapping(m)}
                       label="Edit mapping"
                       size="sm"
-                      className="text-zinc-500 hover:text-white"
+                      className="text-[var(--text-muted)] hover:text-white"
                     />
                     <IconButton
                       icon={<Trash2 className="h-3.5 w-3.5" />}
                       onClick={() => handleDeleteMapping(m.id)}
                       label="Delete mapping"
                       size="sm"
-                      className="text-zinc-500 hover:text-red-400"
+                      className="text-[var(--text-muted)] hover:text-[var(--status-error)]"
                     />
                   </div>
                 ))}
@@ -280,16 +280,16 @@ export default function ServerMappingEditor({
             {/* Timeline preview */}
             {selectedServerMappings.filter(m => m.isLive).length > 0 && (
               <div className="mt-6">
-                <h3 className="text-sm font-medium text-zinc-400 mb-3">Timeline Preview</h3>
+                <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Timeline Preview</h3>
                 <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
-                  <div className={`relative pl-4 border-l-2 border-${accentColor}-500/30 space-y-3`}>
+                  <div className="relative pl-4 border-l-2 border-[var(--accent-primary)]/30 space-y-3">
                     {selectedServerMappings.filter(m => m.isLive).map((m) => (
                       <div key={m.id} className="relative">
-                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-900" />
+                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[var(--status-success)] border-2 border-[var(--bg-secondary)]" />
                         <div className="text-sm font-medium text-white">
                           {m.minutesAfterWipe !== null ? `${formatDuration(m.minutesAfterWipe)}+` : "Wipe Day"}
                         </div>
-                        <div className="text-xs text-zinc-500">{m.config.name}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{m.config.name}</div>
                       </div>
                     ))}
                   </div>
@@ -331,7 +331,7 @@ export default function ServerMappingEditor({
             />
           )}
           <div>
-            <label className="block text-sm text-zinc-400 mb-2">Time After Wipe (leave empty for default)</label>
+            <label className="block text-sm text-[var(--text-muted)] mb-2">Time After Wipe (leave empty for default)</label>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
@@ -341,7 +341,7 @@ export default function ServerMappingEditor({
                 placeholder="Hours"
                 size="sm"
               />
-              <span className="text-zinc-500">h</span>
+              <span className="text-[var(--text-muted)]">h</span>
               <Input
                 type="number"
                 value={minutes}
@@ -351,7 +351,7 @@ export default function ServerMappingEditor({
                 placeholder="Min"
                 size="sm"
               />
-              <span className="text-zinc-500">m</span>
+              <span className="text-[var(--text-muted)]">m</span>
             </div>
           </div>
         </div>

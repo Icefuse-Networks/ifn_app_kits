@@ -214,20 +214,20 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
         onClick={onClose}
       >
         <div
-          className="bg-zinc-900 rounded-xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] flex flex-col"
+          className="bg-[var(--bg-secondary)] rounded-xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-bold text-white">Server Mappings</h3>
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-[var(--text-muted)] mt-1">
                 Assign kit configs to servers
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-zinc-500 hover:text-white transition-colors"
+              className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -235,13 +235,13 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
 
           {/* Messages */}
           {error && (
-            <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-[var(--status-error)]/10 border border-[var(--status-error)]/20 rounded-lg text-sm text-[var(--status-error)]">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg text-sm text-green-400">
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 rounded-lg text-sm text-[var(--status-success)]">
               <Server className="h-4 w-4 shrink-0" />
               {success}
             </div>
@@ -251,11 +251,11 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
           <div className="flex-1 overflow-y-auto mb-4">
             {loading ? (
               <div className="text-center py-12">
-                <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-zinc-500">Loading...</p>
+                <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-[var(--text-muted)]">Loading...</p>
               </div>
             ) : mappings.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <Server className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p>No server mappings yet</p>
                 <p className="text-xs mt-1">Click "Add Mapping" to get started</p>
@@ -273,17 +273,17 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                           {mapping.serverIdentifier.name}
                         </span>
                         {mapping.isLive && (
-                          <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded border border-green-500/30">
+                          <span className="px-2 py-0.5 text-xs bg-[var(--status-success)]/20 text-[var(--status-success)] rounded border border-[var(--status-success)]/30">
                             LIVE
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-zinc-500">
+                      <div className="text-xs text-[var(--text-muted)]">
                         {mapping.serverIdentifier.ip && mapping.serverIdentifier.port
                           ? `${mapping.serverIdentifier.ip}:${mapping.serverIdentifier.port}`
                           : mapping.serverIdentifier.hashedId}
                         {' → '}
-                        <span className="text-purple-400">{mapping.config.name}</span>
+                        <span className="text-[var(--accent-primary)]">{mapping.config.name}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
@@ -291,22 +291,22 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                         onClick={() => handleToggleLive(mapping)}
                         className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                           mapping.isLive
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
-                            : 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                            ? 'bg-[var(--status-error)]/20 text-[var(--status-error)] border border-[var(--status-error)]/30 hover:bg-[var(--status-error)]/30'
+                            : 'bg-[var(--status-success)]/20 text-[var(--status-success)] border border-[var(--status-success)]/30 hover:bg-[var(--status-success)]/30'
                         }`}
                       >
                         {mapping.isLive ? 'Deactivate' : 'Activate'}
                       </button>
                       <button
                         onClick={() => openEditModal(mapping)}
-                        className="p-2 text-zinc-400 hover:text-white transition-colors"
+                        className="p-2 text-[var(--text-muted)] hover:text-white transition-colors"
                         title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteMapping(mapping.id)}
-                        className="p-2 text-zinc-400 hover:text-red-400 transition-colors"
+                        className="p-2 text-[var(--text-muted)] hover:text-[var(--status-error)] transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -322,7 +322,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
           <div className="flex gap-3">
             <button
               onClick={openAddModal}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg font-medium hover:bg-[var(--accent-primary-hover)] transition-colors"
             >
               <Plus className="h-4 w-4" />
               Add Mapping
@@ -344,7 +344,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
           onClick={closeAddModal}
         >
           <div
-            className="bg-zinc-900 rounded-xl border border-white/10 p-6 w-full max-w-md"
+            className="bg-[var(--bg-secondary)] rounded-xl border border-white/10 p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -353,7 +353,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
               </h3>
               <button
                 onClick={closeAddModal}
-                className="p-1 text-zinc-500 hover:text-white transition-colors"
+                className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -362,26 +362,26 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
             <div className="space-y-4">
               {/* Kit Config Dropdown */}
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Kit Config *</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Kit Config *</label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setConfigDropdownOpen(!configDropdownOpen)}
-                    className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
+                    className="w-full bg-[var(--bg-secondary)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
                   >
-                    <span className={selectedConfig ? 'text-white' : 'text-zinc-500'}>
+                    <span className={selectedConfig ? 'text-white' : 'text-[var(--text-muted)]'}>
                       {selectedConfig
                         ? savedConfigs.find((c) => c.id === selectedConfig)?.name || 'Unknown'
                         : 'Select a kit config...'}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 text-zinc-500 transition-transform ${
+                      className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${
                         configDropdownOpen ? 'rotate-180' : ''
                       }`}
                     />
                   </button>
                   {configDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-secondary)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                       {savedConfigs.map((config) => (
                         <button
                           key={config.id}
@@ -392,7 +392,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                           }}
                           className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${
                             selectedConfig === config.id
-                              ? 'bg-purple-500/20 text-purple-400'
+                              ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
                               : 'text-white'
                           }`}
                         >
@@ -406,7 +406,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
 
               {/* Server Multi-Select */}
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">
+                <label className="block text-sm text-[var(--text-muted)] mb-2">
                   {editingId ? 'Server (locked)' : 'Servers *'}
                 </label>
                 <MultiSelect
@@ -423,7 +423,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                   showSelectAll={true}
                 />
                 {!editingId && selectedServers.length > 0 && (
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
                     Creating {selectedServers.length} mapping{selectedServers.length > 1 ? 's' : ''} for the same kit config
                   </p>
                 )}
@@ -440,7 +440,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
               <button
                 onClick={handleSaveMapping}
                 disabled={!selectedConfig || selectedServers.length === 0}
-                className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {editingId ? (
                   <>
