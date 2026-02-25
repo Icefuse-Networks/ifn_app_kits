@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSession } from "@/services/api-auth";
+
+// SECURITY: Allowlist of domains this proxy is permitted to fetch from
+const ALLOWED_DOMAINS = [
+  "api.battlemetrics.com",
+  "api.steampowered.com",
+  "steamcommunity.com",
+  "store.steampowered.com",
+  "cdn.cloudflare.steamstatic.com",
+];
+
+function isAllowedUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    // SECURITY: Only allow HTTPS
+    if (url.protocol !== "https:") return false;
+    // SECURITY: Check against domain allowlist
+    const hostname = url.hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Require admin session
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get("url");
 
@@ -8,22 +39,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "URL parameter is required" }, { status: 400 });
   }
 
-  const method = (searchParams.get("method") || "GET").toUpperCase();
-  const headersParam = searchParams.get("headers");
-  let headers: Record<string, string> = {};
-
-  try {
-    if (headersParam) {
-      headers = JSON.parse(headersParam);
-    }
-  } catch {
-    headers = {};
+  // SECURITY: Validate URL against allowlist to prevent SSRF
+  if (!isAllowedUrl(targetUrl)) {
+    return NextResponse.json({ error: "URL domain not allowed" }, { status: 403 });
   }
 
   try {
     const response = await fetch(targetUrl, {
-      method,
-      headers,
+      method: "GET",
+      headers: { Accept: "application/json" },
     });
 
     const responseHeaders: string[] = [];
@@ -33,22 +57,19 @@ export async function GET(request: NextRequest) {
 
     const responseBody = await response.json().catch(() => null);
 
-    return NextResponse.json(
-      { headers: responseHeaders, body: responseBody },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Proxy error:", error);
+    return NextResponse.json({ headers: responseHeaders, body: responseBody });
+  } catch {
     return NextResponse.json({ error: "Proxy request failed" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  // SECURITY: Require admin session
+  const authResult = await requireSession(request);
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get("url");
 
@@ -56,24 +77,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "URL parameter is required" }, { status: 400 });
   }
 
-  const method = (searchParams.get("method") || "POST").toUpperCase();
-  const headersParam = searchParams.get("headers");
-  let headers: Record<string, string> = {};
-
-  try {
-    if (headersParam) {
-      headers = JSON.parse(headersParam);
-    }
-  } catch {
-    headers = {};
+  // SECURITY: Validate URL against allowlist to prevent SSRF
+  if (!isAllowedUrl(targetUrl)) {
+    return NextResponse.json({ error: "URL domain not allowed" }, { status: 403 });
   }
 
   const body = await request.text();
 
   try {
     const response = await fetch(targetUrl, {
-      method,
-      headers,
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: body || undefined,
     });
 
@@ -84,17 +98,8 @@ export async function POST(request: NextRequest) {
 
     const responseBody = await response.json().catch(() => null);
 
-    return NextResponse.json(
-      { headers: responseHeaders, body: responseBody },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Proxy error:", error);
+    return NextResponse.json({ headers: responseHeaders, body: responseBody });
+  } catch {
     return NextResponse.json({ error: "Proxy request failed" }, { status: 500 });
   }
 }

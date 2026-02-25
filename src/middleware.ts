@@ -150,7 +150,7 @@ export async function middleware(request: NextRequest) {
   })
 
   // SECURITY: Admin-only routes require isAdmin or isRoot claim from OIDC
-  const adminOnlyPrefixes = ['/dashboard', '/api/admin']
+  const adminOnlyPrefixes = ['/dashboard', '/api/admin', '/legacy']
   const isAdminRoute = adminOnlyPrefixes.some(prefix => pathname.startsWith(prefix))
 
   if (isAdminRoute) {

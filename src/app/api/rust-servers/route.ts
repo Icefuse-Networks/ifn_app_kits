@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticateWithScope } from '@/services/api-auth'
 
 interface BMAttributes {
   id: string
@@ -74,6 +75,12 @@ async function fetchBattleMetricsPage(url: string): Promise<BMApiResponse | null
 }
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Auth check - prevent unauthenticated proxy abuse
+  const authResult = await authenticateWithScope(request, 'servers:read')
+  if (!authResult.success) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+  }
+
   if (!BATTLEMETRICS_API_KEY) {
     return NextResponse.json(
       { error: 'Server configuration error: API key is missing.' },

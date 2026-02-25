@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { secureTokenCompare } from "@/lib/security/timing-safe";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const key = searchParams.get("key");
   const action = searchParams.get("action");
 
-  if (key !== process.env.STAFF_API_KEY) {
+  // SECURITY: Timing-safe comparison to prevent timing attacks
+  if (!key || !process.env.STAFF_API_KEY || !secureTokenCompare(key, process.env.STAFF_API_KEY)) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
@@ -81,7 +83,8 @@ export async function GET(request: NextRequest) {
       }
 
       case "purge": {
-        await prisma.$executeRawUnsafe("TRUNCATE TABLE ifn_admin.staff RESTART IDENTITY");
+        // SECURITY: Tagged template prevents SQL injection (vs $executeRawUnsafe)
+        await prisma.$executeRaw`TRUNCATE TABLE ifn_admin.staff RESTART IDENTITY`;
         return NextResponse.json({ message: "The database has been successfully purged." });
       }
 

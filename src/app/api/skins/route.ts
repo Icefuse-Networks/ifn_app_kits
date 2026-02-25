@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { authenticateWithScope } from '@/services/api-auth'
 import { logger } from '@/lib/logger'
 
 /**
@@ -25,6 +26,15 @@ const _STEAM_CDN_BASE = 'https://steamcommunity-a.akamaihd.net/economy/image/'
  * Resolve Steam Workshop skin IDs to preview image URLs
  */
 export async function POST(request: NextRequest) {
+  // SECURITY: Auth check at route start
+  const authResult = await authenticateWithScope(request, 'kits:read')
+  if (!authResult.success) {
+    return NextResponse.json(
+      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
+      { status: authResult.status }
+    )
+  }
+
   try {
     const body = await request.json()
 
