@@ -3,6 +3,8 @@
  */
 
 export { NewKitModal } from './NewKitModal'
+export { GroupModal } from './GroupModal'
+export type { GroupModalMode } from './GroupModal'
 export { SaveModal } from './SaveModal'
 export { LoadModal } from './LoadModal'
 export { RenameModal } from './RenameModal'
