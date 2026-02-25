@@ -25,6 +25,7 @@ import {
   Zap,
   Tags,
   ShoppingCart,
+  Gift,
 } from 'lucide-react'
 
 import { useUndoRedo, useSkinImages } from '@/hooks'
@@ -47,7 +48,9 @@ import {
   MultiplierModal,
   CategoryRenameModal,
   UnsavedChangesModal,
+  PerksModal,
 } from '@/components/kit-manager/modals'
+import type { PerksData } from '@/components/kit-manager/modals'
 import { Switch } from '@/components/ui/Switch'
 import type { Kit, KitItem, KitsData } from '@/types/kit'
 import {
@@ -67,6 +70,7 @@ interface SavedConfig {
   name: string
   description: string | null
   kitData: KitsData
+  storeData: Record<string, unknown> | null
   updatedAt: string
 }
 
@@ -75,7 +79,7 @@ interface Selection {
   index: number
 }
 
-type ModalType = 'new' | 'save' | 'rename' | 'multiplier' | 'categoryRename' | 'unsavedChanges' | null
+type ModalType = 'new' | 'save' | 'rename' | 'multiplier' | 'categoryRename' | 'unsavedChanges' | 'perks' | null
 
 // =============================================================================
 // Page Component
@@ -136,6 +140,9 @@ export default function KitsPage() {
   const [multiplierScope, setMultiplierScope] = useState<'current' | 'all'>(
     'current'
   )
+
+  // Store data state (includes perks, descriptions, etc.)
+  const [storeData, setStoreData] = useState<Record<string, unknown>>({})
 
   // Kit ID copy state
   const [copiedKitId, setCopiedKitId] = useState(false)
@@ -280,6 +287,25 @@ export default function KitsPage() {
   }, [])
 
   // ---------------------------------------------------------------------------
+  // Store Data / Perks Helpers
+  // ---------------------------------------------------------------------------
+
+  const getKitPerks = useCallback((kitId: string): PerksData | null => {
+    const perks = (storeData as Record<string, unknown>)?.perks as Record<string, PerksData> | undefined
+    const p = perks?.[kitId]
+    if (!p) return null
+    if ((p.categories?.length || 0) === 0 && (p.uncategorized?.length || 0) === 0) return null
+    return p
+  }, [storeData])
+
+  const setKitPerks = useCallback((kitId: string, perksData: PerksData) => {
+    setStoreData((prev) => {
+      const perks = ((prev as Record<string, unknown>)?.perks as Record<string, PerksData>) || {}
+      return { ...prev, perks: { ...perks, [kitId]: perksData } }
+    })
+  }, [])
+
+  // ---------------------------------------------------------------------------
   // API
   // ---------------------------------------------------------------------------
 
@@ -287,7 +313,7 @@ export default function KitsPage() {
     try {
       setInitialLoading(true)
       setAuthError(null)
-      const res = await fetch('/api/kits?full=true')
+      const res = await fetch('/api/kits?full=true&store=true')
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: 'Unknown error' }))
@@ -327,13 +353,25 @@ export default function KitsPage() {
           name: string
           description: string | null
           kitData: string | object
+          storeData?: string | object | null
           updatedAt: string
-        }) => ({
-          ...config,
-          kitData: typeof config.kitData === 'string'
-            ? parseKitData(config.kitData)
-            : config.kitData,
-        })
+        }) => {
+          let parsedStoreData: Record<string, unknown> | null = null
+          if (config.storeData) {
+            try {
+              parsedStoreData = typeof config.storeData === 'string'
+                ? JSON.parse(config.storeData)
+                : config.storeData as Record<string, unknown>
+            } catch { /* ignore */ }
+          }
+          return {
+            ...config,
+            kitData: typeof config.kitData === 'string'
+              ? parseKitData(config.kitData)
+              : config.kitData,
+            storeData: parsedStoreData,
+          }
+        }
       )
       setSavedConfigs(configs)
 
@@ -346,6 +384,7 @@ export default function KitsPage() {
         )[0]
         resetHistory(mostRecent.kitData)
         setLoadedConfigId(mostRecent.id)
+        setStoreData(mostRecent.storeData || {})
       }
     } catch (err) {
       console.warn(
@@ -372,6 +411,16 @@ export default function KitsPage() {
         setLoadedConfigId(id)
         setSelectedKitId(null)
         setSelection(null)
+        // Load storeData
+        let parsedStore: Record<string, unknown> = {}
+        if (config.storeData) {
+          try {
+            parsedStore = typeof config.storeData === 'string'
+              ? JSON.parse(config.storeData)
+              : config.storeData
+          } catch { /* ignore */ }
+        }
+        setStoreData(parsedStore)
         setSuccess(`Loaded "${config.name}"`)
         setActiveModal(null)
       } catch (err) {
@@ -399,6 +448,7 @@ export default function KitsPage() {
             name,
             description: description || null,
             kitData: stringifyKitData(kitsData),
+            storeData: Object.keys(storeData).length > 0 ? JSON.stringify(storeData) : null,
           }),
         })
         if (!res.ok) {
@@ -416,7 +466,7 @@ export default function KitsPage() {
         setLoading(false)
       }
     },
-    [kitsData, loadedConfigId, fetchConfigs]
+    [kitsData, storeData, loadedConfigId, fetchConfigs]
   )
 
   // ---------------------------------------------------------------------------
@@ -1354,29 +1404,29 @@ export default function KitsPage() {
 
   const renderHeader = () => (
     <header
-      className="h-14 flex items-center justify-between px-4 shrink-0"
+      className="h-12 flex items-center justify-between px-3 shrink-0"
       style={{
         background: 'rgba(255, 255, 255, 0.04)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
       }}
     >
       {/* Left: Back + Title */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <Link
           href="/dashboard"
-          className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+          className="p-1.5 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--glass-border)',
           }}
         >
-          <ArrowLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+          <ArrowLeft className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
         </Link>
         <div>
-          <h1 className="text-base font-bold text-[var(--text-primary)]">
+          <h1 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
             Kit Manager
           </h1>
-          <p className="text-xs text-[var(--text-muted)]">
+          <p className="text-[10px] text-[var(--text-muted)] leading-tight">
             {activeCategory ? activeCategory.name : 'No category'}
             {' \u00B7 '}
             {kitList.length} kit{kitList.length !== 1 ? 's' : ''}
@@ -1386,31 +1436,31 @@ export default function KitsPage() {
       </div>
 
       {/* Right: Toolbar */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {/* Undo / Redo */}
-        <div className="flex items-center gap-1 mr-2">
+        <div className="flex items-center gap-0.5 mr-1">
           <ToolbarButton
             onClick={undo}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
           >
-            <Undo2 className="w-4 h-4" />
+            <Undo2 className="w-3.5 h-3.5" />
           </ToolbarButton>
           <ToolbarButton
             onClick={redo}
             disabled={!canRedo}
             title="Redo (Ctrl+Y)"
           >
-            <Redo2 className="w-4 h-4" />
+            <Redo2 className="w-3.5 h-3.5" />
           </ToolbarButton>
         </div>
 
         {/* Import / Export */}
         <ToolbarButton onClick={importFromFile} title="Import from file">
-          <Upload className="w-4 h-4" />
+          <Upload className="w-3.5 h-3.5" />
         </ToolbarButton>
         <ToolbarButton onClick={exportToFile} title="Export to file">
-          <Download className="w-4 h-4" />
+          <Download className="w-3.5 h-3.5" />
         </ToolbarButton>
 
         {/* Multiplier */}
@@ -1418,7 +1468,7 @@ export default function KitsPage() {
           onClick={() => setActiveModal('multiplier')}
           title="Apply multiplier"
         >
-          <Percent className="w-4 h-4" />
+          <Percent className="w-3.5 h-3.5" />
         </ToolbarButton>
 
         {/* Save As */}
@@ -1429,13 +1479,13 @@ export default function KitsPage() {
             setSaveModalMode('save')
             setActiveModal('save')
           }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors hover:bg-[var(--bg-card-hover)]"
           style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--glass-border)',
           }}
         >
-          <span className="text-sm text-[var(--text-primary)]">Save As</span>
+          <span className="text-[var(--text-primary)]">Save As</span>
         </button>
 
         {/* Save */}
@@ -1454,11 +1504,11 @@ export default function KitsPage() {
             setSaveDescription('')
             setActiveModal('save')
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-white"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-white"
           style={{ background: 'var(--accent-primary)' }}
         >
-          <Save className="w-4 h-4" />
-          <span className="text-sm">Save</span>
+          <Save className="w-3.5 h-3.5" />
+          <span>Save</span>
         </button>
       </div>
     </header>
@@ -2230,6 +2280,25 @@ export default function KitsPage() {
               <ShoppingCart className="w-3 h-3" />
               <span>Store</span>
             </button>
+
+            <button
+              onClick={() => setActiveModal('perks')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer shrink-0 ${
+                getKitPerks(selectedKitId!) ? 'text-[var(--status-warning)]' : 'text-[var(--text-muted)]'
+              }`}
+              style={{
+                background: getKitPerks(selectedKitId!)
+                  ? 'rgba(var(--status-warning-rgb), 0.15)'
+                  : 'var(--glass-bg)',
+                border: getKitPerks(selectedKitId!)
+                  ? '1px solid var(--status-warning)'
+                  : '1px solid var(--glass-border)',
+              }}
+              title="Manage kit perks"
+            >
+              <Gift className="w-3 h-3" />
+              <span>Perks</span>
+            </button>
           </div>
 
           {/* Spacer */}
@@ -2416,6 +2485,14 @@ export default function KitsPage() {
         />
       )}
 
+      {activeModal === 'perks' && selectedKitId && (
+        <PerksModal
+          onClose={() => setActiveModal(null)}
+          perksData={getKitPerks(selectedKitId) || { categories: [], uncategorized: [] }}
+          onSave={(data) => setKitPerks(selectedKitId, data)}
+        />
+      )}
+
       {/* Right-click context menu */}
       {contextMenu && (
         <div
@@ -2460,7 +2537,7 @@ function ToolbarButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="p-2 rounded-lg transition-colors disabled:opacity-30 text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]"
+      className="p-1.5 rounded-lg transition-colors disabled:opacity-30 text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]"
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--glass-border)',

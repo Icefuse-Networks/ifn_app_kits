@@ -76,6 +76,31 @@ interface ServerKitVariant {
 }
 
 /**
+ * Perk within a perk category
+ */
+interface StorePerk {
+  id: string
+  text: string
+}
+
+/**
+ * Perk category with child perks
+ */
+interface StorePerkCategory {
+  id: string
+  name: string
+  perks: StorePerk[]
+}
+
+/**
+ * Perks data for a kit
+ */
+interface StorePerksData {
+  categories: StorePerkCategory[]
+  uncategorized: StorePerk[]
+}
+
+/**
  * Store kit entry with per-server variants
  */
 interface StoreKitEntry {
@@ -84,6 +109,8 @@ interface StoreKitEntry {
   kit: StoreKitData
   /** Per-config kit variants keyed by config name (e.g., "5X Servers") */
   servers: Record<string, ServerKitVariant>
+  /** Kit perks organized by category */
+  perks?: StorePerksData
 }
 
 /**
@@ -202,14 +229,16 @@ export async function GET(request: NextRequest) {
       const parsed = safeParseKitData(config.kitData)
       if (!parsed) continue
 
-      // Get store descriptions if available
+      // Get store descriptions and perks if available
       let storeDescriptions: Record<string, string> = {}
+      let storePerks: Record<string, StorePerksData> = {}
       if (config.storeData) {
         try {
           const storeData = typeof config.storeData === 'string'
             ? JSON.parse(config.storeData)
             : config.storeData
           storeDescriptions = storeData.descriptions || {}
+          storePerks = storeData.perks || {}
         } catch {
           // Ignore parse errors
         }
@@ -224,16 +253,26 @@ export async function GET(request: NextRequest) {
           kit: transformKit(kit),
         }
 
+        const kitPerks = storePerks[kitKey]
+        const hasPerks = kitPerks && (
+          (kitPerks.categories?.length > 0) || (kitPerks.uncategorized?.length > 0)
+        )
+
         if (!response[kit.Name]) {
           // First config for this kit — set as primary
           response[kit.Name] = {
             storeDescription: variant.storeDescription,
             kit: variant.kit,
             servers: { [config.name]: variant },
+            ...(hasPerks ? { perks: kitPerks } : {}),
           }
         } else {
           // Additional config — add to servers map
           response[kit.Name].servers[config.name] = variant
+          // Merge perks if not already set
+          if (hasPerks && !response[kit.Name].perks) {
+            response[kit.Name].perks = kitPerks
+          }
         }
       }
     }
