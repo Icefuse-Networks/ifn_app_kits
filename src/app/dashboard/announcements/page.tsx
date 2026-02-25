@@ -251,7 +251,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
   }));
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <ModalHeader
         title={announcement ? "Edit Announcement" : "Create Announcement"}
         onClose={onClose}

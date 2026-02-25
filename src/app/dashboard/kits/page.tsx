@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronDown,
   AlertCircle,
-  Check,
   Paintbrush,
   Zap,
   Tags,
@@ -49,8 +48,9 @@ import {
   CategoryRenameModal,
   UnsavedChangesModal,
   PerksModal,
+  GroupModal,
 } from '@/components/kit-manager/modals'
-import type { PerksData } from '@/components/kit-manager/modals'
+import type { PerksData, GroupModalMode } from '@/components/kit-manager/modals'
 import { GlassContainer } from '@/components/global/GlassContainer'
 import { Switch } from '@/components/ui/Switch'
 import type { Kit, KitItem, KitsData } from '@/types/kit'
@@ -80,7 +80,15 @@ interface Selection {
   index: number
 }
 
-type ModalType = 'new' | 'save' | 'rename' | 'multiplier' | 'categoryRename' | 'unsavedChanges' | 'perks' | null
+type ModalType = 'new' | 'save' | 'rename' | 'multiplier' | 'categoryRename' | 'unsavedChanges' | 'perks' | 'group' | null
+
+interface GroupModalState {
+  mode: GroupModalMode
+  parentCatId?: string
+  parentCatName?: string
+  targetId?: string
+  initialName?: string
+}
 
 // =============================================================================
 // Page Component
@@ -122,6 +130,9 @@ export default function KitsPage() {
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([])
   const [loadedConfigId, setLoadedConfigId] = useState<string | null>(null)
   const initialLoadDone = useRef(false)
+
+  // Group modal state
+  const [groupModal, setGroupModal] = useState<GroupModalState | null>(null)
 
   // Category switching state
   const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null)
@@ -1007,6 +1018,31 @@ export default function KitsPage() {
     [kitsData, setKitsData]
   )
 
+  // ---------------------------------------------------------------------------
+  // Group modal helpers
+  // ---------------------------------------------------------------------------
+
+  const openGroupModal = (state: GroupModalState) => {
+    setGroupModal(state)
+    setActiveModal('group')
+  }
+
+  const handleGroupModalSubmit = (name: string) => {
+    if (!groupModal) return
+    const { mode, parentCatId, targetId } = groupModal
+    if (mode === 'create-group') {
+      createKitCategory(name)
+    } else if (mode === 'edit-group' && targetId) {
+      renameKitCategory(targetId, name)
+    } else if (mode === 'create-subgroup' && parentCatId) {
+      createKitSubcategory(parentCatId, name)
+    } else if (mode === 'edit-subgroup' && parentCatId && targetId) {
+      renameKitSubcategory(parentCatId, targetId, name)
+    }
+    setActiveModal(null)
+    setGroupModal(null)
+  }
+
   const assignKitToCategory = useCallback(
     (kitId: string, categoryId: string | undefined, subcategoryId: string | undefined) => {
       const kit = kitsData._kits[kitId]
@@ -1519,36 +1555,21 @@ export default function KitsPage() {
   // ---------------------------------------------------------------------------
 
   const renderMessages = () => {
-    if (!error && !success) return null
+    if (!error) return null
 
     return (
       <div className="px-4 py-2 shrink-0">
-        {error && (
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-            style={{
-              background: 'rgba(var(--status-error-rgb), 0.15)',
-              border: '1px solid var(--status-error)',
-              color: 'var(--status-error)',
-            }}
-          >
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {error}
-          </div>
-        )}
-        {success && (
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-            style={{
-              background: 'rgba(var(--status-success-rgb), 0.15)',
-              border: '1px solid var(--status-success)',
-              color: 'var(--status-success)',
-            }}
-          >
-            <Check className="w-4 h-4 shrink-0" />
-            {success}
-          </div>
-        )}
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+          style={{
+            background: 'rgba(var(--status-error-rgb), 0.15)',
+            border: '1px solid var(--status-error)',
+            color: 'var(--status-error)',
+          }}
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
       </div>
     )
   }
@@ -1755,10 +1776,7 @@ export default function KitsPage() {
           <div className="flex-1 overflow-y-auto p-2 min-h-0">
             {/* Add Group Button */}
             <button
-              onClick={() => {
-                const name = prompt('Enter group name:')
-                if (name?.trim()) createKitCategory(name.trim())
-              }}
+              onClick={() => openGroupModal({ mode: 'create-group' })}
               className="w-full flex items-center gap-2 px-2 py-1.5 mb-2 rounded-lg text-left transition-colors hover:bg-[var(--bg-card-hover)] text-[var(--accent-primary)]"
               style={{
                 background: 'var(--glass-bg)',
@@ -1831,20 +1849,22 @@ export default function KitsPage() {
                         </button>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                           <button
-                            onClick={() => {
-                              const name = prompt('Add subgroup:', '')
-                              if (name?.trim()) createKitSubcategory(category.id, name.trim())
-                            }}
+                            onClick={() => openGroupModal({
+                              mode: 'create-subgroup',
+                              parentCatId: category.id,
+                              parentCatName: category.name,
+                            })}
                             className="p-1 rounded hover:bg-[var(--accent-primary)]/20"
                             title="Add Subgroup"
                           >
                             <Plus className="w-3 h-3 text-[var(--accent-primary)]" />
                           </button>
                           <button
-                            onClick={() => {
-                              const name = prompt('Rename group:', category.name)
-                              if (name?.trim()) renameKitCategory(category.id, name.trim())
-                            }}
+                            onClick={() => openGroupModal({
+                              mode: 'edit-group',
+                              targetId: category.id,
+                              initialName: category.name,
+                            })}
                             className="p-1 rounded hover:bg-[var(--bg-card)]"
                             title="Rename"
                           >
@@ -1934,10 +1954,13 @@ export default function KitsPage() {
                                   </button>
                                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                                     <button
-                                      onClick={() => {
-                                        const name = prompt('Rename subgroup:', sub.name)
-                                        if (name?.trim()) renameKitSubcategory(category.id, sub.id, name.trim())
-                                      }}
+                                      onClick={() => openGroupModal({
+                                        mode: 'edit-subgroup',
+                                        parentCatId: category.id,
+                                        parentCatName: category.name,
+                                        targetId: sub.id,
+                                        initialName: sub.name,
+                                      })}
                                       className="p-0.5 rounded hover:bg-[var(--bg-card)]"
                                       title="Rename"
                                     >
@@ -2495,6 +2518,19 @@ export default function KitsPage() {
         />
       )}
 
+      {activeModal === 'group' && groupModal && (
+        <GroupModal
+          mode={groupModal.mode}
+          initialName={groupModal.initialName}
+          parentGroupName={groupModal.parentCatName}
+          onClose={() => {
+            setActiveModal(null)
+            setGroupModal(null)
+          }}
+          onSubmit={handleGroupModalSubmit}
+        />
+      )}
+
       {/* Right-click context menu */}
       {contextMenu && (
         <div
@@ -2644,6 +2680,21 @@ function KitListItem({
               : '1px solid transparent',
       }}
     >
+      {/* Kit image */}
+      <div
+        className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden"
+        style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+      >
+        {kit.KitImage ? (
+          <img
+            src={kit.KitImage}
+            alt={kit.Name}
+            className="w-7 h-7 object-contain"
+          />
+        ) : (
+          <Package className="w-4 h-4 text-[var(--text-muted)]" />
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-[var(--text-primary)] truncate">
           {kit.Name}

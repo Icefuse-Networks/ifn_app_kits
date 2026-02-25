@@ -23,9 +23,14 @@ import {
   Edit,
   FolderOpen,
   Tag,
+  Search,
+  ChevronDown,
+  SortAsc,
+  BookOpen,
 } from 'lucide-react'
 import type { ApiTokenInfo, ApiScope, ApiTokenCreateResponse, TokenCategory } from '@/types/api'
-import { API_SCOPES, SCOPE_DESCRIPTIONS, DEFAULT_SCOPES } from '@/types/api'
+import { ApiReferenceModal } from '@/components/global/ApiReferenceModal'
+import { API_SCOPES, SCOPE_DESCRIPTIONS, DEFAULT_SCOPES, SCOPE_REGISTRY } from '@/types/api'
 import {
   Modal,
   Input,
@@ -75,6 +80,9 @@ export default function TokensPage() {
 
   // Revoke state
   const [revoking, setRevoking] = useState<string | null>(null)
+
+  // API reference modal
+  const [showApiReference, setShowApiReference] = useState(false)
 
   // Filter state
   const [filterCategory, setFilterCategory] = useState<string | null>(null)
@@ -327,6 +335,13 @@ export default function TokensPage() {
         </div>
         <div className="flex gap-3">
           <Button
+            variant="ghost"
+            onClick={() => setShowApiReference(true)}
+            icon={<BookOpen className="w-4 h-4" />}
+          >
+            API Reference
+          </Button>
+          <Button
             variant="secondary"
             onClick={() => setShowCategoryModal(true)}
             icon={<FolderOpen className="w-4 h-4" />}
@@ -387,6 +402,9 @@ export default function TokensPage() {
         </Alert>
       )}
 
+      {/* API Reference modal */}
+      <ApiReferenceModal isOpen={showApiReference} onClose={() => setShowApiReference(false)} />
+
       {/* New token display modal */}
       <Modal
         isOpen={!!newToken}
@@ -444,7 +462,7 @@ export default function TokensPage() {
         onClose={() => setShowCreateModal(false)}
         title="Create API Token"
         icon={<Key className="h-5 w-5" />}
-        size="lg"
+        size="2xl"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
@@ -480,23 +498,7 @@ export default function TokensPage() {
             />
           )}
 
-          <div>
-            <label className="block text-sm font-semibold text-[var(--text-primary)] mb-3">
-              Permissions
-            </label>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              {API_SCOPES.map((scope) => (
-                <Switch
-                  key={scope}
-                  checked={createScopes.includes(scope)}
-                  onChange={() => toggleCreateScope(scope)}
-                  label={scope}
-                  description={SCOPE_DESCRIPTIONS[scope]}
-                  size="sm"
-                />
-              ))}
-            </div>
-          </div>
+          <ScopeSelector selectedScopes={createScopes} onToggle={toggleCreateScope} />
 
           <Input
             label="Expiration (Optional)"
@@ -513,7 +515,7 @@ export default function TokensPage() {
         onClose={() => setShowEditModal(false)}
         title="Edit Token"
         icon={<Edit className="h-5 w-5" />}
-        size="lg"
+        size="2xl"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
@@ -548,23 +550,7 @@ export default function TokensPage() {
               placeholder="Select category..."
             />
 
-            <div>
-              <label className="block text-sm font-semibold text-[var(--text-primary)] mb-3">
-                Permissions
-              </label>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                {API_SCOPES.map((scope) => (
-                  <Switch
-                    key={scope}
-                    checked={editScopes.includes(scope)}
-                    onChange={() => toggleEditScope(scope)}
-                    label={scope}
-                    description={SCOPE_DESCRIPTIONS[scope]}
-                    size="sm"
-                  />
-                ))}
-              </div>
-            </div>
+            <ScopeSelector selectedScopes={editScopes} onToggle={toggleEditScope} />
           </div>
         )}
       </Modal>
@@ -707,6 +693,191 @@ export default function TokensPage() {
   )
 }
 
+// ============================================================================
+// Scope selector helpers
+// ============================================================================
+
+const PLUGIN_LABELS: Record<string, string> = {
+  kits: 'Kits',
+  core: 'Core Systems',
+  clans: 'Clans',
+  redirect: 'Redirect',
+  lootmanager: 'Loot Manager',
+  bases: 'Bases',
+  giveaways: 'Giveaways',
+  announcements: 'Announcements',
+  stats: 'Stats',
+  feedback: 'Feedback',
+}
+
+const SCOPE_GROUPS: { plugin: string; label: string; scopes: ApiScope[] }[] = (() => {
+  const groupMap: Record<string, ApiScope[]> = {}
+  for (const scope of API_SCOPES) {
+    const plugin = SCOPE_REGISTRY.get(scope)?.plugin ?? 'other'
+    if (!groupMap[plugin]) groupMap[plugin] = []
+    groupMap[plugin].push(scope)
+  }
+  return Object.entries(groupMap).map(([plugin, scopes]) => ({
+    plugin,
+    label: PLUGIN_LABELS[plugin] ?? plugin,
+    scopes,
+  }))
+})()
+
+function ScopeSelector({
+  selectedScopes,
+  onToggle,
+}: {
+  selectedScopes: ApiScope[]
+  onToggle: (scope: ApiScope) => void
+}) {
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('default')
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(SCOPE_GROUPS.map((g) => [g.plugin, true]))
+  )
+
+  const toggleGroup = (plugin: string) =>
+    setExpanded((prev) => ({ ...prev, [plugin]: !prev[plugin] }))
+
+  const sortedGroups = [...SCOPE_GROUPS].sort((a, b) => {
+    if (sortBy === 'alpha') return a.label.localeCompare(b.label)
+    if (sortBy === 'enabled') {
+      const aEnabled = a.scopes.filter((s) => selectedScopes.includes(s)).length
+      const bEnabled = b.scopes.filter((s) => selectedScopes.includes(s)).length
+      return bEnabled - aEnabled
+    }
+    return 0
+  })
+
+  const filteredGroups = sortedGroups
+    .map((group) => ({
+      ...group,
+      scopes: group.scopes.filter(
+        (scope) =>
+          search === '' ||
+          scope.toLowerCase().includes(search.toLowerCase()) ||
+          (SCOPE_REGISTRY.get(scope)?.description ?? '').toLowerCase().includes(search.toLowerCase())
+      ),
+    }))
+    .filter((group) => group.scopes.length > 0)
+
+  return (
+    <div className="space-y-3">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-[var(--text-primary)]">Permissions</span>
+        <span className="text-xs text-[var(--text-muted)]">
+          {selectedScopes.length} / {API_SCOPES.length} enabled
+        </span>
+      </div>
+
+      {/* Search + Sort row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search permissions..."
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none"
+            style={{
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-secondary)',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent-primary)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-secondary)')}
+          />
+        </div>
+        <div className="relative shrink-0">
+          <SortAsc className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="pl-8 pr-7 py-2 text-sm rounded-lg text-[var(--text-primary)] focus:outline-none appearance-none cursor-pointer"
+            style={{
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-secondary)',
+            }}
+          >
+            <option value="default">Default order</option>
+            <option value="alpha">Alphabetical</option>
+            <option value="enabled">Enabled first</option>
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Collapsible plugin groups */}
+      <div className="space-y-2">
+        {filteredGroups.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)] text-center py-6">
+            No permissions match your search.
+          </p>
+        ) : (
+          filteredGroups.map((group) => {
+            const enabledCount = group.scopes.filter((s) => selectedScopes.includes(s)).length
+            const isExpanded = expanded[group.plugin] !== false
+            return (
+              <div
+                key={group.plugin}
+                className="rounded-lg overflow-hidden"
+                style={{ border: '1px solid var(--glass-border)' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.plugin)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 transition-colors text-left"
+                  style={{ background: 'var(--glass-bg)' }}
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {group.label}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        enabledCount > 0
+                          ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-muted)]'
+                      }`}
+                    >
+                      {enabledCount}/{group.scopes.length}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[var(--text-muted)] transition-transform duration-150 ${
+                        isExpanded ? '' : '-rotate-90'
+                      }`}
+                    />
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div
+                    className="grid grid-cols-2 gap-x-4 gap-y-3 p-4"
+                    style={{ borderTop: '1px solid var(--glass-border)' }}
+                  >
+                    {group.scopes.map((scope) => (
+                      <Switch
+                        key={scope}
+                        checked={selectedScopes.includes(scope)}
+                        onChange={() => onToggle(scope)}
+                        label={scope}
+                        description={SCOPE_DESCRIPTIONS[scope]}
+                        size="sm"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
 // Token card component
 function TokenCard({
   token,
