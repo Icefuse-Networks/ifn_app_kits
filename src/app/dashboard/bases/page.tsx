@@ -45,6 +45,9 @@ interface BaseData {
 interface BasesPluginConfig {
   "Bases Data": Record<string, BaseData>;
   "Container Mappings": Record<string, ContainerMappingData>;
+  "Initial Building Grade": number;
+  "Upgraded Building Grade": number;
+  "Auto Upgrade Delay": number;
   "Loot Multiplier": number;
   "Wipe Progression Enabled": boolean;
   "Wipe Progression Min Scale": number;
@@ -95,6 +98,9 @@ const DEFAULT_CONFIG: BasesConfigData = {
       "bamboo_barrel": { "Loot Tables": ["armor", "locker"], "Min Items": 4, "Max Items": 8 },
       "cupboard.tool.deployed": { "Loot Tables": ["toolcupboard"], "Min Items": 3, "Max Items": 6 },
     },
+    "Initial Building Grade": 2,
+    "Upgraded Building Grade": 3,
+    "Auto Upgrade Delay": 300,
     "Loot Multiplier": 1.0,
     "Wipe Progression Enabled": true,
     "Wipe Progression Min Scale": 0.3,
@@ -872,6 +878,30 @@ export default function BasesPage() {
               <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
                 <h3 className="text-sm font-semibold text-white mb-4">Global Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
+                  <label className="text-sm text-[var(--text-muted)]">
+                    Initial Building Grade
+                    <select value={data.pluginConfig["Initial Building Grade"]} onChange={(e) => handleUpdatePluginSetting("Initial Building Grade", parseInt(e.target.value))} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+                      <option value={0} className="bg-[var(--bg-elevated)]">0 - Twig</option>
+                      <option value={1} className="bg-[var(--bg-elevated)]">1 - Wood</option>
+                      <option value={2} className="bg-[var(--bg-elevated)]">2 - Stone</option>
+                      <option value={3} className="bg-[var(--bg-elevated)]">3 - Metal</option>
+                      <option value={4} className="bg-[var(--bg-elevated)]">4 - Armored</option>
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--text-muted)]">
+                    Upgraded Building Grade
+                    <select value={data.pluginConfig["Upgraded Building Grade"]} onChange={(e) => handleUpdatePluginSetting("Upgraded Building Grade", parseInt(e.target.value))} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+                      <option value={0} className="bg-[var(--bg-elevated)]">0 - Twig</option>
+                      <option value={1} className="bg-[var(--bg-elevated)]">1 - Wood</option>
+                      <option value={2} className="bg-[var(--bg-elevated)]">2 - Stone</option>
+                      <option value={3} className="bg-[var(--bg-elevated)]">3 - Metal</option>
+                      <option value={4} className="bg-[var(--bg-elevated)]">4 - Armored</option>
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--text-muted)]">
+                    Auto Upgrade Delay (seconds, 0 = disabled)
+                    <input type="number" value={data.pluginConfig["Auto Upgrade Delay"]} onChange={(e) => handleUpdatePluginSetting("Auto Upgrade Delay", parseFloat(e.target.value) || 0)} min={0} step={60} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
+                  </label>
                   <label className="text-sm text-[var(--text-muted)]">
                     Loot Multiplier
                     <input type="number" value={data.pluginConfig["Loot Multiplier"]} onChange={(e) => handleUpdatePluginSetting("Loot Multiplier", parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
