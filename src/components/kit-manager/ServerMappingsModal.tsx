@@ -115,7 +115,6 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
     setEditingId(null)
     setSelectedConfig(null)
     setSelectedServers([])
-    setConfigDropdownOpen(false)
   }
 
   const handleSaveMapping = async () => {

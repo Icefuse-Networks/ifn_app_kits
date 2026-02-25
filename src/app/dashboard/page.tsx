@@ -1,15 +1,16 @@
 "use client";
 
+import React from 'react'
 import { Package, Zap, ChevronRight, Activity, TrendingUp, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { dashboardSections } from '@/config/navigation'
 import { GlassContainer } from '@/components/global/GlassContainer'
 
-const quickStats = [
-  { label: 'Active Kits', value: '24', change: '+3', changeType: 'positive' as const, icon: Package },
-  { label: 'Total Claims', value: '12.4K', change: '+18%', changeType: 'positive' as const, icon: Activity },
-  { label: 'Active Servers', value: '8', change: '0', changeType: 'neutral' as const, icon: Layers },
-  { label: 'API Calls Today', value: '2.1K', change: '+5%', changeType: 'positive' as const, icon: TrendingUp },
+const quickStats: Array<{ label: string; value: string; change: string; changeType: 'positive' | 'negative' | 'neutral'; icon: React.ComponentType<{ className?: string }> }> = [
+  { label: 'Active Kits', value: '24', change: '+3', changeType: 'positive', icon: Package },
+  { label: 'Total Claims', value: '12.4K', change: '+18%', changeType: 'positive', icon: Activity },
+  { label: 'Active Servers', value: '8', change: '0', changeType: 'neutral', icon: Layers },
+  { label: 'API Calls Today', value: '2.1K', change: '+5%', changeType: 'positive', icon: TrendingUp },
 ]
 
 export default function DashboardPage() {

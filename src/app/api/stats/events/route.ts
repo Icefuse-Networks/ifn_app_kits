@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
         try {
           mergedWeaponKills = JSON.parse((existing?.weapon_kills as string) || '{}')
         } catch (err) {
-          logger.admin.warn('Failed to parse weapon_kills JSON from ClickHouse — resetting to empty', err)
+          logger.admin.warn('Failed to parse weapon_kills JSON from ClickHouse — resetting to empty', err as Error)
         }
         for (const [weapon, count] of Object.entries(delta.weapon_kills)) {
           mergedWeaponKills[weapon] = (mergedWeaponKills[weapon] || 0) + count
