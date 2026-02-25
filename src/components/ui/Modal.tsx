@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { Button, IconButton } from './Button'
 
@@ -81,26 +82,18 @@ export function Modal({
     }
   }
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{
-        background: 'rgba(0, 0, 0, 0.70)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
+      style={{ background: 'rgba(0, 0, 0, 0.75)' }}
       onClick={handleBackdropClick}
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-xl overflow-hidden`}
+        className={`relative w-full ${sizeClasses[size]} rounded-2xl overflow-hidden`}
         style={{
-          background:
-            'linear-gradient(145deg, rgba(20, 35, 60, 0.95) 0%, rgba(15, 28, 50, 0.97) 50%, rgba(12, 22, 42, 0.98) 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.20)',
-          backdropFilter: 'blur(60px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(150%)',
-          boxShadow:
-            '0 4px 20px rgba(0, 0, 0, 0.30), 0 8px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+          background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
+          border: '1px solid var(--glass-border)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
           maxHeight: 'calc(100vh - 2rem)',
           display: 'flex',
           flexDirection: 'column',
@@ -152,6 +145,9 @@ export function Modal({
       </div>
     </div>
   )
+
+  if (typeof window === 'undefined') return null
+  return createPortal(modalContent, document.body)
 }
 
 // =============================================================================
