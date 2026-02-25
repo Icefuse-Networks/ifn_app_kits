@@ -9,9 +9,11 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Trophy, TrendingUp, Server, Clock, Globe, Users, ExternalLink } from 'lucide-react'
+import { Trophy, TrendingUp, Server, Clock, Users, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
+import { PageBackground } from '@/components/global/PageBackground'
 import { Dropdown, DropdownOption } from '@/components/global/Dropdown'
 import { Loading } from '@/components/ui/Loading'
 import { Button } from '@/components/ui/Button'
@@ -173,30 +175,10 @@ export default function LeaderboardsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[var(--bg-root)] flex flex-col">
-      {/* Header */}
-      <header
-        className="border-b"
-        style={{
-          background: 'var(--glass-bg)',
-          borderColor: 'var(--glass-border)',
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-xl font-bold text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors"
-          >
-            Icefuse Kit Manager
-          </Link>
-          <nav className="flex items-center gap-4">
-            <span className="text-sm text-[var(--text-secondary)]">Leaderboards</span>
-          </nav>
-        </div>
-      </header>
+    <PageBackground className="portal-root">
+      <Header />
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full pt-20">
         {/* Page Title */}
         <div className="text-center mb-8">
           <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--accent-primary)]" />
@@ -591,8 +573,7 @@ export default function LeaderboardsPage() {
         )}
       </main>
 
-      {/* Footer */}
       <Footer />
-    </div>
+    </PageBackground>
   )
 }
