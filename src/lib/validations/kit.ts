@@ -78,6 +78,7 @@ export const kitSchema = z.object({
   IsHidden: z.boolean().default(false),
   HideWithoutPermission: z.boolean().default(false),
   IsAutoKit: z.boolean().default(false),
+  IsStoreKit: z.boolean().default(false),
   CopyPasteFile: z.string().max(200).default(''),
   KitImage: z.string().max(500).default(''),
   KitColor: z.string().max(20).default(''),
@@ -396,9 +397,35 @@ export const cloneKitConfigSchema = z.object({
   description: z.string().max(500).nullable().optional(),
 })
 
+/**
+ * Patch an individual kit within a config (partial update by kit name)
+ */
+export const patchKitSchema = z.object({
+  kitName: z.string().min(1).max(100),
+  updates: kitSchema.partial(),
+})
+
+/**
+ * Add a new kit to a config
+ */
+export const addKitSchema = z.object({
+  kitName: z.string().min(1).max(100),
+  kit: kitSchema,
+})
+
+/**
+ * Delete a kit from a config by name
+ */
+export const deleteKitSchema = z.object({
+  kitName: z.string().min(1).max(100),
+})
+
 export type CreateKitConfigInput = z.infer<typeof createKitConfigSchema>
 export type UpdateKitConfigInput = z.infer<typeof updateKitConfigSchema>
 export type CloneKitConfigInput = z.infer<typeof cloneKitConfigSchema>
+export type PatchKitInput = z.infer<typeof patchKitSchema>
+export type AddKitInput = z.infer<typeof addKitSchema>
+export type DeleteKitInput = z.infer<typeof deleteKitSchema>
 export type CreateGameServerInput = z.infer<typeof createGameServerSchema>
 export type UpdateGameServerInput = z.infer<typeof updateGameServerSchema>
 export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
