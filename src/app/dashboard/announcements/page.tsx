@@ -48,11 +48,11 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
     <div className="anim-fade-scale rounded-xl p-6 transition-all group bg-white/[0.02] border border-white/5">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className={`p-2 rounded-lg ${isGlobal ? "bg-green-500/20" : "bg-purple-500/20"}`}>
-            {isGlobal ? <Globe className="h-5 w-5 text-green-400" /> : <Server className="h-5 w-5 text-purple-400" />}
+          <div className={`p-2 rounded-lg ${isGlobal ? "bg-[var(--status-success)]/20" : "bg-[var(--accent-primary)]/20"}`}>
+            {isGlobal ? <Globe className="h-5 w-5 text-[var(--status-success)]" /> : <Server className="h-5 w-5 text-[var(--accent-primary)]" />}
           </div>
           <div>
-            <h4 className="text-white font-semibold group-hover:text-purple-400 transition-colors">{isGlobal ? "Global Announcement" : `${assignedServers.length} Server${assignedServers.length !== 1 ? "s" : ""}`}</h4>
+            <h4 className="text-white font-semibold group-hover:text-[var(--accent-primary)] transition-colors">{isGlobal ? "Global Announcement" : `${assignedServers.length} Server${assignedServers.length !== 1 ? "s" : ""}`}</h4>
             <div className="flex items-center space-x-2 mt-1">
               {announcement.showCardNotification ? (
                 <Badge variant="success" size="sm" icon={<Bell className="h-3 w-3" />}>
@@ -79,7 +79,7 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
           <IconButton icon={<Trash2 className="h-4 w-4" />} onClick={() => onDelete(announcement.id)} label="Delete" size="sm" />
         </div>
       </div>
-      <div className="rounded-lg p-3 bg-purple-500/10 border-l-4 border-purple-500">
+      <div className="rounded-lg p-3 bg-[var(--accent-primary)]/10 border-l-4 border-[var(--accent-primary)]">
         <p className="text-white whitespace-pre-wrap">{announcement.text}</p>
       </div>
     </div>
@@ -156,19 +156,19 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-zinc-400 text-sm font-medium mb-2">Announcement Scope</label>
+          <label className="block text-[var(--text-muted)] text-sm font-medium mb-2">Announcement Scope</label>
           <div className="space-y-3">
             <label className="flex items-center space-x-3 cursor-pointer">
-              <input type="radio" name="announcementScope" checked={isGlobal} onChange={() => { setIsGlobal(true); setSelectedServerIds([]); }} className="text-green-500" />
+              <input type="radio" name="announcementScope" checked={isGlobal} onChange={() => { setIsGlobal(true); setSelectedServerIds([]); }} className="text-[var(--status-success)]" />
               <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-green-400" />
+                <Globe className="h-4 w-4 text-[var(--status-success)]" />
                 <span className="text-white">Global (All Servers)</span>
               </div>
             </label>
             <label className="flex items-center space-x-3 cursor-pointer">
-              <input type="radio" name="announcementScope" checked={!isGlobal} onChange={() => setIsGlobal(false)} className="text-purple-500" />
+              <input type="radio" name="announcementScope" checked={!isGlobal} onChange={() => setIsGlobal(false)} className="text-[var(--accent-primary)]" />
               <div className="flex items-center space-x-2">
-                <Server className="h-4 w-4 text-purple-400" />
+                <Server className="h-4 w-4 text-[var(--accent-primary)]" />
                 <span className="text-white">Specific Servers</span>
               </div>
             </label>
@@ -177,7 +177,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
 
         {!isGlobal && (
           <div>
-            <label className="block text-zinc-400 text-sm font-medium mb-2">Select Servers</label>
+            <label className="block text-[var(--text-muted)] text-sm font-medium mb-2">Select Servers</label>
             <MultiSelect
               value={selectedServerIds}
               options={serverOptions}
@@ -185,7 +185,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
               placeholder="Select servers..."
               showSelectAll
             />
-            <p className="text-xs text-zinc-500 mt-1">Choose which servers should display this announcement</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Choose which servers should display this announcement</p>
           </div>
         )}
 
@@ -204,7 +204,7 @@ const AnnouncementModal = ({ isOpen, onClose, onSave, announcement, servers }: {
             onChange={setShowCardNotification}
             label="Card Notification"
             description={showCardNotification ? "Show as a popup card with timing controls" : "Show as text message only"}
-            icon={showCardNotification ? <Bell className="h-4 w-4 text-green-400" /> : <BellOff className="h-4 w-4" />}
+            icon={showCardNotification ? <Bell className="h-4 w-4 text-[var(--status-success)]" /> : <BellOff className="h-4 w-4" />}
           />
           {showCardNotification && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -319,12 +319,12 @@ export default function AnnouncementsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                <MessageSquare className="h-6 w-6 text-purple-400" />
+              <div className="p-2 rounded-xl bg-[var(--accent-primary)]/20">
+                <MessageSquare className="h-6 w-6 text-[var(--accent-primary)]" />
               </div>
               Announcements
             </h1>
-            <p className="text-zinc-500 mt-2">Manage announcements for individual servers, multiple servers, or all servers globally</p>
+            <p className="text-[var(--text-muted)] mt-2">Manage announcements for individual servers, multiple servers, or all servers globally</p>
           </div>
           <div>
             <Button
@@ -346,7 +346,7 @@ export default function AnnouncementsPage() {
           <div className="space-y-8">
             {globalAnnouncements.length > 0 && (
               <div>
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center"><Globe className="h-5 w-5 mr-2 text-green-400" />Global Announcements</h3>
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center"><Globe className="h-5 w-5 mr-2 text-[var(--status-success)]" />Global Announcements</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {globalAnnouncements.map((announcement) => (
                     <AnnouncementCard key={announcement.id} announcement={announcement} servers={servers} onEdit={openEditModal} onDelete={handleDeleteAnnouncement} />
@@ -356,7 +356,7 @@ export default function AnnouncementsPage() {
             )}
             {serverAnnouncements.length > 0 && (
               <div>
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center"><Server className="h-5 w-5 mr-2 text-purple-400" />Server-Specific Announcements</h3>
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center"><Server className="h-5 w-5 mr-2 text-[var(--accent-primary)]" />Server-Specific Announcements</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {serverAnnouncements.map((announcement) => (
                     <AnnouncementCard key={announcement.id} announcement={announcement} servers={servers} onEdit={openEditModal} onDelete={handleDeleteAnnouncement} />

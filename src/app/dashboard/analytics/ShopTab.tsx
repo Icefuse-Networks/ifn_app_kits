@@ -156,16 +156,16 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
   const serverColumns: Column<ServerStat>[] = useMemo(() => [
     { key: "server", header: "Server", render: (_, row, idx) => (<div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full shrink-0" style={{ background: COLORS[idx % COLORS.length] }} /><span className="text-white font-medium truncate max-w-[280px]" title={row.server}>{row.server}</span></div>) },
     { key: "purchases", header: "Purchases", align: "right" as const, render: (v) => <span className="text-white">{(v as number).toLocaleString()}</span> },
-    { key: "revenue", header: "Revenue", align: "right" as const, render: (v) => <span className="text-green-400 font-semibold">{(v as number).toLocaleString()}</span> },
-    { key: "players", header: "Players", align: "right" as const, render: (v) => <span className="text-zinc-400">{(v as number).toLocaleString()}</span> },
+    { key: "revenue", header: "Revenue", align: "right" as const, render: (v) => <span className="text-[var(--status-success)] font-semibold">{(v as number).toLocaleString()}</span> },
+    { key: "players", header: "Players", align: "right" as const, render: (v) => <span className="text-[var(--text-muted)]">{(v as number).toLocaleString()}</span> },
     { key: "share", header: "Share", render: (_, row, idx) => { const total = analytics?.serverStats.reduce((sum, s) => sum + s.purchases, 0) || 0; return <ShareBar value={row.purchases} total={total} colorIndex={idx} colors={COLORS} />; } },
   ], [analytics?.serverStats]);
 
   const playerColumns: Column<PlayerStat>[] = useMemo(() => [
     { key: "rank", header: "#", render: (_, __, idx) => <RankBadge rank={idx + 1} /> },
-    { key: "playerName", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.playerName}</div><div className="text-xs text-zinc-600 font-mono">{row.steamid64}</div></div>) },
+    { key: "playerName", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.playerName}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{row.steamid64}</div></div>) },
     { key: "purchases", header: "Purchases", align: "right" as const, render: (v) => <span className="text-white">{(v as number).toLocaleString()}</span> },
-    { key: "totalSpent", header: "Total Spent", align: "right" as const, render: (v) => <span className="text-green-400 font-semibold">{(v as number).toLocaleString()}</span> },
+    { key: "totalSpent", header: "Total Spent", align: "right" as const, render: (v) => <span className="text-[var(--status-success)] font-semibold">{(v as number).toLocaleString()}</span> },
   ], []);
 
   return (
@@ -236,13 +236,13 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
               <ChartCard title="Top Items by Revenue" icon={DollarSign} delay={0.8}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {analytics.topItems.slice(0, 8).map((item, idx) => (
-                    <div key={item.item} className="anim-stagger-item p-4 rounded-xl transition-all hover:scale-[1.03] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 hover:border-purple-500/30" style={{ animationDelay: `${idx * 50}ms` }}>
+                    <div key={item.item} className="anim-stagger-item p-4 rounded-xl transition-all hover:scale-[1.03] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 hover:border-[var(--accent-primary)]/30" style={{ animationDelay: `${idx * 50}ms` }}>
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: `linear-gradient(135deg, ${COLORS[idx % COLORS.length]}, ${COLORS[(idx + 1) % COLORS.length]})` }}>{idx + 1}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-white truncate" title={item.item}>{item.item}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs"><span className="text-zinc-400">{item.count} sales</span><span className="text-green-400 font-semibold">{item.revenue.toLocaleString()}</span></div>
-                          <div className="text-xs text-zinc-500 mt-1">{item.buyers} buyers</div>
+                          <div className="flex items-center gap-3 mt-2 text-xs"><span className="text-[var(--text-muted)]">{item.count} sales</span><span className="text-[var(--status-success)] font-semibold">{item.revenue.toLocaleString()}</span></div>
+                          <div className="text-xs text-[var(--text-muted)] mt-1">{item.buyers} buyers</div>
                         </div>
                       </div>
                     </div>
@@ -279,27 +279,27 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.02]">
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase"><Clock className="inline h-4 w-4 mr-1" />Timestamp</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase"><Server className="inline h-4 w-4 mr-1" />Server</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase"><User className="inline h-4 w-4 mr-1" />Player</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase">SteamID64</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase"><Package className="inline h-4 w-4 mr-1" />Item</th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-zinc-400 uppercase">Amt</th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-zinc-400 uppercase">Currency</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-zinc-400 uppercase"><DollarSign className="inline h-4 w-4 mr-1" />Cost</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-muted)] uppercase"><Clock className="inline h-4 w-4 mr-1" />Timestamp</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-muted)] uppercase"><Server className="inline h-4 w-4 mr-1" />Server</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-muted)] uppercase"><User className="inline h-4 w-4 mr-1" />Player</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">SteamID64</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--text-muted)] uppercase"><Package className="inline h-4 w-4 mr-1" />Item</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-[var(--text-muted)] uppercase">Amt</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-[var(--text-muted)] uppercase">Currency</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-[var(--text-muted)] uppercase"><DollarSign className="inline h-4 w-4 mr-1" />Cost</th>
                     </tr>
                   </thead>
                   <tbody>
                     {purchases.map((purchase, idx) => (
                       <tr key={`${purchase.steamid64}-${purchase.timestamp}-${idx}`} className="anim-stagger-item border-b border-white/5 hover:bg-white/[0.03] transition-colors" style={{ animationDelay: `${idx * 20}ms` }}>
-                        <td className="px-6 py-4 text-sm text-zinc-400">{purchase.timestamp}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--text-muted)]">{purchase.timestamp}</td>
                         <td className="px-6 py-4 text-sm text-white">{purchase.server_name}</td>
                         <td className="px-6 py-4 text-sm text-white font-medium">{purchase.player_name}</td>
-                        <td className="px-6 py-4 text-sm text-zinc-500 font-mono">{purchase.steamid64}</td>
-                        <td className="px-6 py-4 text-sm text-purple-400 font-medium">{purchase.item_name}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--text-muted)] font-mono">{purchase.steamid64}</td>
+                        <td className="px-6 py-4 text-sm text-[var(--accent-primary)] font-medium">{purchase.item_name}</td>
                         <td className="px-6 py-4 text-sm text-center text-white">{purchase.amount}</td>
-                        <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">{purchase.currency}</span></td>
-                        <td className="px-6 py-4 text-sm text-right text-green-400 font-semibold">{purchase.cost.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-1 rounded-full text-xs bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">{purchase.currency}</span></td>
+                        <td className="px-6 py-4 text-sm text-right text-[var(--status-success)] font-semibold">{purchase.cost.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -309,7 +309,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 p-6 border-t border-white/5">
                   <Button variant="secondary" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} size="sm"><ChevronLeft className="h-5 w-5" /></Button>
-                  <span className="px-4 py-2 text-sm text-zinc-400">Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} records)</span>
+                  <span className="px-4 py-2 text-sm text-[var(--text-muted)]">Page {currentPage} of {totalPages} ({totalRecords.toLocaleString()} records)</span>
                   <Button variant="secondary" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} size="sm"><ChevronRight className="h-5 w-5" /></Button>
                 </div>
               )}

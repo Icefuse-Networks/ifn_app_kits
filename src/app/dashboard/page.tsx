@@ -18,8 +18,8 @@ export default function DashboardPage() {
       <div className="anim-fade-slide-up">
         <div className="mb-10">
           <div className="flex items-center gap-4 mb-2">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20">
-              <Zap className="h-7 w-7 text-blue-400" />
+            <div className="p-3 rounded-2xl bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/20">
+              <Zap className="h-7 w-7 text-[var(--accent-primary)]" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-[var(--text-primary)]">Dashboard</h1>

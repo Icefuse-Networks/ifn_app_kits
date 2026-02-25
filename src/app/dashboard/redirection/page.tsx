@@ -141,12 +141,12 @@ function StatCard({ label, value, icon: Icon, subtitle, color = "purple" }: {
   color?: string;
 }) {
   const colorClasses: Record<string, { icon: string; bg: string }> = {
-    purple: { icon: "text-purple-400", bg: "bg-purple-500/20" },
-    blue: { icon: "text-blue-400", bg: "bg-blue-500/20" },
-    green: { icon: "text-green-400", bg: "bg-green-500/20" },
-    yellow: { icon: "text-yellow-400", bg: "bg-yellow-500/20" },
-    red: { icon: "text-red-400", bg: "bg-red-500/20" },
-    cyan: { icon: "text-cyan-400", bg: "bg-cyan-500/20" },
+    purple: { icon: "text-[var(--accent-primary)]", bg: "bg-[var(--accent-primary)]/20" },
+    blue: { icon: "text-[var(--accent-primary)]", bg: "bg-[var(--accent-primary)]/20" },
+    green: { icon: "text-[var(--status-success)]", bg: "bg-[var(--status-success)]/20" },
+    yellow: { icon: "text-[var(--status-warning)]", bg: "bg-[var(--status-warning)]/20" },
+    red: { icon: "text-[var(--status-error)]", bg: "bg-[var(--status-error)]/20" },
+    cyan: { icon: "text-[var(--accent-primary)]", bg: "bg-[var(--accent-primary)]/20" },
   };
   const colors = colorClasses[color] || colorClasses.purple;
 
@@ -211,7 +211,7 @@ function ListManager({ label, description, items, onChange, placeholder }: {
           {items.map((item, idx) => (
             <Badge key={idx} variant="secondary" size="sm">
               {item}
-              <button onClick={() => removeItem(item)} className="ml-1 hover:text-red-400">
+              <button onClick={() => removeItem(item)} className="ml-1 hover:text-[var(--status-error)]">
                 ×
               </button>
             </Badge>
@@ -268,7 +268,7 @@ function WipeMappingAdder({ servers, existingMappings, onAdd }: {
   return (
     <div className="flex items-end gap-3">
       <div className="flex-1">
-        <label className="text-xs text-zinc-400 block mb-1">Source (wiping server)</label>
+        <label className="text-xs text-[var(--text-muted)] block mb-1">Source (wiping server)</label>
         <Dropdown
           value={source}
           options={availableSources.map((s): DropdownOption => ({
@@ -282,7 +282,7 @@ function WipeMappingAdder({ servers, existingMappings, onAdd }: {
         />
       </div>
       <div className="flex-1">
-        <label className="text-xs text-zinc-400 block mb-1">Destination</label>
+        <label className="text-xs text-[var(--text-muted)] block mb-1">Destination</label>
         <Dropdown
           value={target}
           options={servers.map((s): DropdownOption => ({
@@ -547,12 +547,12 @@ export default function RedirectionPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                <ArrowRightLeft className="h-6 w-6 text-purple-400" />
+              <div className="p-2 rounded-xl bg-[var(--accent-primary)]/20">
+                <ArrowRightLeft className="h-6 w-6 text-[var(--accent-primary)]" />
               </div>
               Redirection
             </h1>
-            <p className="text-zinc-500 mt-2">Configure AFK redirects, wipe redirects, and player management</p>
+            <p className="text-[var(--text-muted)] mt-2">Configure AFK redirects, wipe redirects, and player management</p>
           </div>
 
           <Button
@@ -583,10 +583,10 @@ export default function RedirectionPage() {
             >
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-orange-400" />
+                  <Shield className="h-5 w-5 text-[var(--status-warning)]" />
                   AFK Redirect
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">Monitors players in configured groups and redirects them to empty servers when AFK</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">Monitors players in configured groups and redirects them to empty servers when AFK</p>
 
                 <div className="space-y-6">
                   <div className="p-3 rounded-lg bg-white/5">
@@ -634,10 +634,10 @@ export default function RedirectionPage() {
 
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-400" />
+                  <Users className="h-5 w-5 text-[var(--accent-primary)]" />
                   Population Thresholds
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">AFK redirects only target servers with population within these limits</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">AFK redirects only target servers with population within these limits</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SettingInput
@@ -657,10 +657,10 @@ export default function RedirectionPage() {
 
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-red-400" />
+                  <Calendar className="h-5 w-5 text-[var(--status-error)]" />
                   Wipe Redirect
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">Redirect players before server wipes. Configure schedules on each server.</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">Redirect players before server wipes. Configure schedules on each server.</p>
 
                 <div className="space-y-6">
                   <div className="p-3 rounded-lg bg-white/5">
@@ -702,12 +702,12 @@ export default function RedirectionPage() {
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <mode.icon className={`h-4 w-4 ${config.wipeRedirectMode === mode.value ? `text-${mode.color}-400` : "text-zinc-400"}`} />
-                            <span className={`text-sm font-medium ${config.wipeRedirectMode === mode.value ? "text-white" : "text-zinc-300"}`}>
+                            <mode.icon className={`h-4 w-4 ${config.wipeRedirectMode === mode.value ? `text-${mode.color}-400` : "text-[var(--text-muted)]"}`} />
+                            <span className={`text-sm font-medium ${config.wipeRedirectMode === mode.value ? "text-white" : "text-[var(--text-secondary)]"}`}>
                               {mode.label}
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-500">{mode.desc}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{mode.desc}</p>
                         </button>
                       ))}
                     </div>
@@ -717,7 +717,7 @@ export default function RedirectionPage() {
                   {config.wipeRedirectMode === "targeted" && (
                     <div className="bg-white/5 rounded-lg p-4">
                       <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">
-                        <Crosshair className="h-4 w-4 inline mr-1 text-blue-400" />
+                        <Crosshair className="h-4 w-4 inline mr-1 text-[var(--accent-primary)]" />
                         Wipe Target Server
                       </label>
                       <p className="text-xs text-[var(--text-muted)] mb-2">All players from wiping servers will be sent here</p>
@@ -740,7 +740,7 @@ export default function RedirectionPage() {
                   {config.wipeRedirectMode === "holding" && (
                     <div className="bg-white/5 rounded-lg p-4">
                       <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">
-                        <RotateCcw className="h-4 w-4 inline mr-1 text-green-400" />
+                        <RotateCcw className="h-4 w-4 inline mr-1 text-[var(--status-success)]" />
                         Holding Server
                       </label>
                       <p className="text-xs text-[var(--text-muted)] mb-2">Players go here temporarily and are redirected back when the wiped server comes back online</p>
@@ -764,7 +764,7 @@ export default function RedirectionPage() {
                     <div className="bg-white/5 rounded-lg p-4 space-y-4">
                       <div>
                         <label className="text-sm font-medium text-[var(--text-primary)] block mb-1">
-                          <GitBranch className="h-4 w-4 inline mr-1 text-yellow-400" />
+                          <GitBranch className="h-4 w-4 inline mr-1 text-[var(--status-warning)]" />
                           Server Wipe Mapping
                         </label>
                         <p className="text-xs text-[var(--text-muted)]">When a source server wipes, its players are sent to the mapped destination</p>
@@ -776,9 +776,9 @@ export default function RedirectionPage() {
                         return (
                           <div key={sourceId} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
                             <div className="flex-1">
-                              <span className="text-sm text-zinc-300">{sourceName}</span>
+                              <span className="text-sm text-[var(--text-secondary)]">{sourceName}</span>
                             </div>
-                            <span className="text-purple-400 text-sm">→</span>
+                            <span className="text-[var(--accent-primary)] text-sm">→</span>
                             <div className="flex-1">
                               <span className="text-sm text-white">{targetName}</span>
                             </div>
@@ -788,7 +788,7 @@ export default function RedirectionPage() {
                                 delete updated[sourceId];
                                 setConfig({ ...config, wipeServerMapping: updated });
                               }}
-                              className="text-red-400 hover:text-red-300 p-1"
+                              className="text-[var(--status-error)] hover:text-[var(--status-error)] p-1"
                             >
                               ×
                             </button>
@@ -813,10 +813,10 @@ export default function RedirectionPage() {
 
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                  <Server className="h-5 w-5 text-green-400" />
+                  <Server className="h-5 w-5 text-[var(--status-success)]" />
                   Target Server Selection
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">Control which servers are used as redirect targets</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">Control which servers are used as redirect targets</p>
 
                 <div className="space-y-6">
                   <div className="bg-white/5 rounded-lg p-4">
@@ -876,10 +876,10 @@ export default function RedirectionPage() {
 
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-400" />
+                  <Zap className="h-5 w-5 text-[var(--status-warning)]" />
                   Global Settings
                 </h2>
-                <p className="text-sm text-zinc-500 mb-4">General configuration that applies to all redirect systems</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">General configuration that applies to all redirect systems</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SettingInput
@@ -923,7 +923,7 @@ export default function RedirectionPage() {
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-purple-400" />
+                    <Activity className="h-5 w-5 text-[var(--accent-primary)]" />
                     Redirect Logs
                   </h2>
                   <div className="flex flex-wrap items-center gap-3">
@@ -942,7 +942,7 @@ export default function RedirectionPage() {
                           key={type}
                           onClick={() => { setLogFilter(type); setLogPage(1); }}
                           className={`px-3 py-2 text-sm transition-colors capitalize ${
-                            logFilter === type ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"
+                            logFilter === type ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)] hover:text-white"
                           }`}
                         >
                           {type}
@@ -955,7 +955,7 @@ export default function RedirectionPage() {
                           key={o}
                           onClick={() => { setOutcomeFilter(o); setLogPage(1); }}
                           className={`px-3 py-2 text-sm transition-colors capitalize ${
-                            outcomeFilter === o ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"
+                            outcomeFilter === o ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)] hover:text-white"
                           }`}
                         >
                           {o}
@@ -971,27 +971,27 @@ export default function RedirectionPage() {
                 {/* Date range filters */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-400">From:</span>
+                    <span className="text-sm text-[var(--text-muted)]">From:</span>
                     <input
                       type="date"
                       value={dateFrom}
                       onChange={(e) => { setDateFrom(e.target.value); setLogPage(1); }}
-                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[var(--accent-primary)]"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-400">To:</span>
+                    <span className="text-sm text-[var(--text-muted)]">To:</span>
                     <input
                       type="date"
                       value={dateTo}
                       onChange={(e) => { setDateTo(e.target.value); setLogPage(1); }}
-                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[var(--accent-primary)]"
                     />
                   </div>
                   {(dateFrom || dateTo) && (
                     <button
                       onClick={() => { setDateFrom(""); setDateTo(""); setLogPage(1); }}
-                      className="text-sm text-purple-400 hover:text-purple-300"
+                      className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
                     >
                       Clear dates
                     </button>
@@ -1012,12 +1012,12 @@ export default function RedirectionPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-white/10">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Player</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Reason</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Outcome</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Source → Target</th>
-                          <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Time</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Player</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Reason</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Outcome</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Source → Target</th>
+                          <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Time</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1032,11 +1032,11 @@ export default function RedirectionPage() {
                               {log.playerName ? (
                                 <div>
                                   <div className="text-white font-medium">{log.playerName}</div>
-                                  <div className="text-xs text-zinc-500">{log.steamId}</div>
+                                  <div className="text-xs text-[var(--text-muted)]">{log.steamId}</div>
                                   {log.rank && <Badge variant="primary" size="sm">{log.rank}</Badge>}
                                 </div>
                               ) : (
-                                <span className="text-zinc-500">{log.players} players</span>
+                                <span className="text-[var(--text-muted)]">{log.players} players</span>
                               )}
                             </td>
                             <td className="py-3 px-4">
@@ -1052,25 +1052,25 @@ export default function RedirectionPage() {
                                 {log.redirectReason}
                               </Badge>
                               {log.afkTimeSeconds && (
-                                <div className="text-xs text-zinc-500 mt-1">{formatTime(log.afkTimeSeconds)}</div>
+                                <div className="text-xs text-[var(--text-muted)] mt-1">{formatTime(log.afkTimeSeconds)}</div>
                               )}
                             </td>
                             <td className="py-3 px-4">
                               <OutcomeBadge outcome={log.outcome} />
                               {log.failureReason && (
-                                <div className="text-xs text-red-400 mt-1" title={log.failureReason}>
+                                <div className="text-xs text-[var(--status-error)] mt-1" title={log.failureReason}>
                                   {log.failureReason.length > 30 ? log.failureReason.slice(0, 28) + "..." : log.failureReason}
                                 </div>
                               )}
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-zinc-400 truncate max-w-[120px]" title={log.sourceIdentifier}>
+                                <span className="text-[var(--text-muted)] truncate max-w-[120px]" title={log.sourceIdentifier}>
                                   {log.sourceName || log.sourceIdentifier}
                                 </span>
                                 {(log.targetIdentifier || log.targetName) && (
                                   <>
-                                    <span className="text-purple-400">→</span>
+                                    <span className="text-[var(--accent-primary)]">→</span>
                                     <span className="text-white truncate max-w-[120px]" title={log.targetIdentifier || ""}>
                                       {log.targetName || log.targetIdentifier}
                                     </span>
@@ -1078,7 +1078,7 @@ export default function RedirectionPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-right text-sm text-zinc-400">
+                            <td className="py-3 px-4 text-right text-sm text-[var(--text-muted)]">
                               {formatDate(log.timestamp)}
                             </td>
                           </tr>
@@ -1097,7 +1097,7 @@ export default function RedirectionPage() {
                       showPageInfo
                     />
                     <div className="text-center mt-2">
-                      <span className="text-sm text-zinc-500">
+                      <span className="text-sm text-[var(--text-muted)]">
                         {logTotal} total
                       </span>
                     </div>
@@ -1120,7 +1120,7 @@ export default function RedirectionPage() {
                       key={p}
                       onClick={() => setAnalyticsPeriod(p)}
                       className={`px-4 py-2 text-sm transition-colors ${
-                        analyticsPeriod === p ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400 hover:text-white"
+                        analyticsPeriod === p ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)] hover:text-white"
                       }`}
                     >
                       {p === "7d" ? "7 Days" : p === "30d" ? "30 Days" : "90 Days"}
@@ -1194,7 +1194,7 @@ export default function RedirectionPage() {
 
                   {/* Charts row */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <ChartCard title="Outcome Breakdown" icon={BarChart3} iconColor="text-green-400" className="lg:col-span-1">
+                    <ChartCard title="Outcome Breakdown" icon={BarChart3} iconColor="text-[var(--status-success)]" className="lg:col-span-1">
                       <div style={{ height: 250 }}>
                         {outcomeChartData.length > 0 ? (
                           <PieChart
@@ -1207,12 +1207,12 @@ export default function RedirectionPage() {
                             legendPosition="bottom"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-zinc-500 text-sm">No outcome data</div>
+                          <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm">No outcome data</div>
                         )}
                       </div>
                     </ChartCard>
 
-                    <ChartCard title="Daily Trend" icon={Activity} iconColor="text-purple-400" className="lg:col-span-2">
+                    <ChartCard title="Daily Trend" icon={Activity} iconColor="text-[var(--accent-primary)]" className="lg:col-span-2">
                       <div style={{ height: 250 }}>
                         {analyticsData.trend.length > 0 ? (
                           <TimeSeriesChart
@@ -1223,7 +1223,7 @@ export default function RedirectionPage() {
                             xAxisRotate={45}
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-zinc-500 text-sm">No trend data</div>
+                          <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm">No trend data</div>
                         )}
                       </div>
                     </ChartCard>
@@ -1231,7 +1231,7 @@ export default function RedirectionPage() {
 
                   {/* Reason breakdown */}
                   {reasonChartData.length > 0 && (
-                    <ChartCard title="Redirects by Reason" icon={AlertTriangle} iconColor="text-yellow-400">
+                    <ChartCard title="Redirects by Reason" icon={AlertTriangle} iconColor="text-[var(--status-warning)]">
                       <div style={{ height: Math.max(200, reasonChartData.length * 40) }}>
                         <BarChart
                           data={reasonChartData}
@@ -1248,17 +1248,17 @@ export default function RedirectionPage() {
                   {analyticsData.byServer.length > 0 && (
                     <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                       <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
-                        <Server className="h-5 w-5 text-blue-400" />
+                        <Server className="h-5 w-5 text-[var(--accent-primary)]" />
                         Per-Server Breakdown
                       </h3>
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
                             <tr className="border-b border-white/10">
-                              <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400">Server</th>
-                              <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Total Redirects</th>
-                              <th className="text-right py-3 px-4 text-sm font-medium text-zinc-400">Success Rate</th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-zinc-400 w-1/3">Rate</th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Server</th>
+                              <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Total Redirects</th>
+                              <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Success Rate</th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)] w-1/3">Rate</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1266,11 +1266,11 @@ export default function RedirectionPage() {
                               <tr key={srv.serverId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                 <td className="py-3 px-4">
                                   <div className="text-white font-medium">{srv.serverName}</div>
-                                  <div className="text-xs text-zinc-500">{srv.serverId}</div>
+                                  <div className="text-xs text-[var(--text-muted)]">{srv.serverId}</div>
                                 </td>
                                 <td className="py-3 px-4 text-right text-white">{srv.count.toLocaleString()}</td>
                                 <td className="py-3 px-4 text-right">
-                                  <span className={srv.successRate >= 90 ? "text-green-400" : srv.successRate >= 70 ? "text-yellow-400" : "text-red-400"}>
+                                  <span className={srv.successRate >= 90 ? "text-[var(--status-success)]" : srv.successRate >= 70 ? "text-[var(--status-warning)]" : "text-[var(--status-error)]"}>
                                     {srv.successRate}%
                                   </span>
                                 </td>
@@ -1278,7 +1278,7 @@ export default function RedirectionPage() {
                                   <div className="w-full bg-white/10 rounded-full h-2">
                                     <div
                                       className={`h-2 rounded-full ${
-                                        srv.successRate >= 90 ? "bg-green-500" : srv.successRate >= 70 ? "bg-yellow-500" : "bg-red-500"
+                                        srv.successRate >= 90 ? "bg-[var(--status-success)]" : srv.successRate >= 70 ? "bg-[var(--status-warning)]" : "bg-[var(--status-error)]"
                                       }`}
                                       style={{ width: `${srv.successRate}%` }}
                                     />

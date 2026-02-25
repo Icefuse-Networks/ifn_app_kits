@@ -171,9 +171,9 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
   type WinnerStat = { steam_id: string; name: string; wins: number; kills: number; events: number };
   const winnerColumns: Column<WinnerStat>[] = useMemo(() => [
     { key: "rank", header: "#", render: (_, __, idx) => <RankBadge rank={idx + 1} /> },
-    { key: "name", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.name}</div><div className="text-xs text-zinc-600 font-mono">{row.steam_id}</div></div>) },
-    { key: "wins", header: "Wins", align: "right" as const, render: (v) => <span className="text-amber-400 font-semibold">{(v as number).toLocaleString()}</span> },
-    { key: "kills", header: "Kills", align: "right" as const, render: (v) => <span className="text-red-400">{(v as number).toLocaleString()}</span> },
+    { key: "name", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.name}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{row.steam_id}</div></div>) },
+    { key: "wins", header: "Wins", align: "right" as const, render: (v) => <span className="text-[var(--status-warning)] font-semibold">{(v as number).toLocaleString()}</span> },
+    { key: "kills", header: "Kills", align: "right" as const, render: (v) => <span className="text-[var(--status-error)]">{(v as number).toLocaleString()}</span> },
   ], []);
 
   return (
@@ -251,8 +251,8 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
       {activeSubTab === 'events' && (
         <>
           {error && (
-            <div className="text-center py-10 bg-red-900/20 border border-red-700/50 p-6 rounded-xl">
-              <p className="text-xl font-semibold text-red-300">{error}</p>
+            <div className="text-center py-10 bg-[var(--status-error)]/20 border border-[var(--status-error)]/50 p-6 rounded-xl">
+              <p className="text-xl font-semibold text-[var(--status-error)]">{error}</p>
             </div>
           )}
           {loading ? <Loading size="lg" text="Loading events..." /> : (
@@ -261,55 +261,55 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                 const isExpanded = expandedEvent === `${event.timestamp}-${event.winner_steam_id}`;
                 return (
                   <div key={`${event.timestamp}-${event.winner_steam_id}-${idx}`}
-                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-amber-500/30 transition-colors"
+                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-[var(--status-warning)]/30 transition-colors"
                     style={{ animationDelay: `${idx * 20}ms` }}>
                     <div className="p-4 cursor-pointer flex items-center justify-between"
                       onClick={() => setExpandedEvent(isExpanded ? null : `${event.timestamp}-${event.winner_steam_id}`)}>
                       <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-lg ${event.event_type === 'koth' ? 'bg-amber-500/20' : 'bg-purple-500/20'}`}>
-                          {event.event_type === 'koth' ? <Target className="h-5 w-5 text-amber-400" /> : <MapPin className="h-5 w-5 text-purple-400" />}
+                        <div className={`p-2 rounded-lg ${event.event_type === 'koth' ? 'bg-[var(--status-warning)]/20' : 'bg-[var(--accent-primary)]/20'}`}>
+                          {event.event_type === 'koth' ? <Target className="h-5 w-5 text-[var(--status-warning)]" /> : <MapPin className="h-5 w-5 text-[var(--accent-primary)]" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <Badge variant={event.event_type === 'koth' ? 'warning' : 'primary'} size="sm">{event.event_type.toUpperCase()}</Badge>
-                            {event.location && <span className="text-xs text-zinc-500">@ {event.location}</span>}
+                            {event.location && <span className="text-xs text-[var(--text-muted)]">@ {event.location}</span>}
                             {event.event_modes?.length > 0 && (
                               <div className="flex gap-1">{event.event_modes.map(mode => <Badge key={mode} variant="secondary" size="sm">{mode}</Badge>)}</div>
                             )}
                           </div>
-                          <div className="text-xs text-zinc-500 mt-1"><Clock className="inline h-3 w-3 mr-1" />{event.timestamp} • {formatDuration(event.duration_seconds)}</div>
+                          <div className="text-xs text-[var(--text-muted)] mt-1"><Clock className="inline h-3 w-3 mr-1" />{event.timestamp} • {formatDuration(event.duration_seconds)}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
                           <div className="flex items-center gap-2">
-                            <Crown className="h-4 w-4 text-amber-400" />
+                            <Crown className="h-4 w-4 text-[var(--status-warning)]" />
                             <span className="text-white font-semibold">{event.winner_name}</span>
-                            {event.winner_clan_tag && <span className="text-xs text-zinc-500">[{event.winner_clan_tag}]</span>}
+                            {event.winner_clan_tag && <span className="text-xs text-[var(--text-muted)]">[{event.winner_clan_tag}]</span>}
                           </div>
-                          <div className="text-xs text-zinc-500">
-                            <Skull className="inline h-3 w-3 mr-1 text-red-400" />{event.winner_kills} kills
+                          <div className="text-xs text-[var(--text-muted)]">
+                            <Skull className="inline h-3 w-3 mr-1 text-[var(--status-error)]" />{event.winner_kills} kills
                             <Users className="inline h-3 w-3 ml-2 mr-1" />{event.participants?.length || 0} players
                           </div>
                         </div>
-                        {isExpanded ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
+                        {isExpanded ? <ChevronUp className="h-5 w-5 text-[var(--text-muted)]" /> : <ChevronDown className="h-5 w-5 text-[var(--text-muted)]" />}
                       </div>
                     </div>
                       {isExpanded && event.participants?.length > 0 && (
                         <div className="border-t border-white/5 overflow-hidden">
                           <div className="p-4">
-                            <h4 className="text-sm font-semibold text-zinc-400 mb-3">Participants</h4>
+                            <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Participants</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
-                                <thead><tr className="text-zinc-500 text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Kills</th><th className="text-right pb-2">Deaths</th><th className="text-right pb-2">K/D</th></tr></thead>
+                                <thead><tr className="text-[var(--text-muted)] text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Kills</th><th className="text-right pb-2">Deaths</th><th className="text-right pb-2">K/D</th></tr></thead>
                                 <tbody>
                                   {[...event.participants].sort((a, b) => a.position - b.position).map((p, pIdx) => (
                                     <tr key={p.steam_id} className="border-t border-white/5">
                                       <td className="py-2"><RankBadge rank={p.position || pIdx + 1} /></td>
-                                      <td className="py-2"><div className="text-white">{p.name}</div><div className="text-xs text-zinc-600 font-mono">{p.steam_id}</div></td>
-                                      <td className="py-2 text-right text-red-400 font-semibold">{p.kills}</td>
-                                      <td className="py-2 text-right text-zinc-400">{p.deaths}</td>
-                                      <td className="py-2 text-right text-zinc-300">{p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : p.kills.toFixed(2)}</td>
+                                      <td className="py-2"><div className="text-white">{p.name}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{p.steam_id}</div></td>
+                                      <td className="py-2 text-right text-[var(--status-error)] font-semibold">{p.kills}</td>
+                                      <td className="py-2 text-right text-[var(--text-muted)]">{p.deaths}</td>
+                                      <td className="py-2 text-right text-[var(--text-secondary)]">{p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : p.kills.toFixed(2)}</td>
                                     </tr>
                                   ))}
                                 </tbody>

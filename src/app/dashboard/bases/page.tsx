@@ -725,13 +725,13 @@ export default function BasesPage() {
       <div className="w-56 border-r border-white/5 flex flex-col bg-white/[0.01]">
         {/* Tabs */}
         <div className="flex border-b border-white/5">
-          <button onClick={() => setActiveTab("config")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "config" ? "text-emerald-400 border-b-2 border-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+          <button onClick={() => setActiveTab("config")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "config" ? "text-[var(--status-success)] border-b-2 border-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}>
             Config
           </button>
-          <button onClick={() => setActiveTab("mapping")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "mapping" ? "text-emerald-400 border-b-2 border-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+          <button onClick={() => setActiveTab("mapping")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "mapping" ? "text-[var(--status-success)] border-b-2 border-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}>
             Mapping
           </button>
-          <button onClick={() => setActiveTab("files")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "files" ? "text-emerald-400 border-b-2 border-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+          <button onClick={() => setActiveTab("files")} className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${activeTab === "files" ? "text-[var(--status-success)] border-b-2 border-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}>
             Files
           </button>
         </div>
@@ -740,17 +740,17 @@ export default function BasesPage() {
           <>
             {/* Toolbar */}
             <div className="flex items-center gap-1 px-2 py-2 border-b border-white/5">
-              <button onClick={undo} disabled={!canUndo} className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-30 transition-colors" title="Undo (Ctrl+Z)">
+              <button onClick={undo} disabled={!canUndo} className="p-1.5 text-[var(--text-muted)] hover:text-white disabled:opacity-30 transition-colors" title="Undo (Ctrl+Z)">
                 <Undo2 className="h-3.5 w-3.5" />
               </button>
-              <button onClick={redo} disabled={!canRedo} className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-30 transition-colors" title="Redo (Ctrl+Shift+Z)">
+              <button onClick={redo} disabled={!canRedo} className="p-1.5 text-[var(--text-muted)] hover:text-white disabled:opacity-30 transition-colors" title="Redo (Ctrl+Shift+Z)">
                 <Redo2 className="h-3.5 w-3.5" />
               </button>
               <div className="flex-1" />
-              <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-zinc-500 hover:text-white transition-colors" title="Import JSON">
+              <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-[var(--text-muted)] hover:text-white transition-colors" title="Import JSON">
                 <Upload className="h-3.5 w-3.5" />
               </button>
-              <button onClick={handleExport} className="p-1.5 text-zinc-500 hover:text-white transition-colors" title="Export JSON">
+              <button onClick={handleExport} className="p-1.5 text-[var(--text-muted)] hover:text-white transition-colors" title="Export JSON">
                 <Download className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -759,7 +759,7 @@ export default function BasesPage() {
             <button
               onClick={() => { setSelectedSection("settings"); setSelectedTable(null); }}
               className={`w-full text-left px-3 py-2 border-b border-white/5 text-sm transition-colors flex items-center gap-2 ${
-                selectedSection === "settings" && !selectedTable ? "bg-emerald-500/10 text-emerald-400" : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                selectedSection === "settings" && !selectedTable ? "bg-[var(--status-success)]/10 text-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-white hover:bg-white/[0.03]"
               }`}
             >
               <Settings className="h-3.5 w-3.5" /> Plugin Settings
@@ -767,7 +767,7 @@ export default function BasesPage() {
 
             {/* Loot table list */}
             <div className="flex-1 overflow-y-auto">
-              <div className="px-3 py-2 text-xs text-zinc-600 font-medium uppercase tracking-wider">Loot Tables</div>
+              <div className="px-3 py-2 text-xs text-[var(--text-tertiary)] font-medium uppercase tracking-wider">Loot Tables</div>
               {lootTableNames.map((name) => {
                 const table = data.lootTables[name];
                 const itemCount = table?.Items?.length || 0;
@@ -775,7 +775,7 @@ export default function BasesPage() {
                   <div
                     key={name}
                     className={`flex items-center border-b border-white/5 transition-colors ${
-                      selectedTable === name ? "bg-emerald-500/10 text-emerald-400 border-l-2 border-l-emerald-500" : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                      selectedTable === name ? "bg-[var(--status-success)]/10 text-[var(--status-success)] border-l-2 border-l-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-white hover:bg-white/[0.03]"
                     }`}
                   >
                     <button
@@ -783,11 +783,11 @@ export default function BasesPage() {
                       className="flex-1 text-left px-3 py-2 min-w-0"
                     >
                       <div className="text-sm font-medium capitalize truncate">{name === "npcloadout" ? "NPC Loadout" : name}</div>
-                      <div className="text-xs text-zinc-600">{itemCount} items{name === "npcloadout" ? " · sleeping NPC gear" : ""}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{itemCount} items{name === "npcloadout" ? " · sleeping NPC gear" : ""}</div>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRemoveLootTable(name); }}
-                      className="p-1.5 mr-1 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+                      className="p-1.5 mr-1 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors shrink-0"
                       title={`Remove ${name}`}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -796,7 +796,7 @@ export default function BasesPage() {
                 );
               })}
               {lootTableNames.length === 0 && (
-                <div className="px-3 py-4 text-xs text-zinc-600 text-center">No loot tables configured</div>
+                <div className="px-3 py-4 text-xs text-[var(--text-tertiary)] text-center">No loot tables configured</div>
               )}
               <div className="flex items-center gap-1 px-2 py-2 border-b border-white/5">
                 <input
@@ -810,11 +810,11 @@ export default function BasesPage() {
                       setNewTableName("");
                     }
                   }}
-                  className="flex-1 min-w-0 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                  className="flex-1 min-w-0 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-[var(--text-tertiary)] focus:outline-none"
                 />
                 <button
                   onClick={() => { if (newTableName.trim()) { handleAddLootTable(newTableName.trim()); setNewTableName(""); } }}
-                  className="p-1.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+                  className="p-1.5 text-[var(--status-success)] hover:text-[var(--status-success)] transition-colors shrink-0"
                   title="Add loot table"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -849,13 +849,13 @@ export default function BasesPage() {
         )}
 
         {activeTab === "mapping" && (
-          <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 p-3 text-center">
+          <div className="flex-1 flex items-center justify-center text-xs text-[var(--text-tertiary)] p-3 text-center">
             Use the main area to manage server mappings
           </div>
         )}
 
         {activeTab === "files" && (
-          <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 p-3 text-center">
+          <div className="flex-1 flex items-center justify-center text-xs text-[var(--text-tertiary)] p-3 text-center">
             Manage CopyPaste .data files for base buildings
           </div>
         )}
@@ -872,7 +872,7 @@ export default function BasesPage() {
               <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
                 <h3 className="text-sm font-semibold text-white mb-4">Global Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="text-sm text-zinc-400">
+                  <label className="text-sm text-[var(--text-muted)]">
                     Loot Multiplier
                     <input type="number" value={data.pluginConfig["Loot Multiplier"]} onChange={(e) => handleUpdatePluginSetting("Loot Multiplier", parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                   </label>
@@ -883,11 +883,11 @@ export default function BasesPage() {
                   />
                   {data.pluginConfig["Wipe Progression Enabled"] && (
                     <>
-                      <label className="text-sm text-zinc-400">
+                      <label className="text-sm text-[var(--text-muted)]">
                         Min Scale (0-1)
                         <input type="number" value={data.pluginConfig["Wipe Progression Min Scale"]} onChange={(e) => handleUpdatePluginSetting("Wipe Progression Min Scale", parseFloat(e.target.value) || 0.3)} min={0} max={1} step={0.05} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                       </label>
-                      <label className="text-sm text-zinc-400">
+                      <label className="text-sm text-[var(--text-muted)]">
                         Hours To Max
                         <input type="number" value={data.pluginConfig["Wipe Progression Hours To Max"]} onChange={(e) => handleUpdatePluginSetting("Wipe Progression Hours To Max", parseInt(e.target.value) || 72)} min={1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                       </label>
@@ -899,7 +899,7 @@ export default function BasesPage() {
               {/* Container Mappings */}
               <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
                 <h3 className="text-sm font-semibold text-white mb-1">Container Mappings</h3>
-                <p className="text-xs text-zinc-500 mb-4">Map container prefabs to loot tables. Multiple tables = random pick per spawn. Unmapped containers are skipped.</p>
+                <p className="text-xs text-[var(--text-muted)] mb-4">Map container prefabs to loot tables. Multiple tables = random pick per spawn. Unmapped containers are skipped.</p>
                 <div className="space-y-2">
                   {Object.entries(data.pluginConfig["Container Mappings"] || {}).map(([prefab, mapping]) => (
                     <div key={prefab} className="p-2 rounded-lg bg-white/[0.02] space-y-2">
@@ -913,7 +913,7 @@ export default function BasesPage() {
                           title="Min Items"
                           className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
                         />
-                        <span className="text-zinc-600 text-xs">-</span>
+                        <span className="text-[var(--text-tertiary)] text-xs">-</span>
                         <input
                           type="number"
                           value={mapping["Max Items"]}
@@ -922,15 +922,15 @@ export default function BasesPage() {
                           title="Max Items"
                           className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
                         />
-                        <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
+                        <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors">
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {(mapping["Loot Tables"] || []).map((table) => (
-                          <span key={table} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs">
+                          <span key={table} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--status-success)]/10 text-[var(--status-success)] text-xs">
                             {table}
-                            <button onClick={() => handleRemoveTableFromMapping(prefab, table)} className="hover:text-red-400 transition-colors">
+                            <button onClick={() => handleRemoveTableFromMapping(prefab, table)} className="hover:text-[var(--status-error)] transition-colors">
                               <X className="h-3 w-3" />
                             </button>
                           </span>
@@ -938,7 +938,7 @@ export default function BasesPage() {
                         <select
                           value=""
                           onChange={(e) => { if (e.target.value) handleAddTableToMapping(prefab, e.target.value); }}
-                          className="rounded bg-white/5 border border-white/5 px-1.5 py-0.5 text-xs text-zinc-400 focus:outline-none cursor-pointer"
+                          className="rounded bg-white/5 border border-white/5 px-1.5 py-0.5 text-xs text-[var(--text-muted)] focus:outline-none cursor-pointer"
                         >
                           <option value="">+ table</option>
                           {lootTableNames.filter(n => !(mapping["Loot Tables"] || []).includes(n)).map(n => (
@@ -961,11 +961,11 @@ export default function BasesPage() {
                         setNewMappingPrefab("");
                       }
                     }}
-                    className="flex-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none"
+                    className="flex-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-xs text-white placeholder:text-[var(--text-tertiary)] focus:outline-none"
                   />
                   <button
                     onClick={() => { if (newMappingPrefab.trim()) { handleAddContainerMapping(newMappingPrefab.trim()); setNewMappingPrefab(""); } }}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded bg-emerald-500/10 text-emerald-400 text-xs hover:bg-emerald-500/20 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1.5 rounded bg-[var(--status-success)]/10 text-[var(--status-success)] text-xs hover:bg-[var(--status-success)]/20 transition-colors"
                   >
                     <Plus className="h-3 w-3" /> Add
                   </button>
@@ -976,7 +976,7 @@ export default function BasesPage() {
               <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
                 <h3 className="text-sm font-semibold text-white mb-4">Bases Data</h3>
                 {basesFiles.length === 0 && (
-                  <p className="text-xs text-zinc-500 mb-3">No files uploaded yet. Go to the Files tab to upload .data files first.</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">No files uploaded yet. Go to the Files tab to upload .data files first.</p>
                 )}
                 {Object.entries(data.pluginConfig["Bases Data"]).map(([baseType, baseData]) => {
                   const assignedFiles = new Set(
@@ -988,9 +988,9 @@ export default function BasesPage() {
                   return (
                     <div key={baseType} className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
-                          {baseType} <span className="text-zinc-600 font-normal">({baseData.Buildings.length})</span>
-                          <label className="text-xs text-zinc-400 flex items-center gap-1 ml-2">
+                        <h4 className="text-sm font-medium text-[var(--status-success)] flex items-center gap-2">
+                          {baseType} <span className="text-[var(--text-tertiary)] font-normal">({baseData.Buildings.length})</span>
+                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
                             Spawn
                             <input type="number" value={baseData["Spawn Count"] ?? 10} onChange={(e) => handleUpdateSpawnCount(baseType, parseInt(e.target.value) || 0)} min={0} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
                           </label>
@@ -1006,20 +1006,20 @@ export default function BasesPage() {
                         )}
                       </div>
                       {baseData.Buildings.length === 0 ? (
-                        <p className="text-xs text-zinc-600 pl-2">No buildings assigned</p>
+                        <p className="text-xs text-[var(--text-tertiary)] pl-2">No buildings assigned</p>
                       ) : (
                         <div className="space-y-1">
                           {baseData.Buildings.map((building, i) => {
                             const hasFile = basesFiles.some(f => f.name === building);
                             return (
                               <div key={i} className="flex items-center gap-2 p-1.5 rounded bg-white/[0.02]">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasFile ? "bg-emerald-400" : "bg-red-400"}`} />
-                                <File className={`h-3.5 w-3.5 flex-shrink-0 ${hasFile ? "text-emerald-400" : "text-red-400"}`} />
-                                <span className={`text-xs flex-1 ${hasFile ? "text-white" : "text-red-400"}`}>
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasFile ? "bg-[var(--status-success)]" : "bg-[var(--status-error)]"}`} />
+                                <File className={`h-3.5 w-3.5 flex-shrink-0 ${hasFile ? "text-[var(--status-success)]" : "text-[var(--status-error)]"}`} />
+                                <span className={`text-xs flex-1 ${hasFile ? "text-white" : "text-[var(--status-error)]"}`}>
                                   {building}
-                                  {!hasFile && <span className="text-red-400/60 ml-1">(missing)</span>}
+                                  {!hasFile && <span className="text-[var(--status-error)]/60 ml-1">(missing)</span>}
                                 </span>
-                                <button onClick={() => handleRemoveBuilding(baseType, i)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors">
+                                <button onClick={() => handleRemoveBuilding(baseType, i)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors">
                                   <Trash2 className="h-3 w-3" />
                                 </button>
                               </div>
@@ -1045,7 +1045,7 @@ export default function BasesPage() {
               accentColor="emerald"
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-600">
+            <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)]">
               <div className="text-center">
                 <Settings className="h-8 w-8 mx-auto mb-2" />
                 <p className="text-sm">Select a loot table or plugin settings</p>
@@ -1082,22 +1082,22 @@ export default function BasesPage() {
           onDrop={handleFileDrop}
         >
           {isDraggingFiles && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 border-2 border-dashed border-emerald-400 rounded-xl pointer-events-none">
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 border-2 border-dashed border-[var(--status-success)] rounded-xl pointer-events-none">
               <div className="text-center">
-                <Upload className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
-                <p className="text-lg font-medium text-emerald-400">Drop .data files here</p>
+                <Upload className="h-10 w-10 text-[var(--status-success)] mx-auto mb-2" />
+                <p className="text-lg font-medium text-[var(--status-success)]">Drop .data files here</p>
               </div>
             </div>
           )}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-semibold text-white">Base Paste Files</h2>
-              <p className="text-sm text-zinc-500 mt-1">CopyPaste .data files downloaded by the plugin. Drag & drop or click upload.</p>
+              <p className="text-sm text-[var(--text-muted)] mt-1">CopyPaste .data files downloaded by the plugin. Drag & drop or click upload.</p>
             </div>
             <button
               onClick={() => pasteFileInputRef.current?.click()}
               disabled={isUploadingFile}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg hover:bg-[var(--status-success)]/30 transition-colors disabled:opacity-50"
             >
               {isUploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Upload .data Files
@@ -1105,7 +1105,7 @@ export default function BasesPage() {
           </div>
 
           {basesFiles.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-zinc-600 border-2 border-dashed border-white/5 rounded-xl">
+            <div className="flex flex-col items-center justify-center py-20 text-[var(--text-tertiary)] border-2 border-dashed border-white/5 rounded-xl">
               <File className="h-10 w-10 mb-3" />
               <p className="text-sm">No base files uploaded yet</p>
               <p className="text-xs mt-1">Drag & drop .data files here or click Upload</p>
@@ -1115,11 +1115,11 @@ export default function BasesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/5">
-                    <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Name</th>
-                    <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Category</th>
-                    <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Size</th>
-                    <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3">Updated</th>
-                    <th className="text-right text-xs text-zinc-500 font-medium px-4 py-3">Actions</th>
+                    <th className="text-left text-xs text-[var(--text-muted)] font-medium px-4 py-3">Name</th>
+                    <th className="text-left text-xs text-[var(--text-muted)] font-medium px-4 py-3">Category</th>
+                    <th className="text-left text-xs text-[var(--text-muted)] font-medium px-4 py-3">Size</th>
+                    <th className="text-left text-xs text-[var(--text-muted)] font-medium px-4 py-3">Updated</th>
+                    <th className="text-right text-xs text-[var(--text-muted)] font-medium px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1131,9 +1131,9 @@ export default function BasesPage() {
                     <tr key={file.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <File className="h-4 w-4 text-emerald-400" />
+                          <File className="h-4 w-4 text-[var(--status-success)]" />
                           <span className="text-sm text-white font-medium">{file.name}</span>
-                          <span className="text-xs text-zinc-600">.data</span>
+                          <span className="text-xs text-[var(--text-tertiary)]">.data</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -1142,26 +1142,26 @@ export default function BasesPage() {
                           onChange={(e) => handleChangeFileCategory(file.name, assignedCategory, e.target.value)}
                           className="rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white focus:outline-none"
                         >
-                          <option value="" className="bg-zinc-900">Unassigned</option>
+                          <option value="" className="bg-[var(--bg-elevated)]">Unassigned</option>
                           {Object.keys(data.pluginConfig["Bases Data"]).map(cat => (
-                            <option key={cat} value={cat} className="bg-zinc-900">{cat}</option>
+                            <option key={cat} value={cat} className="bg-[var(--bg-elevated)]">{cat}</option>
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-400">
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
                         {file.fileSize > 1024 * 1024
                           ? `${(file.fileSize / 1024 / 1024).toFixed(1)} MB`
                           : file.fileSize > 1024
                           ? `${(file.fileSize / 1024).toFixed(1)} KB`
                           : `${file.fileSize} B`}
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-500">
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)]">
                         {new Date(file.updatedAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleDeletePasteFile(file.name)}
-                          className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                          className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors"
                           title="Delete file"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -1185,10 +1185,10 @@ export default function BasesPage() {
                     const hasFile = basesFiles.some(f => f.name === building);
                     return (
                       <div key={`${baseType}-${building}`} className="flex items-center gap-2 text-xs">
-                        <span className={`w-2 h-2 rounded-full ${hasFile ? "bg-emerald-400" : "bg-red-400"}`} />
-                        <span className="text-zinc-500">{baseType}:</span>
-                        <span className={hasFile ? "text-white" : "text-red-400"}>{building}</span>
-                        {!hasFile && <span className="text-red-400/60">(missing file)</span>}
+                        <span className={`w-2 h-2 rounded-full ${hasFile ? "bg-[var(--status-success)]" : "bg-[var(--status-error)]"}`} />
+                        <span className="text-[var(--text-muted)]">{baseType}:</span>
+                        <span className={hasFile ? "text-white" : "text-[var(--status-error)]"}>{building}</span>
+                        {!hasFile && <span className="text-[var(--status-error)]/60">(missing file)</span>}
                       </div>
                     );
                   })

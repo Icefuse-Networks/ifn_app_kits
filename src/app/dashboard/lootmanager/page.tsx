@@ -645,19 +645,19 @@ export default function LootManagerPage() {
   }, [data.ContainerItems, updateContainer]);
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 overflow-hidden">
+    <div className="flex h-[calc(100vh-5rem)] bg-[var(--bg-root)] overflow-hidden">
       <div className="w-72 flex flex-col bg-white/[0.02] border-r border-white/5">
         <div className="p-4 border-b border-white/5">
           <div className="flex gap-1 mb-4 p-1 rounded-lg bg-white/5">
             <button
               onClick={() => setActiveTab("tables")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "tables" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "text-zinc-500 hover:text-white"}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "tables" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-muted)] hover:text-white"}`}
             >
               <Package className="h-4 w-4" />Tables
             </button>
             <button
               onClick={() => setActiveTab("mapping")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "mapping" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "text-zinc-500 hover:text-white"}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "mapping" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-muted)] hover:text-white"}`}
             >
               <Link2 className="h-4 w-4" />Mapping
             </button>
@@ -667,30 +667,30 @@ export default function LootManagerPage() {
             <>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Package className="h-5 w-5 text-purple-400" />
+                  <Package className="h-5 w-5 text-[var(--accent-primary)]" />
                   Containers
                 </h2>
                 <div className="flex items-center gap-1">
-                  <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Undo"><Undo2 className="h-4 w-4" /></button>
-                  <button onClick={redo} disabled={!canRedo} className="p-1.5 rounded text-zinc-500 disabled:opacity-30 bg-white/5" title="Redo"><Redo2 className="h-4 w-4" /></button>
+                  <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded text-[var(--text-muted)] disabled:opacity-30 bg-white/5" title="Undo"><Undo2 className="h-4 w-4" /></button>
+                  <button onClick={redo} disabled={!canRedo} className="p-1.5 rounded text-[var(--text-muted)] disabled:opacity-30 bg-white/5" title="Redo"><Redo2 className="h-4 w-4" /></button>
                 </div>
               </div>
               {currentConfigName && (
-                <div className="mb-3 flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
-                  <FileText className="h-4 w-4 text-purple-400" />
-                  <span className="text-sm text-purple-400 truncate flex-1">{currentConfigName}</span>
-                  <button onClick={handleOpenVersionHistory} className="p-1 rounded hover:bg-purple-500/20 transition-colors" title="Version History">
-                    <History className="h-3.5 w-3.5 text-purple-400" />
+                <div className="mb-3 flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30">
+                  <FileText className="h-4 w-4 text-[var(--accent-primary)]" />
+                  <span className="text-sm text-[var(--accent-primary)] truncate flex-1">{currentConfigName}</span>
+                  <button onClick={handleOpenVersionHistory} className="p-1 rounded hover:bg-[var(--accent-primary)]/20 transition-colors" title="Version History">
+                    <History className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
                   </button>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${currentConfigVersion > (currentPublishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${currentConfigVersion > (currentPublishedVersion || 0) ? "bg-[var(--status-warning)]/20 text-[var(--status-warning)]" : "bg-[var(--status-success)]/20 text-[var(--status-success)]"}`}>
                     v{currentConfigVersion}{currentPublishedVersion ? ` / v${currentPublishedVersion}` : ""}
                   </span>
-                  {isSaving && <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
+                  {isSaving && <div className="w-3 h-3 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />}
                 </div>
               )}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search containers..." className="w-full rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search containers..." className="w-full rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-[var(--text-tertiary)] bg-white/5 border border-white/5 focus:outline-none" />
               </div>
             </>
           )}
@@ -698,7 +698,7 @@ export default function LootManagerPage() {
           {activeTab === "mapping" && (
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Server className="h-5 w-5 text-blue-400" />
+                <Server className="h-5 w-5 text-[var(--accent-primary)]" />
                 Server Assignments
               </h2>
             </div>
@@ -709,8 +709,8 @@ export default function LootManagerPage() {
           <>
             <div className="flex-1 overflow-y-auto p-2">
               {filteredContainers.length === 0 ? (
-                <div className="text-center py-8 text-zinc-600">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50 text-purple-400" />
+                <div className="text-center py-8 text-[var(--text-tertiary)]">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50 text-[var(--accent-primary)]" />
                   <p className="text-sm">No containers found</p>
                   <p className="text-xs mt-1">Upload a LootManager.json</p>
                 </div>
@@ -721,12 +721,12 @@ export default function LootManagerPage() {
                     const isSelected = selectedContainer === name;
                     return (
                       <div key={name}
-                        className={`group relative rounded-lg cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/[0.02] text-zinc-500 hover:bg-white/5"}`}
+                        className={`group relative rounded-lg cursor-pointer transition-all ${isSelected ? "bg-[var(--accent-primary)] text-white" : "bg-white/[0.02] text-[var(--text-muted)] hover:bg-white/5"}`}
                         onClick={() => setSelectedContainer(name)}
                       >
                         <div className="flex items-center justify-between p-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${container.Enabled ? "bg-green-400" : "bg-red-400"}`} />
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${container.Enabled ? "bg-[var(--status-success)]" : "bg-[var(--status-error)]"}`} />
                             <span className="truncate text-sm font-medium">{name}</span>
                           </div>
                           <span className="text-xs opacity-60 flex-shrink-0">{container.Items.length}</span>
@@ -739,22 +739,22 @@ export default function LootManagerPage() {
             </div>
 
             <div className="p-3 space-y-2 border-t border-white/5">
-              <button onClick={() => setShowUnstagedModal(true)} className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border ${unstagedConfigs.length > 0 ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" : "text-zinc-500 bg-white/5 border-white/10"}`}>
-                <CloudUpload className="h-4 w-4" />Unstaged{unstagedConfigs.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-yellow-500/30 text-xs">{unstagedConfigs.length}</span>}
+              <button onClick={() => setShowUnstagedModal(true)} className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border ${unstagedConfigs.length > 0 ? "text-[var(--status-warning)] bg-[var(--status-warning)]/10 border-[var(--status-warning)]/30" : "text-[var(--text-muted)] bg-white/5 border-white/10"}`}>
+                <CloudUpload className="h-4 w-4" />Unstaged{unstagedConfigs.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-[var(--status-warning)]/30 text-xs">{unstagedConfigs.length}</span>}
               </button>
               <div className="flex gap-2">
-                <button onClick={() => setShowLoadModal(true)} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><FolderOpen className="h-4 w-4" />Load</button>
-                <button onClick={() => currentConfigId ? handleQuickSave() : setShowSaveModal(true)} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-green-400 px-3 py-2 rounded-lg text-sm bg-green-500/10 border border-green-500/30 disabled:opacity-50"><Save className="h-4 w-4" />{currentConfigId ? "Save" : "Save As"}</button>
+                <button onClick={() => setShowLoadModal(true)} className="flex-1 flex items-center justify-center gap-1 text-[var(--text-muted)] px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><FolderOpen className="h-4 w-4" />Load</button>
+                <button onClick={() => currentConfigId ? handleQuickSave() : setShowSaveModal(true)} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-[var(--status-success)] px-3 py-2 rounded-lg text-sm bg-[var(--status-success)]/10 border border-[var(--status-success)]/30 disabled:opacity-50"><Save className="h-4 w-4" />{currentConfigId ? "Save" : "Save As"}</button>
               </div>
               {currentConfigId && currentConfigVersion > (currentPublishedVersion || 0) && (
-                <button onClick={() => handlePublish(currentConfigId)} className="w-full flex items-center justify-center gap-2 text-green-400 px-3 py-2 rounded-lg text-sm font-medium bg-green-500/20 border border-green-500/30">
+                <button onClick={() => handlePublish(currentConfigId)} className="w-full flex items-center justify-center gap-2 text-[var(--status-success)] px-3 py-2 rounded-lg text-sm font-medium bg-[var(--status-success)]/20 border border-[var(--status-success)]/30">
                   <CloudUpload className="h-4 w-4" />Publish v{currentConfigVersion}
                 </button>
               )}
-              <button onClick={() => setShowNewContainerModal(true)} className="w-full flex items-center justify-center gap-2 text-white px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />New Container</button>
+              <button onClick={() => setShowNewContainerModal(true)} className="w-full flex items-center justify-center gap-2 text-white px-3 py-2 rounded-lg text-sm font-medium bg-[var(--accent-primary)]"><Plus className="h-4 w-4" />New Container</button>
               <div className="flex gap-2">
-                <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><Upload className="h-4 w-4" />Upload</button>
-                <button onClick={handleExport} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-zinc-500 px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-50"><Download className="h-4 w-4" />Export</button>
+                <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-1 text-[var(--text-muted)] px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10"><Upload className="h-4 w-4" />Upload</button>
+                <button onClick={handleExport} disabled={containerNames.length === 0} className="flex-1 flex items-center justify-center gap-1 text-[var(--text-muted)] px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-50"><Download className="h-4 w-4" />Export</button>
               </div>
             </div>
           </>
@@ -764,8 +764,8 @@ export default function LootManagerPage() {
           <>
             <div className="flex-1 overflow-y-auto p-2">
               {servers.length === 0 ? (
-                <div className="text-center py-8 text-zinc-600">
-                  <Server className="h-8 w-8 mx-auto mb-2 opacity-50 text-blue-400" />
+                <div className="text-center py-8 text-[var(--text-tertiary)]">
+                  <Server className="h-8 w-8 mx-auto mb-2 opacity-50 text-[var(--accent-primary)]" />
                   <p className="text-sm">No servers</p>
                   <p className="text-xs mt-1">Servers register automatically</p>
                 </div>
@@ -779,18 +779,18 @@ export default function LootManagerPage() {
                       <div
                         key={server.id}
                         onClick={() => setSelectedMappingServerId(server.id)}
-                        className={`rounded-lg p-3 cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30" : "bg-white/[0.02] border border-transparent hover:bg-white/[0.04]"}`}
+                        className={`rounded-lg p-3 cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-[var(--accent-primary)]/20 to-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/30" : "bg-white/[0.02] border border-transparent hover:bg-white/[0.04]"}`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium text-white truncate">{server.name}</div>
-                            <div className="text-xs text-zinc-500 truncate">{server.ip}:{server.port}</div>
+                            <div className="text-xs text-[var(--text-muted)] truncate">{server.ip}:{server.port}</div>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             {liveMappings.length > 0 ? (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">{liveMappings.length} live</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--status-success)]/20 text-[var(--status-success)]">{liveMappings.length} live</span>
                             ) : serverMappings.length > 0 ? (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">{serverMappings.length}</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--text-muted)]/20 text-[var(--text-muted)]">{serverMappings.length}</span>
                             ) : null}
                           </div>
                         </div>
@@ -811,23 +811,23 @@ export default function LootManagerPage() {
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="p-4 border-b border-white/5">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <FolderOpen className="h-5 w-5 text-purple-400" />
+                    <FolderOpen className="h-5 w-5 text-[var(--accent-primary)]" />
                     Quick Load
                   </h2>
-                  <p className="text-sm text-zinc-500 mt-1">Select a saved config to start editing</p>
+                  <p className="text-sm text-[var(--text-muted)] mt-1">Select a saved config to start editing</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   {loadingSavedConfigs ? (
                     <div className="text-center py-12">
-                      <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-zinc-500">Loading configs...</p>
+                      <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-[var(--text-muted)]">Loading configs...</p>
                     </div>
                   ) : savedConfigs.length === 0 ? (
                     <div className="text-center py-12">
-                      <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-purple-400" />
-                      <h3 className="text-xl font-medium text-zinc-500 mb-2">No Saved Configs</h3>
-                      <p className="text-sm text-zinc-600 mb-4">Upload a LootManager.json to get started</p>
-                      <button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-colors">
+                      <Package className="h-16 w-16 mx-auto mb-4 opacity-30 text-[var(--accent-primary)]" />
+                      <h3 className="text-xl font-medium text-[var(--text-muted)] mb-2">No Saved Configs</h3>
+                      <p className="text-sm text-[var(--text-tertiary)] mb-4">Upload a LootManager.json to get started</p>
+                      <button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/20 transition-colors">
                         <Upload className="h-4 w-4" />Upload JSON
                       </button>
                     </div>
@@ -837,20 +837,20 @@ export default function LootManagerPage() {
                         <button
                           key={config.id}
                           onClick={() => handleLoadConfig(config)}
-                          className="group text-left p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all"
+                          className="group text-left p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/5 transition-all"
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <h3 className="font-medium text-white group-hover:text-purple-400 transition-colors truncate">{config.name}</h3>
+                            <h3 className="font-medium text-white group-hover:text-[var(--accent-primary)] transition-colors truncate">{config.name}</h3>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {config.currentVersion > (config.publishedVersion ?? 0) ? (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">draft</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--status-warning)]/20 text-[var(--status-warning)]">draft</span>
                               ) : config.publishedVersion ? (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">v{config.publishedVersion}</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--status-success)]/20 text-[var(--status-success)]">v{config.publishedVersion}</span>
                               ) : null}
                             </div>
                           </div>
-                          {config.description && <p className="text-xs text-zinc-500 line-clamp-2 mb-2">{config.description}</p>}
-                          <div className="text-xs text-zinc-600">
+                          {config.description && <p className="text-xs text-[var(--text-muted)] line-clamp-2 mb-2">{config.description}</p>}
+                          <div className="text-xs text-[var(--text-tertiary)]">
                             Updated {new Date(config.updatedAt).toLocaleDateString()}
                           </div>
                         </button>
@@ -865,16 +865,16 @@ export default function LootManagerPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <h1 className="text-2xl font-bold text-white">{selectedContainer}</h1>
-                      <button onClick={() => toggleContainerEnabled(selectedContainer)} className={`px-3 py-1 rounded-full text-xs font-medium ${currentContainer?.Enabled ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+                      <button onClick={() => toggleContainerEnabled(selectedContainer)} className={`px-3 py-1 rounded-full text-xs font-medium ${currentContainer?.Enabled ? "bg-[var(--status-success)]/20 text-[var(--status-success)] border border-[var(--status-success)]/30" : "bg-[var(--status-error)]/20 text-[var(--status-error)] border border-[var(--status-error)]/30"}`}>
                         {currentContainer?.Enabled ? "Enabled" : "Disabled"}
                       </button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={copyContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Copy"><Copy className="h-4 w-4" /></button>
-                      <button onClick={pasteContainer} disabled={!copiedContainer} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10 disabled:opacity-50" title="Paste"><Clipboard className="h-4 w-4" /></button>
-                      <button onClick={() => setShowMultiplierModal(true)} className="p-2 rounded-lg text-zinc-500 bg-white/5 border border-white/10" title="Multiplier"><Percent className="h-4 w-4" /></button>
-                      <button onClick={clearAllItems} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Clear all"><Trash2 className="h-4 w-4" /></button>
-                      <button onClick={() => deleteContainer(selectedContainer)} className="p-2 rounded-lg text-red-400 bg-red-500/10 border border-red-500/30" title="Delete"><X className="h-4 w-4" /></button>
+                      <button onClick={copyContainer} className="p-2 rounded-lg text-[var(--text-muted)] bg-white/5 border border-white/10" title="Copy"><Copy className="h-4 w-4" /></button>
+                      <button onClick={pasteContainer} disabled={!copiedContainer} className="p-2 rounded-lg text-[var(--text-muted)] bg-white/5 border border-white/10 disabled:opacity-50" title="Paste"><Clipboard className="h-4 w-4" /></button>
+                      <button onClick={() => setShowMultiplierModal(true)} className="p-2 rounded-lg text-[var(--text-muted)] bg-white/5 border border-white/10" title="Multiplier"><Percent className="h-4 w-4" /></button>
+                      <button onClick={clearAllItems} className="p-2 rounded-lg text-[var(--status-error)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30" title="Clear all"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={() => deleteContainer(selectedContainer)} className="p-2 rounded-lg text-[var(--status-error)] bg-[var(--status-error)]/10 border border-[var(--status-error)]/30" title="Delete"><X className="h-4 w-4" /></button>
                     </div>
                   </div>
                   <div className="grid grid-cols-4 gap-4">
@@ -885,7 +885,7 @@ export default function LootManagerPage() {
                       { label: "Max Scrap", key: "Max Scrap" as const },
                     ].map(({ label, key }) => (
                       <div key={key} className="rounded-lg p-3 bg-white/[0.02] border border-white/5">
-                        <label className="block text-xs text-zinc-500 mb-1">{label}</label>
+                        <label className="block text-xs text-[var(--text-muted)] mb-1">{label}</label>
                         <input type="number" value={currentContainer?.[key] ?? 0} onChange={(e) => updateContainer(selectedContainer, { [key]: parseInt(e.target.value) || 0 })} className="w-full rounded px-3 py-2 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" />
                       </div>
                     ))}
@@ -895,24 +895,24 @@ export default function LootManagerPage() {
                 <div className="px-4 py-3 flex items-center justify-between bg-white/[0.02] border-b border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <input type="text" value={itemSearchTerm} onChange={(e) => setItemSearchTerm(e.target.value)} placeholder="Search items..." className="rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 bg-white/[0.02] border border-white/5 focus:outline-none w-64" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                      <input type="text" value={itemSearchTerm} onChange={(e) => setItemSearchTerm(e.target.value)} placeholder="Search items..." className="rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-[var(--text-tertiary)] bg-white/[0.02] border border-white/5 focus:outline-none w-64" />
                     </div>
-                    <span className="text-sm text-zinc-500">{filteredItems.length} items</span>
+                    <span className="text-sm text-[var(--text-muted)]">{filteredItems.length} items</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><Grid className="h-4 w-4" /></button>
-                    <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-colors ${viewMode === "list" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/5 text-zinc-500"}`}><List className="h-4 w-4" /></button>
-                    <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500"><Plus className="h-4 w-4" />Add Item</button>
+                    <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)]"}`}><Grid className="h-4 w-4" /></button>
+                    <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-colors ${viewMode === "list" ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)]"}`}><List className="h-4 w-4" /></button>
+                    <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium bg-[var(--accent-primary)]"><Plus className="h-4 w-4" />Add Item</button>
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4">
                   {filteredItems.length === 0 ? (
-                    <div className="text-center py-12 text-zinc-600">
-                      <Package className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-400" />
+                    <div className="text-center py-12 text-[var(--text-tertiary)]">
+                      <Package className="h-12 w-12 mx-auto mb-3 opacity-30 text-[var(--accent-primary)]" />
                       <p>No items in this container</p>
-                      <button onClick={() => setShowAddItem(true)} className="mt-3 text-purple-400 hover:text-purple-300 text-sm">Add your first item</button>
+                      <button onClick={() => setShowAddItem(true)} className="mt-3 text-[var(--accent-primary)] hover:text-[var(--accent-primary)] text-sm">Add your first item</button>
                     </div>
                   ) : viewMode === "grid" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -941,49 +941,49 @@ export default function LootManagerPage() {
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="p-4 border-b border-white/5">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Server className="h-5 w-5 text-blue-400" />
+                    <Server className="h-5 w-5 text-[var(--accent-primary)]" />
                     Server Loot Rotation
                   </h2>
-                  <p className="text-sm text-zinc-500 mt-1">Assign loot tables to servers with time-based rotation</p>
+                  <p className="text-sm text-[var(--text-muted)] mt-1">Assign loot tables to servers with time-based rotation</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6">
                   <div className="max-w-2xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                      <div className="p-4 rounded-xl bg-gradient-to-br from-[var(--accent-primary)]/10 to-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-blue-500/20"><Clock className="h-5 w-5 text-blue-400" /></div>
+                          <div className="p-2 rounded-lg bg-[var(--accent-primary)]/20"><Clock className="h-5 w-5 text-[var(--accent-primary)]" /></div>
                           <h3 className="font-medium text-white">Rolling Loot</h3>
                         </div>
-                        <p className="text-xs text-zinc-400">Automatically switch loot tables based on time since wipe</p>
+                        <p className="text-xs text-[var(--text-muted)]">Automatically switch loot tables based on time since wipe</p>
                       </div>
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                      <div className="p-4 rounded-xl bg-gradient-to-br from-[var(--status-success)]/10 to-[var(--status-success)]/10 border border-[var(--status-success)]/20">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="p-2 rounded-lg bg-green-500/20"><ToggleRight className="h-5 w-5 text-green-400" /></div>
+                          <div className="p-2 rounded-lg bg-[var(--status-success)]/20"><ToggleRight className="h-5 w-5 text-[var(--status-success)]" /></div>
                           <h3 className="font-medium text-white">Live Toggle</h3>
                         </div>
-                        <p className="text-xs text-zinc-400">Enable/disable tables without removing them from rotation</p>
+                        <p className="text-xs text-[var(--text-muted)]">Enable/disable tables without removing them from rotation</p>
                       </div>
                     </div>
                     <div className="rounded-xl bg-white/[0.02] border border-white/5 p-5">
-                      <h4 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-blue-400" />Example Rotation Schedule
+                      <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-4 flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-[var(--accent-primary)]" />Example Rotation Schedule
                       </h4>
-                      <div className="relative pl-4 border-l-2 border-blue-500/30 space-y-4">
+                      <div className="relative pl-4 border-l-2 border-[var(--accent-primary)]/30 space-y-4">
                         {[
-                          { time: "Wipe Day", desc: "Standard vanilla-like loot", color: "blue" },
-                          { time: "12h+", desc: "Slightly increased rates", color: "cyan" },
-                          { time: "24h+", desc: "Medium tier progression", color: "purple" },
-                          { time: "48h+", desc: "High-tier end-game loot", color: "pink" },
+                          { time: "Wipe Day", desc: "Standard vanilla-like loot" },
+                          { time: "12h+", desc: "Slightly increased rates" },
+                          { time: "24h+", desc: "Medium tier progression" },
+                          { time: "48h+", desc: "High-tier end-game loot" },
                         ].map((stage, i) => (
                           <div key={i} className="relative">
-                            <div className={`absolute -left-[21px] w-3 h-3 rounded-full bg-${stage.color}-500 border-2 border-zinc-900`} />
+                            <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[var(--accent-primary)] border-2 border-[var(--bg-root)]" />
                             <div className="text-sm font-medium text-white">{stage.time}</div>
-                            <div className="text-xs text-zinc-500">{stage.desc}</div>
+                            <div className="text-xs text-[var(--text-muted)]">{stage.desc}</div>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <p className="text-center text-zinc-600 text-sm mt-6">Select a server from the sidebar to configure its rotation</p>
+                    <p className="text-center text-[var(--text-tertiary)] text-sm mt-6">Select a server from the sidebar to configure its rotation</p>
                   </div>
                 </div>
               </div>
@@ -994,33 +994,33 @@ export default function LootManagerPage() {
               if (!server) return null;
               return (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 border-b border-white/5">
+                  <div className="p-4 bg-gradient-to-r from-[var(--accent-primary)]/5 to-[var(--accent-primary)]/5 border-b border-white/5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                          <Server className="h-6 w-6 text-blue-400" />
+                        <div className="p-3 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20">
+                          <Server className="h-6 w-6 text-[var(--accent-primary)]" />
                         </div>
                         <div>
                           <h1 className="text-xl font-bold text-white">{server.name}</h1>
-                          <p className="text-sm text-zinc-500">{server.ip}:{server.port}</p>
+                          <p className="text-sm text-[var(--text-muted)]">{server.ip}:{server.port}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {liveMappings.length > 0 ? (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                            <span className="text-sm text-green-400">{liveMappings.length} active</span>
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--status-success)]/10 border border-[var(--status-success)]/20">
+                            <div className="w-2 h-2 rounded-full bg-[var(--status-success)] animate-pulse" />
+                            <span className="text-sm text-[var(--status-success)]">{liveMappings.length} active</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-500/10 border border-zinc-500/20">
-                            <div className="w-2 h-2 rounded-full bg-zinc-500" />
-                            <span className="text-sm text-zinc-500">No active tables</span>
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--text-muted)]/10 border border-[var(--text-muted)]/20">
+                            <div className="w-2 h-2 rounded-full bg-[var(--text-muted)]" />
+                            <span className="text-sm text-[var(--text-muted)]">No active tables</span>
                           </div>
                         )}
                         <button
                           onClick={() => handleAddToRotation(server.id)}
                           disabled={savedConfigs.length === 0}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/80 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                           <Plus className="h-4 w-4" />Add Table
                         </button>
@@ -1032,15 +1032,15 @@ export default function LootManagerPage() {
                     <div className="p-4">
                       {serverMappings.length === 0 ? (
                         <div className="text-center py-16 rounded-xl bg-white/[0.01] border border-dashed border-white/10">
-                          <div className="p-4 rounded-full bg-blue-500/10 w-fit mx-auto mb-4">
-                            <Link2 className="h-8 w-8 text-blue-400" />
+                          <div className="p-4 rounded-full bg-[var(--accent-primary)]/10 w-fit mx-auto mb-4">
+                            <Link2 className="h-8 w-8 text-[var(--accent-primary)]" />
                           </div>
-                          <h3 className="text-lg font-medium text-zinc-400 mb-2">No Loot Tables Assigned</h3>
-                          <p className="text-sm text-zinc-600 mb-4 max-w-md mx-auto">Add your first loot table to this server to start configuring the rotation schedule.</p>
+                          <h3 className="text-lg font-medium text-[var(--text-muted)] mb-2">No Loot Tables Assigned</h3>
+                          <p className="text-sm text-[var(--text-tertiary)] mb-4 max-w-md mx-auto">Add your first loot table to this server to start configuring the rotation schedule.</p>
                           <button
                             onClick={() => handleAddToRotation(server.id)}
                             disabled={savedConfigs.length === 0}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 text-sm disabled:opacity-50 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/20 text-sm disabled:opacity-50 transition-colors"
                           >
                             <Plus className="h-4 w-4" />Add First Table
                           </button>
@@ -1048,14 +1048,14 @@ export default function LootManagerPage() {
                       ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div>
-                            <h3 className="text-sm font-medium text-zinc-400 mb-3">Rotation Tables</h3>
+                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Rotation Tables</h3>
                             <div className="space-y-2">
                               {serverMappings.map((mapping) => (
                                 <div
                                   key={mapping.id}
                                   className={`relative p-4 rounded-xl border transition-all ${
                                     mapping.isLive
-                                      ? "bg-gradient-to-r from-green-500/5 to-emerald-500/5 border-green-500/20"
+                                      ? "bg-gradient-to-r from-[var(--status-success)]/5 to-[var(--status-success)]/5 border-[var(--status-success)]/20"
                                       : "bg-white/[0.02] border-white/5 opacity-60"
                                   }`}
                                 >
@@ -1063,7 +1063,7 @@ export default function LootManagerPage() {
                                     <div className="flex items-start gap-3 min-w-0 flex-1">
                                       <button
                                         onClick={() => handleToggleLive(mapping)}
-                                        className={`mt-0.5 flex-shrink-0 transition-colors ${mapping.isLive ? "text-green-400" : "text-zinc-600 hover:text-zinc-400"}`}
+                                        className={`mt-0.5 flex-shrink-0 transition-colors ${mapping.isLive ? "text-[var(--status-success)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-muted)]"}`}
                                       >
                                         {mapping.isLive ? <ToggleRight className="h-6 w-6" /> : <ToggleLeft className="h-6 w-6" />}
                                       </button>
@@ -1071,17 +1071,17 @@ export default function LootManagerPage() {
                                         <div className="flex items-center gap-2 flex-wrap">
                                           <span className="font-medium text-white">{mapping.config.name}</span>
                                           {mapping.config.publishedVersion && (
-                                            <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">v{mapping.config.publishedVersion}</span>
+                                            <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--text-muted)]/20 text-[var(--text-muted)]">v{mapping.config.publishedVersion}</span>
                                           )}
                                         </div>
                                         <div className="mt-1">
                                           {mapping.minutesAfterWipe !== null ? (
-                                            <span className="inline-flex items-center gap-1.5 text-sm text-blue-400">
+                                            <span className="inline-flex items-center gap-1.5 text-sm text-[var(--accent-primary)]">
                                               <Clock className="h-3.5 w-3.5" />
                                               {formatDuration(mapping.minutesAfterWipe)} after wipe
                                             </span>
                                           ) : (
-                                            <span className="inline-flex items-center gap-1.5 text-sm text-zinc-500">
+                                            <span className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
                                               <Clock className="h-3.5 w-3.5" />
                                               Wipe day default
                                             </span>
@@ -1090,10 +1090,10 @@ export default function LootManagerPage() {
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                      <button onClick={() => handleEditMapping(mapping)} className="p-2 rounded-lg text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all" title="Edit">
+                                      <button onClick={() => handleEditMapping(mapping)} className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 transition-all" title="Edit">
                                         <Pencil className="h-4 w-4" />
                                       </button>
-                                      <button onClick={() => handleDeleteMapping(mapping.id)} className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Remove">
+                                      <button onClick={() => handleDeleteMapping(mapping.id)} className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--status-error)] hover:bg-[var(--status-error)]/10 transition-all" title="Remove">
                                         <Trash2 className="h-4 w-4" />
                                       </button>
                                     </div>
@@ -1104,20 +1104,20 @@ export default function LootManagerPage() {
                           </div>
 
                           <div>
-                            <h3 className="text-sm font-medium text-zinc-400 mb-3">Timeline Preview</h3>
+                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Timeline Preview</h3>
                             <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
-                              <div className="relative pl-4 border-l-2 border-blue-500/30 space-y-3">
+                              <div className="relative pl-4 border-l-2 border-[var(--accent-primary)]/30 space-y-3">
                                 {serverMappings.filter(m => m.isLive).map((m, i) => (
                                   <div key={m.id} className="relative">
-                                    <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-900" />
+                                    <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[var(--status-success)] border-2 border-[var(--bg-root)]" />
                                     <div className="text-sm font-medium text-white">
                                       {m.minutesAfterWipe !== null ? `${formatDuration(m.minutesAfterWipe)}+` : "Wipe Day"}
                                     </div>
-                                    <div className="text-xs text-zinc-500">{m.config.name}</div>
+                                    <div className="text-xs text-[var(--text-muted)]">{m.config.name}</div>
                                   </div>
                                 ))}
                                 {serverMappings.filter(m => m.isLive).length === 0 && (
-                                  <div className="text-sm text-zinc-600 italic">No active tables in rotation</div>
+                                  <div className="text-sm text-[var(--text-tertiary)] italic">No active tables in rotation</div>
                                 )}
                               </div>
                             </div>
@@ -1137,7 +1137,7 @@ export default function LootManagerPage() {
         <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${showItemBrowser ? "w-72" : "w-10"}`}>
           <button
             onClick={() => setShowItemBrowser(!showItemBrowser)}
-            className="p-2 text-zinc-500 hover:text-white border-b border-white/5 flex items-center justify-center"
+            className="p-2 text-[var(--text-muted)] hover:text-white border-b border-white/5 flex items-center justify-center"
             title={showItemBrowser ? "Hide item browser" : "Show item browser"}
           >
             <ChevronRight className={`h-4 w-4 transition-transform ${showItemBrowser ? "rotate-180" : ""}`} />
@@ -1147,13 +1147,13 @@ export default function LootManagerPage() {
               <div className="p-3 border-b border-white/5">
                 <h3 className="text-sm font-semibold text-white mb-2">Item Browser</h3>
                 <div className="relative mb-2">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                   <input
                     type="text"
                     value={itemBrowserSearch}
                     onChange={(e) => setItemBrowserSearch(e.target.value)}
                     placeholder="Search items..."
-                    className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 bg-white/5 border border-white/5 focus:outline-none"
+                    className="w-full rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-[var(--text-tertiary)] bg-white/5 border border-white/5 focus:outline-none"
                   />
                 </div>
                 <Dropdown
@@ -1167,12 +1167,12 @@ export default function LootManagerPage() {
               </div>
               <div className="flex-1 overflow-y-auto p-2">
                 {rustItems.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-600">
-                    <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <div className="text-center py-8 text-[var(--text-tertiary)]">
+                    <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     <p className="text-xs">Loading items...</p>
                   </div>
                 ) : filteredRustItems.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-600">
+                  <div className="text-center py-8 text-[var(--text-tertiary)]">
                     <p className="text-xs">No items found</p>
                   </div>
                 ) : (
@@ -1181,7 +1181,7 @@ export default function LootManagerPage() {
                       <button
                         key={item.shortname}
                         onClick={() => { addItem(selectedContainer, item.shortname); toast.success(`Added ${item.Name}`); }}
-                        className="group relative aspect-square rounded-lg bg-white/[0.02] border border-white/5 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all p-1"
+                        className="group relative aspect-square rounded-lg bg-white/[0.02] border border-white/5 hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-primary)]/10 transition-all p-1"
                         title={`${item.Name}\n${item.shortname}`}
                       >
                         <img
@@ -1192,14 +1192,14 @@ export default function LootManagerPage() {
                           onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
                         />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg">
-                          <Plus className="h-4 w-4 text-purple-400" />
+                          <Plus className="h-4 w-4 text-[var(--accent-primary)]" />
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
                 {filteredRustItems.length >= 100 && (
-                  <p className="text-xs text-zinc-500 text-center mt-2">Showing first 100 results</p>
+                  <p className="text-xs text-[var(--text-muted)] text-center mt-2">Showing first 100 results</p>
                 )}
               </div>
             </>
@@ -1212,17 +1212,17 @@ export default function LootManagerPage() {
         {showAddItem && selectedContainer && (
           <Modal onClose={() => { setShowAddItem(false); setAddItemSearch(""); }} title="Add Item">
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-              <input type="text" value={addItemSearch} onChange={(e) => setAddItemSearch(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && addItemSearch.trim()) addItem(selectedContainer, addItemSearch.trim()); }} placeholder="Enter item shortname..." className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-3 text-white placeholder-zinc-500 focus:outline-none" autoFocus />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+              <input type="text" value={addItemSearch} onChange={(e) => setAddItemSearch(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && addItemSearch.trim()) addItem(selectedContainer, addItemSearch.trim()); }} placeholder="Enter item shortname..." className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none" autoFocus />
             </div>
             {addItemSearch.trim() && (
               <button onClick={() => addItem(selectedContainer, addItemSearch.trim())} className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
-                <img src={getItemImageUrl(addItemSearch.trim())} alt={addItemSearch} referrerPolicy="no-referrer" className="w-10 h-10 object-contain bg-zinc-900 rounded-lg p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <img src={getItemImageUrl(addItemSearch.trim())} alt={addItemSearch} referrerPolicy="no-referrer" className="w-10 h-10 object-contain bg-[var(--bg-elevated)] rounded-lg p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 <div className="flex-1 text-left">
                   <span className="text-white font-medium">{addItemSearch.trim()}</span>
-                  <p className="text-xs text-zinc-500">Press Enter or click to add</p>
+                  <p className="text-xs text-[var(--text-muted)]">Press Enter or click to add</p>
                 </div>
-                <Plus className="h-5 w-5 text-purple-400" />
+                <Plus className="h-5 w-5 text-[var(--accent-primary)]" />
               </button>
             )}
           </Modal>
@@ -1232,11 +1232,11 @@ export default function LootManagerPage() {
           <Modal onClose={() => setShowMultiplierModal(false)} title="Multiplier">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Multiplier Value</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Multiplier Value</label>
                 <input type="number" value={multiplierValue} onChange={(e) => setMultiplierValue(parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none" />
               </div>
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Apply To</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Apply To</label>
                 <div className="flex flex-wrap gap-2">
                   {[{ label: "Min", checked: multiplierApplyMin, set: setMultiplierApplyMin }, { label: "Max", checked: multiplierApplyMax, set: setMultiplierApplyMax }, { label: "Chance", checked: multiplierApplyChance, set: setMultiplierApplyChance }, { label: "Scrap", checked: multiplierApplyScrap, set: setMultiplierApplyScrap }].map(({ label, checked, set }) => (
                       <CheckboxSwitch
@@ -1259,24 +1259,24 @@ export default function LootManagerPage() {
                 className="inline-block"
               />
               <div className="flex gap-2">
-                <button onClick={() => setMultiplierScope("current")} disabled={!selectedContainer} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "current" && selectedContainer ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400"} disabled:opacity-50`}>Current</button>
-                <button onClick={() => setMultiplierScope("all")} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "all" ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-400"}`}>All</button>
+                <button onClick={() => setMultiplierScope("current")} disabled={!selectedContainer} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "current" && selectedContainer ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)]"} disabled:opacity-50`}>Current</button>
+                <button onClick={() => setMultiplierScope("all")} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${multiplierScope === "all" ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)]"}`}>All</button>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowMultiplierModal(false)} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={applyMultiplier} className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg font-medium">Apply {multiplierValue}x</button>
+              <button onClick={applyMultiplier} className="flex-1 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg font-medium">Apply {multiplierValue}x</button>
             </div>
           </Modal>
         )}
 
         {showNewContainerModal && (
           <Modal onClose={() => { setShowNewContainerModal(false); setNewContainerName(""); }} title="New Container">
-            <input type="text" value={newContainerName} onChange={(e) => setNewContainerName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNewContainer()} placeholder="e.g., crate_elite" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none" autoFocus />
-            <p className="text-xs text-zinc-500 mt-2">Use the same name as the container prefab in Rust</p>
+            <input type="text" value={newContainerName} onChange={(e) => setNewContainerName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNewContainer()} placeholder="e.g., crate_elite" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none" autoFocus />
+            <p className="text-xs text-[var(--text-muted)] mt-2">Use the same name as the container prefab in Rust</p>
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setShowNewContainerModal(false); setNewContainerName(""); }} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={addNewContainer} className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg font-medium">Create</button>
+              <button onClick={addNewContainer} className="flex-1 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg font-medium">Create</button>
             </div>
           </Modal>
         )}
@@ -1285,17 +1285,17 @@ export default function LootManagerPage() {
           <Modal onClose={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} title="Save Configuration">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Name *</label>
-                <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="e.g., 1000x Server Loot" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none" autoFocus />
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Name *</label>
+                <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="e.g., 1000x Server Loot" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none" autoFocus />
               </div>
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Description (optional)</label>
-                <textarea value={saveDescription} onChange={(e) => setSaveDescription(e.target.value)} placeholder="Brief description..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none resize-none" />
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Description (optional)</label>
+                <textarea value={saveDescription} onChange={(e) => setSaveDescription(e.target.value)} placeholder="Brief description..." rows={2} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none resize-none" />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={handleSaveConfig} disabled={isSaving || !saveName.trim()} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={handleSaveConfig} disabled={isSaving || !saveName.trim()} className="flex-1 px-4 py-2 bg-[var(--status-success)] text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                 {isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="h-4 w-4" />Save</>}
               </button>
             </div>
@@ -1306,11 +1306,11 @@ export default function LootManagerPage() {
           <Modal onClose={() => setShowUnstagedModal(false)} title="Unstaged Changes" wide>
             <div className="max-h-96 overflow-y-auto space-y-2">
               {unstagedConfigs.length === 0 ? (
-                <div className="text-center py-12 text-zinc-500"><Check className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>All configs are published</p></div>
+                <div className="text-center py-12 text-[var(--text-muted)]"><Check className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>All configs are published</p></div>
               ) : (
                 <>
                   <div className="flex justify-end mb-4">
-                    <button onClick={handlePublishAll} className="flex items-center gap-2 text-green-400 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/20 border border-green-500/30">
+                    <button onClick={handlePublishAll} className="flex items-center gap-2 text-[var(--status-success)] px-4 py-2 rounded-lg text-sm font-medium bg-[var(--status-success)]/20 border border-[var(--status-success)]/30">
                       <CloudUpload className="h-4 w-4" />Publish All ({unstagedConfigs.length})
                     </button>
                   </div>
@@ -1319,9 +1319,9 @@ export default function LootManagerPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <h4 className="text-white font-medium truncate">{config.name}</h4>
-                          <p className="text-xs text-zinc-500 mt-1">v{config.currentVersion} → publish (current: {config.publishedVersion || "none"})</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">v{config.currentVersion} → publish (current: {config.publishedVersion || "none"})</p>
                         </div>
-                        <button onClick={() => handlePublish(config.id)} className="ml-4 flex items-center gap-2 text-green-400 px-3 py-1.5 rounded-lg text-sm bg-green-500/20 border border-green-500/30">
+                        <button onClick={() => handlePublish(config.id)} className="ml-4 flex items-center gap-2 text-[var(--status-success)] px-3 py-1.5 rounded-lg text-sm bg-[var(--status-success)]/20 border border-[var(--status-success)]/30">
                           <CloudUpload className="h-4 w-4" />Publish
                         </button>
                       </div>
@@ -1337,30 +1337,30 @@ export default function LootManagerPage() {
         {showLoadModal && (
           <Modal onClose={() => setShowLoadModal(false)} title="Load Configuration" wide>
             <div className="mb-4">
-              <input type="text" placeholder="Search saved configs..." className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none" />
+              <input type="text" placeholder="Search saved configs..." className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-[var(--text-muted)] focus:outline-none" />
             </div>
             <div className="max-h-96 overflow-y-auto space-y-2">
               {loadingSavedConfigs ? (
-                <div className="text-center py-12"><div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" /><p className="text-zinc-500">Loading...</p></div>
+                <div className="text-center py-12"><div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" /><p className="text-[var(--text-muted)]">Loading...</p></div>
               ) : savedConfigs.length === 0 ? (
-                <div className="text-center py-12 text-zinc-500"><FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No saved configs yet</p></div>
+                <div className="text-center py-12 text-[var(--text-muted)]"><FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No saved configs yet</p></div>
               ) : (
                 savedConfigs.map((config) => (
                   <div key={config.id} className="bg-white/5 rounded-lg border border-white/10 p-4 hover:border-white/20 transition-colors group">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadConfig(config)}>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-white font-medium truncate group-hover:text-purple-400 transition-colors">{config.name}</h4>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${config.currentVersion > (config.publishedVersion || 0) ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}`}>
+                          <h4 className="text-white font-medium truncate group-hover:text-[var(--accent-primary)] transition-colors">{config.name}</h4>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${config.currentVersion > (config.publishedVersion || 0) ? "bg-[var(--status-warning)]/20 text-[var(--status-warning)]" : "bg-[var(--status-success)]/20 text-[var(--status-success)]"}`}>
                             v{config.currentVersion}
                           </span>
                         </div>
-                        {config.description && <p className="text-sm text-zinc-500 mt-1 line-clamp-2">{config.description}</p>}
-                        <p className="text-xs text-zinc-600 mt-2">Updated {new Date(config.updatedAt).toLocaleDateString()}</p>
+                        {config.description && <p className="text-sm text-[var(--text-muted)] mt-1 line-clamp-2">{config.description}</p>}
+                        <p className="text-xs text-[var(--text-tertiary)] mt-2">Updated {new Date(config.updatedAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <button onClick={() => handleLoadConfig(config)} className="p-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-white transition-colors" title="Load"><Check className="h-4 w-4" /></button>
-                        <button onClick={() => handleDeleteConfig(config.id)} className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => handleLoadConfig(config)} className="p-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)] rounded-lg text-white transition-colors" title="Load"><Check className="h-4 w-4" /></button>
+                        <button onClick={() => handleDeleteConfig(config.id)} className="p-2 bg-[var(--status-error)]/20 hover:bg-[var(--status-error)]/30 rounded-lg text-[var(--status-error)] transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
                   </div>
@@ -1375,28 +1375,28 @@ export default function LootManagerPage() {
           <Modal onClose={closeAddMappingModal} title={editingMappingId ? "Edit Mapping" : "Assign Server to Loot Table"}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Loot Table *</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Loot Table *</label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setConfigDropdownOpen(!configDropdownOpen)}
-                    className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
+                    className="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
                   >
-                    <span className={selectedMappingConfig ? "text-white" : "text-zinc-500"}>
+                    <span className={selectedMappingConfig ? "text-white" : "text-[var(--text-muted)]"}>
                       {selectedMappingConfig
                         ? savedConfigs.find(c => c.id === selectedMappingConfig)?.name + (savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion ? ` (v${savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion})` : " (unpublished)")
                         : "Select a loot table..."}
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${configDropdownOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${configDropdownOpen ? "rotate-180" : ""}`} />
                   </button>
                   {configDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-elevated)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                       {savedConfigs.map((config) => (
                         <button
                           key={config.id}
                           type="button"
                           onClick={() => { setSelectedMappingConfig(config.id); setConfigDropdownOpen(false); }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingConfig === config.id ? "bg-purple-500/20 text-purple-400" : "text-white"}`}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingConfig === config.id ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]" : "text-white"}`}
                         >
                           {config.name} {config.publishedVersion ? `(v${config.publishedVersion})` : "(unpublished)"}
                         </button>
@@ -1406,29 +1406,29 @@ export default function LootManagerPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Server *</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Server *</label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => !editingMappingId && setServerDropdownOpen(!serverDropdownOpen)}
                     disabled={!!editingMappingId}
-                    className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none disabled:opacity-50 flex items-center justify-between"
+                    className="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none disabled:opacity-50 flex items-center justify-between"
                   >
-                    <span className={selectedMappingServer ? "text-white" : "text-zinc-500"}>
+                    <span className={selectedMappingServer ? "text-white" : "text-[var(--text-muted)]"}>
                       {selectedMappingServer
                         ? `${servers.find(s => s.id === selectedMappingServer)?.name} (${servers.find(s => s.id === selectedMappingServer)?.ip}:${servers.find(s => s.id === selectedMappingServer)?.port})`
                         : "Select a server..."}
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${serverDropdownOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${serverDropdownOpen ? "rotate-180" : ""}`} />
                   </button>
                   {serverDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-elevated)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                       {servers.map((server) => (
                         <button
                           key={server.id}
                           type="button"
                           onClick={() => { setSelectedMappingServer(server.id); setServerDropdownOpen(false); }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingServer === server.id ? "bg-blue-500/20 text-blue-400" : "text-white"}`}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingServer === server.id ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]" : "text-white"}`}
                         >
                           {server.name} ({server.ip}:{server.port})
                         </button>
@@ -1438,7 +1438,7 @@ export default function LootManagerPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-zinc-400 mb-2">Time After Wipe (optional)</label>
+                <label className="block text-sm text-[var(--text-muted)] mb-2">Time After Wipe (optional)</label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <div className="relative">
@@ -1448,9 +1448,9 @@ export default function LootManagerPage() {
                         onChange={(e) => setSelectedMappingHours(e.target.value)}
                         placeholder="0"
                         min={0}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none pr-8"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none pr-8"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">h</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">h</span>
                     </div>
                   </div>
                   <div className="flex-1">
@@ -1462,18 +1462,18 @@ export default function LootManagerPage() {
                         placeholder="0"
                         min={0}
                         max={59}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none pr-8"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-[var(--text-muted)] focus:outline-none pr-8"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">m</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">m</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">Leave both empty for wipe day default. Example: 1h 30m = 90 minutes after wipe.</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Leave both empty for wipe day default. Example: 1h 30m = 90 minutes after wipe.</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={closeAddMappingModal} className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
-              <button onClick={handleAddMapping} disabled={!selectedMappingConfig || !selectedMappingServer} className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50">
+              <button onClick={handleAddMapping} disabled={!selectedMappingConfig || !selectedMappingServer} className="flex-1 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg font-medium disabled:opacity-50">
                 {editingMappingId ? <><Pencil className="h-4 w-4 inline mr-2" />Update</> : <><Plus className="h-4 w-4 inline mr-2" />Assign</>}
               </button>
             </div>
@@ -1484,24 +1484,24 @@ export default function LootManagerPage() {
           <Modal onClose={() => setShowVersionHistoryModal(false)} title="Version History" wide>
             <div className="max-h-96 overflow-y-auto space-y-2">
               {loadingVersions ? (
-                <div className="text-center py-12"><div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" /><p className="text-zinc-500">Loading...</p></div>
+                <div className="text-center py-12"><div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" /><p className="text-[var(--text-muted)]">Loading...</p></div>
               ) : versions.length === 0 ? (
-                <div className="text-center py-12 text-zinc-500"><History className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No version history</p></div>
+                <div className="text-center py-12 text-[var(--text-muted)]"><History className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No version history</p></div>
               ) : (
                 versions.map((v) => (
                   <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm font-medium ${v.version === currentConfigVersion ? "text-purple-400" : "text-white"}`}>
+                      <span className={`text-sm font-medium ${v.version === currentConfigVersion ? "text-[var(--accent-primary)]" : "text-white"}`}>
                         v{v.version}
                         {v.version === currentConfigVersion && <span className="ml-2 text-xs opacity-60">(current)</span>}
-                        {v.version === currentPublishedVersion && <span className="ml-2 text-xs text-green-400">(published)</span>}
+                        {v.version === currentPublishedVersion && <span className="ml-2 text-xs text-[var(--status-success)]">(published)</span>}
                       </span>
-                      <span className="text-xs text-zinc-500">{new Date(v.createdAt).toLocaleString()}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{new Date(v.createdAt).toLocaleString()}</span>
                     </div>
                     {v.version !== currentConfigVersion && (
                       <button
                         onClick={() => handleRestoreVersion(v.version)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 bg-purple-500/20 border border-purple-500/30 rounded-lg hover:bg-purple-500/30 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-[var(--accent-primary)] bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/30 rounded-lg hover:bg-[var(--accent-primary)]/30 transition-colors"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />Restore
                       </button>
@@ -1510,7 +1510,7 @@ export default function LootManagerPage() {
                 ))
               )}
             </div>
-            <p className="text-xs text-zinc-500 mt-4">Up to 50 versions are retained per config. Older versions are automatically deleted.</p>
+            <p className="text-xs text-[var(--text-muted)] mt-4">Up to 50 versions are retained per config. Older versions are automatically deleted.</p>
             <button onClick={() => setShowVersionHistoryModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Close</button>
           </Modal>
         )}
@@ -1521,10 +1521,10 @@ export default function LootManagerPage() {
 function Modal({ children, onClose, title, wide = false }: { children: React.ReactNode; onClose: () => void; title: string; wide?: boolean }) {
   return (
     <div className="anim-fade-scale fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className={`bg-zinc-900 rounded-xl border border-white/10 p-6 w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-[var(--bg-elevated)] rounded-xl border border-white/10 p-6 w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">{title}</h3>
-          <button onClick={onClose} className="p-1 text-zinc-500 hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"><X className="h-5 w-5" /></button>
         </div>
         {children}
       </div>
@@ -1542,28 +1542,28 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-medium text-white truncate">{getItemShortname(item)}</h4>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-zinc-500">{item["Min item amount"]}-{item["Max item amount"]}</span>
-              <span className="text-xs text-purple-400">{item["Chance to spawn"]}%</span>
-              {item["Is Blueprint"] && <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">BP</span>}
+              <span className="text-xs text-[var(--text-muted)]">{item["Min item amount"]}-{item["Max item amount"]}</span>
+              <span className="text-xs text-[var(--accent-primary)]">{item["Chance to spawn"]}%</span>
+              {item["Is Blueprint"] && <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">BP</span>}
             </div>
           </div>
-          <button onClick={() => onRemove(containerName, index)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="h-4 w-4" /></button>
+          <button onClick={() => onRemove(containerName, index)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors"><Trash2 className="h-4 w-4" /></button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-xs text-zinc-600">Min</label><input type="number" value={item["Min item amount"]} onChange={(e) => onUpdate(containerName, index, { "Min item amount": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
-          <div><label className="text-xs text-zinc-600">Max</label><input type="number" value={item["Max item amount"]} onChange={(e) => onUpdate(containerName, index, { "Max item amount": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+          <div><label className="text-xs text-[var(--text-tertiary)]">Min</label><input type="number" value={item["Min item amount"]} onChange={(e) => onUpdate(containerName, index, { "Min item amount": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+          <div><label className="text-xs text-[var(--text-tertiary)]">Max</label><input type="number" value={item["Max item amount"]} onChange={(e) => onUpdate(containerName, index, { "Max item amount": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
         </div>
-        <div className="mt-2"><label className="text-xs text-zinc-600">Chance</label><input type="number" value={item["Chance to spawn"]} onChange={(e) => onUpdate(containerName, index, { "Chance to spawn": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
-        <button onClick={() => setExpanded(!expanded)} className="w-full mt-3 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-white transition-colors">{expanded ? "Less" : "More"}<ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>
+        <div className="mt-2"><label className="text-xs text-[var(--text-tertiary)]">Chance</label><input type="number" value={item["Chance to spawn"]} onChange={(e) => onUpdate(containerName, index, { "Chance to spawn": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+        <button onClick={() => setExpanded(!expanded)} className="w-full mt-3 flex items-center justify-center gap-1 text-xs text-[var(--text-muted)] hover:text-white transition-colors">{expanded ? "Less" : "More"}<ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>
           {expanded && (
             <div className="overflow-hidden">
               <div className="pt-3 mt-3 space-y-2 border-t border-white/5">
                 <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="Is Blueprint" />
                 <div className="grid grid-cols-2 gap-2">
-                  <div><label className="text-xs text-zinc-600">Min Cond %</label><input type="number" value={item["Min Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "Min Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
-                  <div><label className="text-xs text-zinc-600">Max Cond %</label><input type="number" value={item["max Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "max Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+                  <div><label className="text-xs text-[var(--text-tertiary)]">Min Cond %</label><input type="number" value={item["Min Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "Min Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+                  <div><label className="text-xs text-[var(--text-tertiary)]">Max Cond %</label><input type="number" value={item["max Condition % (0.0% - 100.0%)"]} onChange={(e) => onUpdate(containerName, index, { "max Condition % (0.0% - 100.0%)": parseFloat(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
                 </div>
-                <div><label className="text-xs text-zinc-600">Times per container</label><input type="text" value={item["Times allowed to spawn per container"]} onChange={(e) => onUpdate(containerName, index, { "Times allowed to spawn per container": e.target.value })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
+                <div><label className="text-xs text-[var(--text-tertiary)]">Times per container</label><input type="text" value={item["Times allowed to spawn per container"]} onChange={(e) => onUpdate(containerName, index, { "Times allowed to spawn per container": e.target.value })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
               </div>
             </div>
           )}
@@ -1580,12 +1580,12 @@ function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item:
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">
           <input type="number" value={item["Min item amount"]} onChange={(e) => onUpdate(containerName, index, { "Min item amount": parseInt(e.target.value) || 0 })} className="w-16 rounded px-2 py-1 text-white text-sm text-center bg-white/[0.02] border border-white/5 focus:outline-none" />
-          <span className="text-zinc-600">-</span>
+          <span className="text-[var(--text-tertiary)]">-</span>
           <input type="number" value={item["Max item amount"]} onChange={(e) => onUpdate(containerName, index, { "Max item amount": parseInt(e.target.value) || 0 })} className="w-16 rounded px-2 py-1 text-white text-sm text-center bg-white/[0.02] border border-white/5 focus:outline-none" />
         </div>
         <input type="number" value={item["Chance to spawn"]} onChange={(e) => onUpdate(containerName, index, { "Chance to spawn": parseInt(e.target.value) || 0 })} className="w-20 rounded px-2 py-1 text-white text-sm text-center bg-white/[0.02] border border-white/5 focus:outline-none" title="Chance" />
         <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="BP" />
-        <button onClick={() => onRemove(containerName, index)} className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="h-4 w-4" /></button>
+        <button onClick={() => onRemove(containerName, index)} className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors"><Trash2 className="h-4 w-4" /></button>
       </div>
     </div>
   );

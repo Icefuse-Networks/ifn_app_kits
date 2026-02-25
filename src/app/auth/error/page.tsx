@@ -13,7 +13,7 @@ function ErrorContent() {
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
         <p className="mb-4">{error}</p>
-        <Link href="/" className="text-blue-500 hover:underline">
+        <Link href="/" className="text-[var(--accent-primary)] hover:underline">
           Go back home
         </Link>
       </div>

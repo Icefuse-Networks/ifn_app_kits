@@ -83,32 +83,32 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder = "Selec
 
   return (
     <div ref={dropdownRef} className="relative">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm min-w-[200px] justify-between hover:border-purple-500/50 transition-colors">
-        <span className={selected.length === 0 ? "text-zinc-400" : "text-white"}>{displayText}</span>
-        <ChevronDown className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm min-w-[200px] justify-between hover:border-[var(--accent-primary)]/50 transition-colors">
+        <span className={selected.length === 0 ? "text-[var(--text-muted)]" : "text-white"}>{displayText}</span>
+        <ChevronDown className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
         {isOpen && (
-          <div className="anim-fade-slide-up absolute z-50 mt-2 w-80 rounded-lg bg-zinc-900 border border-white/10 shadow-xl overflow-hidden">
+          <div className="anim-fade-slide-up absolute z-50 mt-2 w-80 rounded-lg bg-[var(--bg-elevated)] border border-white/10 shadow-xl overflow-hidden">
             <div className="p-2 border-b border-white/5">
               <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search servers..."
-                className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500" />
+                className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[var(--accent-primary)]" />
             </div>
             <div className="flex gap-2 p-2 border-b border-white/5">
-              <button onClick={() => onChange(options.map(getServerKey))} className="flex-1 px-2 py-1 text-xs rounded bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors">Select All</button>
-              <button onClick={() => onChange([])} className="flex-1 px-2 py-1 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Clear All</button>
+              <button onClick={() => onChange(options.map(getServerKey))} className="flex-1 px-2 py-1 text-xs rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30 transition-colors">Select All</button>
+              <button onClick={() => onChange([])} className="flex-1 px-2 py-1 text-xs rounded bg-[var(--status-error)]/20 text-[var(--status-error)] hover:bg-[var(--status-error)]/30 transition-colors">Clear All</button>
             </div>
             <div className="max-h-64 overflow-y-auto">
-              {filteredOptions.length === 0 ? <div className="p-4 text-center text-zinc-500 text-sm">No servers found</div> :
+              {filteredOptions.length === 0 ? <div className="p-4 text-center text-[var(--text-muted)] text-sm">No servers found</div> :
                 filteredOptions.map((option) => {
                   const key = getServerKey(option);
                   return (
                     <button key={key} onClick={() => toggleOption(key)} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selected.includes(key) ? "bg-purple-500 border-purple-500" : "border-white/20"}`}>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selected.includes(key) ? "bg-[var(--accent-primary)] border-[var(--accent-primary)]" : "border-white/20"}`}>
                         {selected.includes(key) && <Check className="h-3 w-3 text-white" />}
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <div className="text-white text-sm truncate">{option.server_name}</div>
-                        <div className="text-zinc-500 text-xs truncate">{option.server_ip}</div>
+                        <div className="text-[var(--text-muted)] text-xs truncate">{option.server_ip}</div>
                       </div>
                     </button>
                   );
@@ -241,17 +241,17 @@ export default function ServersTab() {
   }, [timeseries, groupBy, selectedServers]);
 
   const aggregateColumns: Column<AggregateData>[] = useMemo(() => [
-    { key: "server_name", header: "Server", render: (_, row) => (<div><div className="text-white font-medium">{row.server_name}</div><div className="text-xs text-zinc-500">{row.server_ip}</div></div>) },
-    { key: "category", header: "Category", className: "text-zinc-400" },
+    { key: "server_name", header: "Server", render: (_, row) => (<div><div className="text-white font-medium">{row.server_name}</div><div className="text-xs text-[var(--text-muted)]">{row.server_ip}</div></div>) },
+    { key: "category", header: "Category", className: "text-[var(--text-muted)]" },
     { key: "avg_players", header: "Avg Players", align: "right" as const, render: (v) => <span className="text-white font-semibold">{Math.round(Number(v))}</span> },
-    { key: "peak_players", header: "Peak", align: "right" as const, render: (v) => <span className="text-yellow-400 font-semibold">{Number(v)}</span> },
-    { key: "avg_capacity", header: "Capacity", align: "right" as const, render: (v) => <span className="text-zinc-400">{Math.round(Number(v))}</span> },
+    { key: "peak_players", header: "Peak", align: "right" as const, render: (v) => <span className="text-[var(--status-warning)] font-semibold">{Number(v)}</span> },
+    { key: "avg_capacity", header: "Capacity", align: "right" as const, render: (v) => <span className="text-[var(--text-muted)]">{Math.round(Number(v))}</span> },
     { key: "avg_utilization", header: "Utilization", align: "right" as const, render: (v) => {
       const util = Number(v);
-      const color = util > 75 ? "text-green-400" : util > 50 ? "text-yellow-400" : "text-red-400";
+      const color = util > 75 ? "text-[var(--status-success)]" : util > 50 ? "text-[var(--status-warning)]" : "text-[var(--status-error)]";
       return <span className={`font-semibold ${color}`}>{util.toFixed(1)}%</span>;
     }},
-    { key: "data_points", header: "Data Points", align: "right" as const, className: "text-zinc-500" },
+    { key: "data_points", header: "Data Points", align: "right" as const, className: "text-[var(--text-muted)]" },
   ], []);
 
   // --- Population Forecast ---
@@ -482,10 +482,10 @@ export default function ServersTab() {
         {timeRange === "custom" && (
           <div className="flex items-center gap-2">
             <input type="datetime-local" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500" />
-            <span className="text-zinc-500">to</span>
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[var(--accent-primary)]" />
+            <span className="text-[var(--text-muted)]">to</span>
             <input type="datetime-local" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500" />
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[var(--accent-primary)]" />
           </div>
         )}
         <Dropdown value={groupBy} options={[
@@ -499,39 +499,39 @@ export default function ServersTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <StatCard label="Current Players" value={loading ? "--" : currentPlayers.total} subtitle={`${currentPlayers.count} servers online`} icon={Users} delay={0} />
-        <StatCard label="Avg Total Players" value={loading ? "--" : summaryStats.totalAvg} icon={TrendingUp} iconColor="text-blue-400" iconBgColor="bg-blue-500/20" delay={0.1} />
-        <StatCard label="Peak Players" value={loading ? "--" : summaryStats.totalPeak} icon={Zap} iconColor="text-yellow-400" iconBgColor="bg-yellow-500/20" delay={0.2} />
-        <StatCard label="Avg Utilization" value={loading ? "--" : `${summaryStats.avgUtil}%`} icon={Activity} iconColor="text-green-400" iconBgColor="bg-green-500/20" delay={0.3} />
+        <StatCard label="Avg Total Players" value={loading ? "--" : summaryStats.totalAvg} icon={TrendingUp} iconColor="text-[var(--accent-primary)]" iconBgColor="bg-[var(--accent-primary)]/20" delay={0.1} />
+        <StatCard label="Peak Players" value={loading ? "--" : summaryStats.totalPeak} icon={Zap} iconColor="text-[var(--status-warning)]" iconBgColor="bg-[var(--status-warning)]/20" delay={0.2} />
+        <StatCard label="Avg Utilization" value={loading ? "--" : `${summaryStats.avgUtil}%`} icon={Activity} iconColor="text-[var(--status-success)]" iconBgColor="bg-[var(--status-success)]/20" delay={0.3} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <ChartCard title="Total Players Over Time" icon={TrendingUp} iconColor="text-purple-400" delay={0.2}>
+        <ChartCard title="Total Players Over Time" icon={TrendingUp} iconColor="text-[var(--accent-primary)]" delay={0.2}>
           <div className="h-72"><TimeSeriesChart data={totalPlayersData} series={[{ key: "total_players", name: "Total Players", type: "line", color: COLORS[0], smooth: true, areaStyle: true }]} height="100%" /></div>
         </ChartCard>
-        <ChartCard title="Server Comparison" icon={Server} iconColor="text-blue-400" delay={0.3}>
+        <ChartCard title="Server Comparison" icon={Server} iconColor="text-[var(--accent-primary)]" delay={0.3}>
           <div className="h-72">
             {serverComparisonData.data.length > 0
               ? <TimeSeriesChart data={serverComparisonData.data} series={serverComparisonData.series} height="100%" />
-              : <div className="h-full flex items-center justify-center text-zinc-500 text-sm">No data for selected time range</div>}
+              : <div className="h-full flex items-center justify-center text-[var(--text-muted)] text-sm">No data for selected time range</div>}
           </div>
         </ChartCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <ChartCard title="Server Utilization" icon={BarChart3} iconColor="text-green-400" delay={0.4}>
+        <ChartCard title="Server Utilization" icon={BarChart3} iconColor="text-[var(--status-success)]" delay={0.4}>
           <div className="h-64"><BarChart data={aggregate.slice(0, 10).map((a) => ({ label: a.server_name.substring(0, 15), value: Number(a.avg_utilization) }))} height="100%" colors={COLORS} labelWidth={80} valueFormatter={(v) => `${v.toFixed(1)}%`} /></div>
         </ChartCard>
-        <ChartCard title="Peak Players by Server" icon={Zap} iconColor="text-yellow-400" delay={0.5}>
+        <ChartCard title="Peak Players by Server" icon={Zap} iconColor="text-[var(--status-warning)]" delay={0.5}>
           <div className="h-64"><PieChart data={aggregate.slice(0, 10).map((a) => ({ name: a.server_name.substring(0, 15), value: Number(a.peak_players) }))} height="100%" colors={COLORS} /></div>
         </ChartCard>
-        <ChartCard title="Activity Heatmap" icon={Clock} iconColor="text-pink-400" delay={0.6}>
+        <ChartCard title="Activity Heatmap" icon={Clock} iconColor="text-[var(--accent-primary)]" delay={0.6}>
           <div className="h-64 overflow-auto"><ActivityHeatmap data={heatmapGrid} tooltipPrefix="players" cellHeight={20} /></div>
         </ChartCard>
       </div>
 
       {/* 7-Day Population Forecast */}
       <div className="mb-6">
-        <ChartCard title="7-Day Population Forecast" icon={Sparkles} iconColor="text-emerald-400" delay={0.65}>
+        <ChartCard title="7-Day Population Forecast" icon={Sparkles} iconColor="text-[var(--status-success)]" delay={0.65}>
           {forecastLoading ? (
             <div className="h-80 flex items-center justify-center"><Loading /></div>
           ) : forecastData.length > 0 ? (
@@ -541,19 +541,19 @@ export default function ServersTab() {
                   f.event.split(', ').forEach(e => { if (e && !acc.includes(e)) acc.push(e); });
                   return acc;
                 }, []).map(e => (
-                  <span key={e} className="px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-medium">{e}</span>
+                  <span key={e} className="px-2 py-1 rounded-full bg-[var(--status-warning)]/15 text-[var(--status-warning)] text-xs font-medium">{e}</span>
                 ))}
               </div>
               <div className="h-80"><EChartWrapper option={forecastOption} height="100%" /></div>
-              <p className="text-xs text-zinc-600 mt-2">Based on 90-day historical patterns. Adjusted for US holidays, school calendar (Eastern), and weekend patterns. Shaded area shows confidence range.</p>
+              <p className="text-xs text-[var(--text-tertiary)] mt-2">Based on 90-day historical patterns. Adjusted for US holidays, school calendar (Eastern), and weekend patterns. Shaded area shows confidence range.</p>
             </>
           ) : (
-            <div className="h-40 flex items-center justify-center text-zinc-500 text-sm">Not enough historical data to generate forecast</div>
+            <div className="h-40 flex items-center justify-center text-[var(--text-muted)] text-sm">Not enough historical data to generate forecast</div>
           )}
         </ChartCard>
       </div>
 
-      <ChartCard title="Server Statistics" icon={Server} iconColor="text-purple-400" delay={0.7}>
+      <ChartCard title="Server Statistics" icon={Server} iconColor="text-[var(--accent-primary)]" delay={0.7}>
         {loading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-white/5 rounded-lg animate-pulse" />)}</div>
         ) : (

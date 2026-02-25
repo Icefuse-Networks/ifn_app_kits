@@ -284,7 +284,7 @@ export default function FeedbackPage() {
         key={item.id}
         className={`anim-stagger-item rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
           isPending
-            ? "border-amber-500/20 hover:border-amber-500/40"
+            ? "border-[var(--status-warning)]/20 hover:border-[var(--status-warning)]/40"
             : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"
         }`}
         style={{ animationDelay: `${idx * 30}ms` }}
@@ -300,7 +300,7 @@ export default function FeedbackPage() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {isAllServers && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20">
                   <Server className="w-3 h-3" />
                   {servers.find(s => s.hashedId === item.serverIdentifier)?.name || item.serverIdentifier}
                 </span>
@@ -312,7 +312,7 @@ export default function FeedbackPage() {
                 {formatDate(item.createdAt)}
               </span>
               {item.rewardAmount != null && item.status === "accepted" && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--status-success)]/15 text-[var(--status-success)] border border-[var(--status-success)]/20">
                   <DollarSign className="w-3 h-3" />{item.rewardAmount.toLocaleString()}
                 </span>
               )}
@@ -377,10 +377,10 @@ export default function FeedbackPage() {
 
                 {item.reward && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                    Reward: <span className="text-emerald-400 font-medium">${item.reward.amount.toLocaleString()}</span>
+                    <DollarSign className="w-3.5 h-3.5 text-[var(--status-success)]" />
+                    Reward: <span className="text-[var(--status-success)] font-medium">${item.reward.amount.toLocaleString()}</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                      item.reward.status === "processed" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+                      item.reward.status === "processed" ? "bg-[var(--status-success)]/15 text-[var(--status-success)]" : "bg-[var(--status-warning)]/15 text-[var(--status-warning)]"
                     }`}>
                       {item.reward.status}
                     </span>
@@ -392,7 +392,7 @@ export default function FeedbackPage() {
 
                 {isPending && (
                   <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-black/10">
-                    <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <DollarSign className="w-4 h-4 text-[var(--status-success)] shrink-0" />
                     <label className="text-xs font-medium text-[var(--text-muted)] shrink-0">Reward on accept:</label>
                     <div className="w-40" onClick={(e) => e.stopPropagation()}>
                       <NumberInput
@@ -427,8 +427,8 @@ export default function FeedbackPage() {
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/20">
-                <MessageCircle className="h-6 w-6 text-blue-400" />
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[var(--accent-primary)]/20 to-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/20">
+                <MessageCircle className="h-6 w-6 text-[var(--accent-primary)]" />
               </div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">Feedback</h1>
             </div>
@@ -442,7 +442,7 @@ export default function FeedbackPage() {
                 className="flex items-center gap-2 pl-3 pr-8 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-[var(--glass-border-prominent)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors cursor-pointer min-w-[180px]"
               >
                 {isAllServers ? (
-                  <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+                  <Layers className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
                 ) : (
                   <Server className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                 )}
@@ -470,7 +470,7 @@ export default function FeedbackPage() {
                       onClick={() => { setSelectedServer("__all__"); setServerDropdownOpen(false) }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
                         isAllServers
-                          ? "bg-blue-500/15 text-blue-400"
+                          ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]"
                           : "text-[var(--text-secondary)] hover:bg-white/5"
                       }`}
                     >
@@ -490,7 +490,7 @@ export default function FeedbackPage() {
                           onClick={() => { setSelectedServer(s.hashedId); setServerDropdownOpen(false) }}
                           className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
                             isSelected
-                              ? "bg-blue-500/15 text-blue-400"
+                              ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]"
                               : "text-[var(--text-secondary)] hover:bg-white/5"
                           }`}
                         >
@@ -522,8 +522,8 @@ export default function FeedbackPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Inbox className="w-5 h-5 text-purple-400" />
+              <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10">
+                <Inbox className="w-5 h-5 text-[var(--accent-primary)]" />
               </div>
               <div>
                 <p className="text-sm text-[var(--text-muted)]">Total</p>
@@ -533,34 +533,34 @@ export default function FeedbackPage() {
           </div>
           <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Clock className="w-5 h-5 text-amber-400" />
+              <div className="p-2 rounded-lg bg-[var(--status-warning)]/10">
+                <Clock className="w-5 h-5 text-[var(--status-warning)]" />
               </div>
               <div>
                 <p className="text-sm text-[var(--text-muted)]">Pending</p>
-                <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
+                <p className="text-2xl font-bold text-[var(--status-warning)]">{stats.pending}</p>
               </div>
             </div>
           </div>
           <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '200ms' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <div className="p-2 rounded-lg bg-[var(--status-success)]/10">
+                <CheckCircle2 className="w-5 h-5 text-[var(--status-success)]" />
               </div>
               <div>
                 <p className="text-sm text-[var(--text-muted)]">Accepted</p>
-                <p className="text-2xl font-bold text-emerald-400">{stats.accepted}</p>
+                <p className="text-2xl font-bold text-[var(--status-success)]">{stats.accepted}</p>
               </div>
             </div>
           </div>
           <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '250ms' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <XCircle className="w-5 h-5 text-red-400" />
+              <div className="p-2 rounded-lg bg-[var(--status-error)]/10">
+                <XCircle className="w-5 h-5 text-[var(--status-error)]" />
               </div>
               <div>
                 <p className="text-sm text-[var(--text-muted)]">Denied</p>
-                <p className="text-2xl font-bold text-red-400">{stats.denied}</p>
+                <p className="text-2xl font-bold text-[var(--status-error)]">{stats.denied}</p>
               </div>
             </div>
           </div>
@@ -623,7 +623,7 @@ export default function FeedbackPage() {
           <>
             {pendingFeedback.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-lg font-semibold text-amber-400 mb-3 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-[var(--status-warning)] mb-3 flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   Unreviewed Feedback ({pendingFeedback.length})
                 </h2>
@@ -635,7 +635,7 @@ export default function FeedbackPage() {
 
             {acceptedFeedback.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-lg font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-[var(--status-success)] mb-3 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
                   Accepted Feedback ({acceptedFeedback.length})
                 </h2>
@@ -649,7 +649,7 @@ export default function FeedbackPage() {
               <div className="mb-8">
                 <button
                   onClick={() => setShowDenied(!showDenied)}
-                  className="flex items-center gap-2 text-lg font-semibold text-red-400 mb-3 hover:text-red-300 transition-colors"
+                  className="flex items-center gap-2 text-lg font-semibold text-[var(--status-error)] mb-3 hover:text-[var(--status-error)] transition-colors"
                 >
                   {showDenied ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                   Denied Feedback ({deniedFeedback.length})

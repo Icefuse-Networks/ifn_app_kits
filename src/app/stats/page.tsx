@@ -42,7 +42,7 @@ interface StatsResponse {
   meta: { total: number; filteredTotal: number; limit: number; offset: number; hasMore: boolean }
 }
 
-const MEDAL_COLORS = ['text-yellow-400', 'text-gray-300', 'text-orange-400']
+const MEDAL_COLORS = ['text-[var(--status-warning)]', 'text-[var(--text-secondary)]', 'text-[var(--status-warning)]']
 
 export default function PublicStatsPage() {
   const [identifiers, setIdentifiers] = useState<ServerIdentifier[]>([])

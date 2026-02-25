@@ -161,20 +161,20 @@ export default function ServersPage() {
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/20">
-                <Server className="h-6 w-6 text-violet-400" />
+              <div className="p-2.5 rounded-xl bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/20">
+                <Server className="h-6 w-6 text-[var(--accent-primary)]" />
               </div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">Servers</h1>
             </div>
             <p className="text-[var(--text-muted)] text-sm ml-[52px]">Monitor and manage your game servers</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--status-success)]/10 border border-[var(--status-success)]/20">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--status-success)] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--status-success)]" />
               </span>
-              <span className="text-xs font-medium text-emerald-400">Live</span>
+              <span className="text-xs font-medium text-[var(--status-success)]">Live</span>
             </div>
             <Button
               variant="primary"
@@ -188,14 +188,14 @@ export default function ServersPage() {
 
         <div className="flex items-center gap-6 mb-8">
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
-            <div className="p-2 rounded-lg bg-emerald-500/10"><Activity className="w-4 h-4 text-emerald-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--status-success)]/10"><Activity className="w-4 h-4 text-[var(--status-success)]" /></div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-emerald-400">{stats.online}</span>
+              <span className="text-2xl font-bold text-[var(--status-success)]">{stats.online}</span>
               <span className="text-sm text-[var(--text-muted)]">/ {stats.live} online</span>
             </div>
           </div>
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
-            <div className="p-2 rounded-lg bg-purple-500/10"><Users className="w-4 h-4 text-purple-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Users className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.players}</span>
               <span className="text-sm text-[var(--text-muted)]">players</span>
@@ -254,9 +254,9 @@ export default function ServersPage() {
                             <Link href={`/dashboard/servers/${server.id}`} className="group block rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)] hover:bg-[var(--glass-bg-prominent)] hover:shadow-xl hover:shadow-black/10">
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <div className={`relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${online ? 'bg-gradient-to-br from-emerald-500/20 to-green-500/20 border border-emerald-500/30' : 'bg-[var(--bg-input)] border border-[var(--glass-border)]'}`}>
-                                    <Server className={`w-5 h-5 ${online ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`} />
-                                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--glass-bg)] ${online ? 'bg-emerald-500' : 'bg-gray-500'}`} />
+                                  <div className={`relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${online ? 'bg-[var(--status-success)]/20 border border-[var(--status-success)]/30' : 'bg-[var(--bg-input)] border border-[var(--glass-border)]'}`}>
+                                    <Server className={`w-5 h-5 ${online ? 'text-[var(--status-success)]' : 'text-[var(--text-muted)]'}`} />
+                                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--glass-bg)] ${online ? 'bg-[var(--status-success)]' : 'bg-[var(--text-muted)]'}`} />
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <h3 className="font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--accent-primary)] transition-colors">{server.name}</h3>
@@ -267,11 +267,11 @@ export default function ServersPage() {
                               </div>
                               <div className="flex items-center justify-between pt-3 border-t border-[var(--glass-border)]">
                                 <div className="flex items-center gap-3">
-                                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${server.playerCount > 0 ? 'bg-blue-500/10 text-blue-400' : 'bg-[var(--bg-input)] text-[var(--text-muted)]'}`}>
+                                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${server.playerCount > 0 ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]' : 'bg-[var(--bg-input)] text-[var(--text-muted)]'}`}>
                                     <Users className="w-3.5 h-3.5" />
                                     <span className="text-sm font-semibold">{server.playerCount}</span>
                                   </div>
-                                  <span className={`flex items-center gap-1 text-xs ${online ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`}>
+                                  <span className={`flex items-center gap-1 text-xs ${online ? 'text-[var(--status-success)]' : 'text-[var(--text-muted)]'}`}>
                                     {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
                                     {online ? 'Online' : 'Offline'}
                                   </span>

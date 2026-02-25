@@ -55,12 +55,12 @@ export default function DashboardPage() {
       <div className="anim-fade-slide-up">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-              <Zap className="h-6 w-6 text-purple-400" />
+            <div className="p-2 rounded-xl bg-[var(--accent-primary)]/20">
+              <Zap className="h-6 w-6 text-[var(--accent-primary)]" />
             </div>
             Dashboard
           </h1>
-          <p className="text-zinc-500 mt-2">Overview of your server infrastructure</p>
+          <p className="text-[var(--text-muted)] mt-2">Overview of your server infrastructure</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -86,7 +86,7 @@ export default function DashboardPage() {
             style={{ animationDelay: '400ms' }}
           >
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-purple-400" />
+              <Clock className="h-5 w-5 text-[var(--accent-primary)]" />
               Recent Activity
             </h2>
             {loading ? (
@@ -101,14 +101,14 @@ export default function DashboardPage() {
                   <div key={activity.id} className="p-4 rounded-lg bg-white/[0.02] border border-white/5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-white">{activity.message}</span>
-                      <span className="text-xs text-zinc-500">{activity.timestamp}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{activity.timestamp}</span>
                     </div>
-                    <span className="text-xs text-purple-400 mt-1 inline-block">{activity.type}</span>
+                    <span className="text-xs text-[var(--accent-primary)] mt-1 inline-block">{activity.type}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-zinc-500">
+              <div className="text-center py-8 text-[var(--text-muted)]">
                 <Activity className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p>No recent activity</p>
               </div>
@@ -120,21 +120,21 @@ export default function DashboardPage() {
             style={{ animationDelay: '500ms' }}
           >
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-400" />
+              <TrendingUp className="h-5 w-5 text-[var(--status-success)]" />
               Quick Stats
             </h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] border border-white/5">
-                <span className="text-zinc-400">Server Uptime</span>
-                <span className="text-green-400 font-semibold">99.9%</span>
+                <span className="text-[var(--text-muted)]">Server Uptime</span>
+                <span className="text-[var(--status-success)] font-semibold">99.9%</span>
               </div>
               <div className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] border border-white/5">
-                <span className="text-zinc-400">Active Announcements</span>
-                <span className="text-purple-400 font-semibold">--</span>
+                <span className="text-[var(--text-muted)]">Active Announcements</span>
+                <span className="text-[var(--accent-primary)] font-semibold">--</span>
               </div>
               <div className="flex items-center justify-between p-4 rounded-lg bg-white/[0.02] border border-white/5">
-                <span className="text-zinc-400">Loot Configs</span>
-                <span className="text-blue-400 font-semibold">--</span>
+                <span className="text-[var(--text-muted)]">Loot Configs</span>
+                <span className="text-[var(--accent-primary)] font-semibold">--</span>
               </div>
             </div>
           </div>

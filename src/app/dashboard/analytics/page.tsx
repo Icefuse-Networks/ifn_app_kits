@@ -52,11 +52,11 @@ export default function CentralAnalyticsPage() {
   const showSharedFilters = activeCategory === 'bases' || activeCategory === 'events' || activeCategory === 'shop';
 
   const overviewCards: { category: Category; icon: React.ElementType; iconColor: string; bgFrom: string; bgTo: string; borderColor: string; title: string; desc: string }[] = [
-    { category: 'bases', icon: Castle, iconColor: 'text-red-400', bgFrom: 'from-red-500/10', bgTo: 'to-orange-500/10', borderColor: 'border-red-500/20 hover:border-red-500/40', title: 'Base Raid Analytics', desc: 'Raid statistics, raiders, completion rates, and leaderboards' },
-    { category: 'events', icon: Trophy, iconColor: 'text-amber-400', bgFrom: 'from-amber-500/10', bgTo: 'to-red-500/10', borderColor: 'border-amber-500/20 hover:border-amber-500/40', title: 'Event Analytics', desc: 'KOTH and Maze event statistics, winners, and participation' },
-    { category: 'servers', icon: ServerIcon, iconColor: 'text-purple-400', bgFrom: 'from-purple-500/10', bgTo: 'to-pink-500/10', borderColor: 'border-purple-500/20 hover:border-purple-500/40', title: 'Server Analytics', desc: 'Real-time population data, utilization, and activity trends' },
-    { category: 'shop', icon: ShoppingCart, iconColor: 'text-green-400', bgFrom: 'from-green-500/10', bgTo: 'to-emerald-500/10', borderColor: 'border-green-500/20 hover:border-green-500/40', title: 'Shop Analytics', desc: 'Purchase analytics, revenue tracking, and top items' },
-    { category: 'global', icon: TrendingUp, iconColor: 'text-cyan-400', bgFrom: 'from-cyan-500/10', bgTo: 'to-blue-500/10', borderColor: 'border-cyan-500/20 hover:border-cyan-500/40', title: 'Global Rust Stats', desc: 'Global server analytics from BattleMetrics (Top 1000)' },
+    { category: 'bases', icon: Castle, iconColor: 'text-[var(--status-error)]', bgFrom: 'from-[var(--status-error)]/10', bgTo: 'to-[var(--status-warning)]/10', borderColor: 'border-[var(--status-error)]/20 hover:border-[var(--status-error)]/40', title: 'Base Raid Analytics', desc: 'Raid statistics, raiders, completion rates, and leaderboards' },
+    { category: 'events', icon: Trophy, iconColor: 'text-[var(--status-warning)]', bgFrom: 'from-[var(--status-warning)]/10', bgTo: 'to-[var(--status-error)]/10', borderColor: 'border-[var(--status-warning)]/20 hover:border-[var(--status-warning)]/40', title: 'Event Analytics', desc: 'KOTH and Maze event statistics, winners, and participation' },
+    { category: 'servers', icon: ServerIcon, iconColor: 'text-[var(--accent-primary)]', bgFrom: 'from-[var(--accent-primary)]/10', bgTo: 'to-[var(--accent-primary)]/10', borderColor: 'border-[var(--accent-primary)]/20 hover:border-[var(--accent-primary)]/40', title: 'Server Analytics', desc: 'Real-time population data, utilization, and activity trends' },
+    { category: 'shop', icon: ShoppingCart, iconColor: 'text-[var(--status-success)]', bgFrom: 'from-[var(--status-success)]/10', bgTo: 'to-[var(--status-success)]/10', borderColor: 'border-[var(--status-success)]/20 hover:border-[var(--status-success)]/40', title: 'Shop Analytics', desc: 'Purchase analytics, revenue tracking, and top items' },
+    { category: 'global', icon: TrendingUp, iconColor: 'text-[var(--accent-primary)]', bgFrom: 'from-[var(--accent-primary)]/10', bgTo: 'to-[var(--accent-primary)]/10', borderColor: 'border-[var(--accent-primary)]/20 hover:border-[var(--accent-primary)]/40', title: 'Global Rust Stats', desc: 'Global server analytics from BattleMetrics (Top 1000)' },
   ];
 
   return (
@@ -67,12 +67,12 @@ export default function CentralAnalyticsPage() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                  <BarChart3 className="h-6 w-6 text-purple-400" />
+                <div className="p-2 rounded-xl bg-[var(--accent-primary)]/20">
+                  <BarChart3 className="h-6 w-6 text-[var(--accent-primary)]" />
                 </div>
                 Central Analytics
               </h1>
-              <p className="text-zinc-500 mt-2">Consolidated analytics across all systems</p>
+              <p className="text-[var(--text-muted)] mt-2">Consolidated analytics across all systems</p>
             </div>
             <div className="flex gap-3 flex-wrap items-center">
               {activeCategory !== 'overview' && (
@@ -137,7 +137,7 @@ export default function CentralAnalyticsPage() {
                       <card.icon className={`h-12 w-12 ${card.iconColor}`} />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">{card.title}</h2>
-                    <p className="text-zinc-400 text-sm">{card.desc}</p>
+                    <p className="text-[var(--text-muted)] text-sm">{card.desc}</p>
                   </div>
                 </div>
               ))}

@@ -197,10 +197,10 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
   type RaiderStat = { steam_id: string; name: string; raids: number; entities: number; completed: number };
   const raiderColumns: Column<RaiderStat>[] = useMemo(() => [
     { key: "rank", header: "#", render: (_, __, idx) => <RankBadge rank={idx + 1} /> },
-    { key: "name", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.name}</div><div className="text-xs text-zinc-600 font-mono">{row.steam_id}</div></div>) },
-    { key: "raids", header: "Raids", align: "right" as const, render: (v) => <span className="text-amber-400 font-semibold">{(v as number).toLocaleString()}</span> },
-    { key: "entities", header: "Destroyed", align: "right" as const, render: (v) => <span className="text-red-400">{(v as number).toLocaleString()}</span> },
-    { key: "completed", header: "Completed", align: "right" as const, render: (v) => <span className="text-green-400">{(v as number).toLocaleString()}</span> },
+    { key: "name", header: "Player", render: (_, row) => (<div><div className="text-sm text-white font-medium">{row.name}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{row.steam_id}</div></div>) },
+    { key: "raids", header: "Raids", align: "right" as const, render: (v) => <span className="text-[var(--status-warning)] font-semibold">{(v as number).toLocaleString()}</span> },
+    { key: "entities", header: "Destroyed", align: "right" as const, render: (v) => <span className="text-[var(--status-error)]">{(v as number).toLocaleString()}</span> },
+    { key: "completed", header: "Completed", align: "right" as const, render: (v) => <span className="text-[var(--status-success)]">{(v as number).toLocaleString()}</span> },
   ], []);
 
   return (
@@ -290,8 +290,8 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
       {activeSubTab === 'raids' && (
         <>
           {error && (
-            <div className="text-center py-10 bg-red-900/20 border border-red-700/50 p-6 rounded-xl">
-              <p className="text-xl font-semibold text-red-300">{error}</p>
+            <div className="text-center py-10 bg-[var(--status-error)]/20 border border-[var(--status-error)]/50 p-6 rounded-xl">
+              <p className="text-xl font-semibold text-[var(--status-error)]">{error}</p>
             </div>
           )}
           {loading ? <Loading size="lg" text="Loading raids..." /> : (
@@ -301,53 +301,53 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                 const isExpanded = expandedRaid === raidKey;
                 return (
                   <div key={`${raidKey}-${idx}`}
-                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-red-500/30 transition-colors"
+                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-[var(--status-error)]/30 transition-colors"
                     style={{ animationDelay: `${idx * 20}ms` }}>
                     <div className="p-4 cursor-pointer flex items-center justify-between" onClick={() => setExpandedRaid(isExpanded ? null : raidKey)}>
                       <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-lg ${raid.was_completed ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                          {raid.was_completed ? <CheckCircle2 className="h-5 w-5 text-green-400" /> : <Target className="h-5 w-5 text-red-400" />}
+                        <div className={`p-2 rounded-lg ${raid.was_completed ? 'bg-[var(--status-success)]/20' : 'bg-[var(--status-error)]/20'}`}>
+                          {raid.was_completed ? <CheckCircle2 className="h-5 w-5 text-[var(--status-success)]" /> : <Target className="h-5 w-5 text-[var(--status-error)]" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <Badge variant={raid.was_completed ? 'success' : 'error'} size="sm">{raid.was_completed ? 'COMPLETED' : 'ABANDONED'}</Badge>
                             <Badge variant="secondary" size="sm">{raid.base_type}</Badge>
                             <Badge variant="secondary" size="sm">{raid.building_grade}</Badge>
-                            <span className="text-xs text-zinc-500">{raid.building_name}</span>
+                            <span className="text-xs text-[var(--text-muted)]">{raid.building_name}</span>
                           </div>
-                          <div className="text-xs text-zinc-500 mt-1">
+                          <div className="text-xs text-[var(--text-muted)] mt-1">
                             <Clock className="inline h-3 w-3 mr-1" />{raid.timestamp_str} &bull; {formatDuration(raid.raid_duration_seconds)}
-                            {raid.server_id && <span className="ml-2 text-zinc-600">&bull; {serverNameMap[raid.server_id] || raid.server_id}</span>}
+                            {raid.server_id && <span className="ml-2 text-[var(--text-tertiary)]">&bull; {serverNameMap[raid.server_id] || raid.server_id}</span>}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
                           <div className="flex items-center gap-3 text-sm">
-                            <span className="text-zinc-400"><Hammer className="inline h-3 w-3 mr-1 text-orange-400" />{raid.total_entities_destroyed}</span>
-                            <span className="text-zinc-400"><Box className="inline h-3 w-3 mr-1 text-yellow-400" />{raid.total_containers_destroyed}</span>
-                            <span className="text-zinc-400"><Skull className="inline h-3 w-3 mr-1 text-red-400" />{raid.total_npcs_killed}</span>
+                            <span className="text-[var(--text-muted)]"><Hammer className="inline h-3 w-3 mr-1 text-[var(--status-warning)]" />{raid.total_entities_destroyed}</span>
+                            <span className="text-[var(--text-muted)]"><Box className="inline h-3 w-3 mr-1 text-[var(--status-warning)]" />{raid.total_containers_destroyed}</span>
+                            <span className="text-[var(--text-muted)]"><Skull className="inline h-3 w-3 mr-1 text-[var(--status-error)]" />{raid.total_npcs_killed}</span>
                           </div>
-                          <div className="text-xs text-zinc-500 mt-1"><Users className="inline h-3 w-3 mr-1" />{raid.raider_steam_ids?.length || 0} raiders</div>
+                          <div className="text-xs text-[var(--text-muted)] mt-1"><Users className="inline h-3 w-3 mr-1" />{raid.raider_steam_ids?.length || 0} raiders</div>
                         </div>
-                        {isExpanded ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
+                        {isExpanded ? <ChevronUp className="h-5 w-5 text-[var(--text-muted)]" /> : <ChevronDown className="h-5 w-5 text-[var(--text-muted)]" />}
                       </div>
                     </div>
                       {isExpanded && raid.raider_steam_ids?.length > 0 && (
                         <div className="border-t border-white/5 overflow-hidden">
                           <div className="p-4">
-                            <h4 className="text-sm font-semibold text-zinc-400 mb-3">Raiders</h4>
+                            <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Raiders</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
-                                <thead><tr className="text-zinc-500 text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Entities</th><th className="text-right pb-2">Containers</th><th className="text-right pb-2">NPCs Killed</th></tr></thead>
+                                <thead><tr className="text-[var(--text-muted)] text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Entities</th><th className="text-right pb-2">Containers</th><th className="text-right pb-2">NPCs Killed</th></tr></thead>
                                 <tbody>
                                   {raid.raider_steam_ids.map((steamId, pIdx) => (
                                     <tr key={steamId} className="border-t border-white/5">
                                       <td className="py-2"><RankBadge rank={pIdx + 1} /></td>
-                                      <td className="py-2"><div className="text-white">{raid.raider_names[pIdx] || "Unknown"}</div><div className="text-xs text-zinc-600 font-mono">{steamId}</div></td>
-                                      <td className="py-2 text-right text-orange-400 font-semibold">{raid.raider_entities_destroyed?.[pIdx] || 0}</td>
-                                      <td className="py-2 text-right text-yellow-400">{raid.raider_containers_destroyed?.[pIdx] || 0}</td>
-                                      <td className="py-2 text-right text-red-400">{raid.raider_npcs_killed?.[pIdx] || 0}</td>
+                                      <td className="py-2"><div className="text-white">{raid.raider_names[pIdx] || "Unknown"}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{steamId}</div></td>
+                                      <td className="py-2 text-right text-[var(--status-warning)] font-semibold">{raid.raider_entities_destroyed?.[pIdx] || 0}</td>
+                                      <td className="py-2 text-right text-[var(--status-warning)]">{raid.raider_containers_destroyed?.[pIdx] || 0}</td>
+                                      <td className="py-2 text-right text-[var(--status-error)]">{raid.raider_npcs_killed?.[pIdx] || 0}</td>
                                     </tr>
                                   ))}
                                 </tbody>

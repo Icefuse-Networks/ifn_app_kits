@@ -490,7 +490,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
               <button
                 onClick={deleteServer}
                 disabled={deleting}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-red-500 text-white"
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-[var(--status-error)] text-white"
               >
                 {deleting ? 'Deleting...' : 'Confirm'}
               </button>
@@ -504,10 +504,10 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
           ) : (
             <button
               onClick={() => setDeleteConfirm(true)}
-              className="p-2 rounded-lg transition-colors hover:bg-red-500/10"
+              className="p-2 rounded-lg transition-colors hover:bg-[var(--status-error)]/10"
               title="Delete server"
             >
-              <Trash2 className="w-4 h-4 text-[var(--text-muted)] hover:text-red-400" />
+              <Trash2 className="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--status-error)]" />
             </button>
           )}
         </div>
@@ -519,8 +519,8 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
           style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20">
-              <Users className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--accent-primary)]/20">
+              <Users className="w-5 h-5 text-[var(--accent-primary)]" />
             </div>
             <div>
               <p className="text-sm text-[var(--text-muted)]">Players Online</p>
@@ -534,8 +534,8 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
           style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-500/20">
-              <Globe className="w-5 h-5 text-emerald-400" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--status-success)]/20">
+              <Globe className="w-5 h-5 text-[var(--status-success)]" />
             </div>
             <div>
               <p className="text-sm text-[var(--text-muted)]">Server Address</p>
@@ -558,8 +558,8 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
           style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/20">
-              <Terminal className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--accent-primary)]/20">
+              <Terminal className="w-5 h-5 text-[var(--accent-primary)]" />
             </div>
             <div>
               <p className="text-sm text-[var(--text-muted)]">Connect Command</p>
@@ -621,7 +621,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         >
           <div className="px-6 py-4 border-b border-[var(--glass-border)]">
             <div className="flex items-center gap-2">
-              <Timer className="w-5 h-5 text-yellow-400" />
+              <Timer className="w-5 h-5 text-[var(--status-warning)]" />
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Pending Redirects</h2>
               <span
                 className="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -661,7 +661,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                         {item.status}
                       </span>
                       {item.failureReason && (
-                        <div className="text-xs text-red-400 mt-1">{item.failureReason}</div>
+                        <div className="text-xs text-[var(--status-error)] mt-1">{item.failureReason}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-[var(--text-muted)]">
@@ -671,7 +671,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                       {item.status === 'pending' && (
                         <button
                           onClick={() => cancelRedirect(item.id)}
-                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-[var(--status-error)] hover:bg-[var(--status-error)]/10 transition-colors"
                           title="Cancel redirect"
                         >
                           <X className="w-4 h-4" />
@@ -812,7 +812,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
         >
           <div className="px-6 py-4 border-b border-[var(--glass-border)]">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-purple-400" />
+              <Activity className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent Redirect History</h2>
             </div>
             <p className="text-sm text-[var(--text-muted)]">Last 10 redirects from this server</p>
@@ -858,11 +858,11 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                       {log.outcome ? (
                         <div className="flex items-center gap-1">
                           {log.outcome === 'success' ? (
-                            <CheckCircle className="w-4 h-4 text-green-400" />
+                            <CheckCircle className="w-4 h-4 text-[var(--status-success)]" />
                           ) : log.outcome === 'failed' ? (
-                            <XCircle className="w-4 h-4 text-red-400" />
+                            <XCircle className="w-4 h-4 text-[var(--status-error)]" />
                           ) : (
-                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                            <AlertTriangle className="w-4 h-4 text-[var(--status-warning)]" />
                           )}
                           <span
                             className="text-xs font-medium"
@@ -874,7 +874,7 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                             {log.outcome}
                           </span>
                           {log.failureReason && (
-                            <span className="text-xs text-red-400 ml-1" title={log.failureReason}>
+                            <span className="text-xs text-[var(--status-error)] ml-1" title={log.failureReason}>
                               ({log.failureReason.length > 20 ? log.failureReason.slice(0, 18) + '...' : log.failureReason})
                             </span>
                           )}
@@ -923,11 +923,11 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
             {redirectMode === 'all' && (
               <div className="mb-4 p-3 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <span className="text-sm font-medium text-red-400">This will redirect ALL players</span>
+                  <AlertTriangle className="w-4 h-4 text-[var(--status-error)]" />
+                  <span className="text-sm font-medium text-[var(--status-error)]">This will redirect ALL players</span>
                 </div>
                 <p className="text-xs text-[var(--text-muted)] mb-2">
-                  Type <span className="font-mono font-bold text-red-400">REDIRECT</span> to confirm
+                  Type <span className="font-mono font-bold text-[var(--status-error)]">REDIRECT</span> to confirm
                 </p>
                 <input
                   type="text"
@@ -1064,13 +1064,13 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                     onClick={() => server && copyToClipboard(server.hashedId, 'hashedId')}
                     className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)]"
                   >
-                    {copied === 'hashedId' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-[var(--text-muted)]" />}
+                    {copied === 'hashedId' ? <Check className="w-4 h-4 text-[var(--status-success)]" /> : <Copy className="w-4 h-4 text-[var(--text-muted)]" />}
                   </button>
                 </div>
               </div>
               <div className="pt-4 border-t border-[var(--glass-border)]">
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-orange-400" />
+                  <Calendar className="w-4 h-4 text-[var(--status-warning)]" />
                   <label className="text-sm font-medium text-[var(--text-secondary)]">Wipe Schedule (EST/EDT)</label>
                 </div>
                 {wipeSchedules.length === 0 ? (
@@ -1095,9 +1095,9 @@ export default function ServerDetailPage({ params }: { params: Promise<{ id: str
                         </div>
                         <button
                           onClick={() => deleteWipeSchedule(schedule.id)}
-                          className="p-1 rounded hover:bg-red-500/10"
+                          className="p-1 rounded hover:bg-[var(--status-error)]/10"
                         >
-                          <Trash2 className="w-3 h-3 text-[var(--text-muted)] hover:text-red-400" />
+                          <Trash2 className="w-3 h-3 text-[var(--text-muted)] hover:text-[var(--status-error)]" />
                         </button>
                       </div>
                     ))}

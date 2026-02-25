@@ -360,8 +360,8 @@ export default function GiveawaysPage() {
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/20">
-                <Gift className="h-6 w-6 text-pink-400" />
+              <div className="p-2.5 rounded-xl bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/20">
+                <Gift className="h-6 w-6 text-[var(--accent-primary)]" />
               </div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">Giveaways</h1>
             </div>
@@ -389,28 +389,28 @@ export default function GiveawaysPage() {
         {/* Stats */}
         <div className="flex items-center gap-6 mb-8">
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
-            <div className="p-2 rounded-lg bg-emerald-500/10"><Power className="w-4 h-4 text-emerald-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--status-success)]/10"><Power className="w-4 h-4 text-[var(--status-success)]" /></div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-emerald-400">{stats.active}</span>
+              <span className="text-2xl font-bold text-[var(--status-success)]">{stats.active}</span>
               <span className="text-sm text-[var(--text-muted)]">active</span>
             </div>
           </div>
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
-            <div className="p-2 rounded-lg bg-purple-500/10"><Users className="w-4 h-4 text-purple-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Users className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.totalPlayers}</span>
               <span className="text-sm text-[var(--text-muted)]">entries</span>
             </div>
           </div>
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '200ms' }}>
-            <div className="p-2 rounded-lg bg-blue-500/10"><Clock className="w-4 h-4 text-blue-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Clock className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{formatTime(stats.totalPlaytime)}</span>
               <span className="text-sm text-[var(--text-muted)]">playtime</span>
             </div>
           </div>
           <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '250ms' }}>
-            <div className="p-2 rounded-lg bg-pink-500/10"><Server className="w-4 h-4 text-pink-400" /></div>
+            <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Server className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.uniqueServers}</span>
               <span className="text-sm text-[var(--text-muted)]">servers</span>
@@ -450,12 +450,12 @@ export default function GiveawaysPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {giveaways.map((giveaway, idx) => (
                   <div key={giveaway.id} className="anim-stagger-item" style={{ animationDelay: `${300 + idx * 50}ms` }}>
-                    <div className={`group rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border hover:shadow-xl hover:shadow-black/10 ${giveaway.isActive ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"}`}>
+                    <div className={`group rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border hover:shadow-xl hover:shadow-black/10 ${giveaway.isActive ? "border-[var(--status-success)]/30 hover:border-[var(--status-success)]/50" : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"}`}>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${giveaway.isActive ? "bg-gradient-to-br from-emerald-500/20 to-green-500/20 border border-emerald-500/30" : "bg-[var(--bg-input)] border border-[var(--glass-border)]"}`}>
-                            <Gift className={`w-5 h-5 ${giveaway.isActive ? "text-emerald-400" : "text-[var(--text-muted)]"}`} />
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--glass-bg)] ${giveaway.isActive ? "bg-emerald-500" : "bg-gray-500"}`} />
+                          <div className={`relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${giveaway.isActive ? "bg-[var(--status-success)]/20 border border-[var(--status-success)]/30" : "bg-[var(--bg-input)] border border-[var(--glass-border)]"}`}>
+                            <Gift className={`w-5 h-5 ${giveaway.isActive ? "text-[var(--status-success)]" : "text-[var(--text-muted)]"}`} />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--glass-bg)] ${giveaway.isActive ? "bg-[var(--status-success)]" : "bg-[var(--text-muted)]"}`} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-[var(--text-primary)] truncate">{giveaway.name}</h3>
@@ -468,7 +468,7 @@ export default function GiveawaysPage() {
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                           {giveaway.isGlobal ? (
-                            <><Globe className="w-3.5 h-3.5 text-blue-400" /><span className="text-blue-400">All Servers</span></>
+                            <><Globe className="w-3.5 h-3.5 text-[var(--accent-primary)]" /><span className="text-[var(--accent-primary)]">All Servers</span></>
                           ) : (
                             <><Server className="w-3.5 h-3.5" /><span>{giveaway.servers.length} server{giveaway.servers.length !== 1 ? "s" : ""}</span></>
                           )}
@@ -485,8 +485,8 @@ export default function GiveawaysPage() {
                         )}
                         {giveaway.winnerName && (
                           <div className="flex items-center gap-2 text-xs">
-                            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-                            <span className="text-yellow-400 font-medium">{giveaway.winnerName}</span>
+                            <Trophy className="w-3.5 h-3.5 text-[var(--status-warning)]" />
+                            <span className="text-[var(--status-warning)] font-medium">{giveaway.winnerName}</span>
                             {giveaway.winnerSteamId64 && <span className="text-[var(--text-muted)] font-mono text-[10px]">{giveaway.winnerSteamId64}</span>}
                           </div>
                         )}
@@ -501,11 +501,11 @@ export default function GiveawaysPage() {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-3 border-t border-[var(--glass-border)]">
                         <div className="flex items-center gap-3">
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${(giveaway._count?.players ?? 0) > 0 ? "bg-purple-500/10 text-purple-400" : "bg-[var(--bg-input)] text-[var(--text-muted)]"}`}>
+                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${(giveaway._count?.players ?? 0) > 0 ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]" : "bg-[var(--bg-input)] text-[var(--text-muted)]"}`}>
                             <Users className="w-3.5 h-3.5" />
                             <span className="text-sm font-semibold">{giveaway._count?.players ?? 0}</span>
                           </div>
-                          <span className={`flex items-center gap-1 text-xs ${giveaway.isActive ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>
+                          <span className={`flex items-center gap-1 text-xs ${giveaway.isActive ? "text-[var(--status-success)]" : "text-[var(--text-muted)]"}`}>
                             {giveaway.isActive ? <Power className="w-3 h-3" /> : <PowerOff className="w-3 h-3" />}
                             {giveaway.isActive ? "Active" : "Inactive"}
                           </span>
@@ -514,10 +514,10 @@ export default function GiveawaysPage() {
                           <button onClick={() => { setSelectedGiveaway(giveaway.id); setTab("players") }} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors" title="View players">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={() => toggleGiveaway(giveaway)} className={`p-1.5 rounded-lg transition-colors ${giveaway.isActive ? "text-emerald-400 hover:text-red-400 hover:bg-red-500/10" : "text-[var(--text-muted)] hover:text-emerald-400 hover:bg-emerald-500/10"}`} title={giveaway.isActive ? "Deactivate" : "Activate"}>
+                          <button onClick={() => toggleGiveaway(giveaway)} className={`p-1.5 rounded-lg transition-colors ${giveaway.isActive ? "text-[var(--status-success)] hover:text-[var(--status-error)] hover:bg-[var(--status-error)]/10" : "text-[var(--text-muted)] hover:text-[var(--status-success)] hover:bg-[var(--status-success)]/10"}`} title={giveaway.isActive ? "Deactivate" : "Activate"}>
                             {giveaway.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
                           </button>
-                          <button onClick={() => deleteGiveaway(giveaway.id)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
+                          <button onClick={() => deleteGiveaway(giveaway.id)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--status-error)] hover:bg-[var(--status-error)]/10 transition-colors" title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -557,7 +557,7 @@ export default function GiveawaysPage() {
                 loading={isPickingWinner}
                 loadingText="Picking..."
                  icon={<Trophy className="w-4 h-4" />}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/80"
               >
                 Pick Winner
               </Button>
@@ -568,7 +568,7 @@ export default function GiveawaysPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <div className="rounded-xl p-5 bg-[var(--glass-bg)] border border-[var(--glass-border)]">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-1.5 rounded-lg bg-purple-500/10"><Server className="w-4 h-4 text-purple-400" /></div>
+                    <div className="p-1.5 rounded-lg bg-[var(--accent-primary)]/10"><Server className="w-4 h-4 text-[var(--accent-primary)]" /></div>
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">Players by Server</h3>
                   </div>
                   <div className="space-y-3">
@@ -582,7 +582,7 @@ export default function GiveawaysPage() {
                             <span className="text-xs font-semibold text-[var(--text-primary)]">{count}</span>
                           </div>
                           <div className="w-full rounded-full h-1.5 bg-[var(--bg-input)]">
-                            <div className="h-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                            <div className="h-1.5 rounded-full bg-[var(--accent-primary)] transition-all duration-700" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -591,7 +591,7 @@ export default function GiveawaysPage() {
                 </div>
                 <div className="rounded-xl p-5 bg-[var(--glass-bg)] border border-[var(--glass-border)]">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-1.5 rounded-lg bg-blue-500/10"><BarChart3 className="w-4 h-4 text-blue-400" /></div>
+                    <div className="p-1.5 rounded-lg bg-[var(--accent-primary)]/10"><BarChart3 className="w-4 h-4 text-[var(--accent-primary)]" /></div>
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">Playtime Distribution</h3>
                   </div>
                   <div className="space-y-3">
@@ -615,7 +615,7 @@ export default function GiveawaysPage() {
                               <span className="text-xs font-semibold text-[var(--text-primary)]">{count}</span>
                             </div>
                             <div className="w-full rounded-full h-1.5 bg-[var(--bg-input)]">
-                              <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                              <div className="h-1.5 rounded-full bg-[var(--accent-primary)] transition-all duration-700" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                         )
@@ -648,7 +648,7 @@ export default function GiveawaysPage() {
                             {playerAvatars[player.playerSteamId64] ? (
                               <img src={playerAvatars[player.playerSteamId64]} alt={player.playerName} className="w-full h-full object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/30 to-pink-500/30">
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--accent-primary)]/30 to-[var(--accent-primary)]/30">
                                 <User className="w-4 h-4 text-[var(--text-muted)]" />
                               </div>
                             )}
@@ -659,7 +659,7 @@ export default function GiveawaysPage() {
                       <td className="py-3 px-5"><span className="text-xs font-mono text-[var(--text-muted)]">{player.playerSteamId64}</span></td>
                       <td className="py-3 px-5">
                         <span className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
-                          <Clock className="w-3.5 h-3.5 text-purple-400" />
+                          <Clock className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
                           {formatTime(player.playTime)}
                         </span>
                       </td>
@@ -671,7 +671,7 @@ export default function GiveawaysPage() {
                         </div>
                       </td>
                       <td className="py-3 px-5 text-right">
-                        <button onClick={() => deletePlayer(player.id)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                        <button onClick={() => deletePlayer(player.id)} className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--status-error)] hover:bg-[var(--status-error)]/10 transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -693,21 +693,21 @@ export default function GiveawaysPage() {
         {/* Winner display */}
         {winners.length > 0 && !isPickingWinner && (
           <div className="anim-fade-scale fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setWinners([])}>
-            <div className="rounded-2xl p-8 max-w-md w-full bg-[var(--bg-secondary)] border-2 border-purple-500/30" onClick={e => e.stopPropagation()}>
+            <div className="rounded-2xl p-8 max-w-md w-full bg-[var(--bg-secondary)] border-2 border-[var(--accent-primary)]/30" onClick={e => e.stopPropagation()}>
               <div className="text-center">
                 <div className="anim-fade-scale" style={{ animationDelay: '200ms' }}>
-                  <Trophy className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
+                  <Trophy className="w-12 h-12 mx-auto mb-4 text-[var(--status-warning)]" />
                 </div>
                 <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{winners.length > 1 ? "Winners!" : "Winner!"}</h3>
                 <div className="space-y-3 mb-6">
                   {winners.map((w, i) => (
-                    <div key={w.id} className="anim-stagger-item rounded-xl p-4 bg-[var(--glass-bg)] border border-purple-500/20" style={{ animationDelay: `${300 + i * 150}ms` }}>
+                    <div key={w.id} className="anim-stagger-item rounded-xl p-4 bg-[var(--glass-bg)] border border-[var(--accent-primary)]/20" style={{ animationDelay: `${300 + i * 150}ms` }}>
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-3 border-purple-500/50 shrink-0">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-3 border-[var(--accent-primary)]/50 shrink-0">
                           {playerAvatars[w.playerSteamId64] ? (
                             <img src={playerAvatars[w.playerSteamId64]} alt={w.playerName} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/30 to-pink-500/30">
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--accent-primary)]/30 to-[var(--accent-primary)]/30">
                               <User className="w-5 h-5 text-[var(--text-muted)]" />
                             </div>
                           )}
@@ -716,7 +716,7 @@ export default function GiveawaysPage() {
                           <p className="text-lg font-bold text-[var(--text-primary)] truncate">{w.playerName}</p>
                           <p className="text-xs font-mono text-[var(--text-muted)]">{w.playerSteamId64}</p>
                         </div>
-                        <div className="text-sm text-purple-400 flex items-center gap-1">
+                        <div className="text-sm text-[var(--accent-primary)] flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {formatTime(w.playTime)}
                         </div>
@@ -735,23 +735,23 @@ export default function GiveawaysPage() {
         {/* Picking animation overlay */}
         {isPickingWinner && (
           <div className="anim-fade-slide-up fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="rounded-2xl p-8 max-w-4xl w-full mx-4 bg-[var(--bg-secondary)] border-2 border-purple-500/30">
+            <div className="rounded-2xl p-8 max-w-4xl w-full mx-4 bg-[var(--bg-secondary)] border-2 border-[var(--accent-primary)]/30">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Selecting Winner...</h3>
                 <p className="text-sm text-[var(--text-muted)]">The reel is spinning!</p>
               </div>
               <div className="relative rounded-xl p-6 overflow-hidden bg-[var(--glass-bg)]" style={{ height: "180px" }}>
-                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 transform -translate-x-1/2 z-10 bg-purple-500" />
+                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 transform -translate-x-1/2 z-10 bg-[var(--accent-primary)]" />
                 <div className="absolute top-0 bottom-0 left-0 w-24 z-10 bg-gradient-to-r from-[var(--bg-secondary)] to-transparent" />
                 <div className="absolute top-0 bottom-0 right-0 w-24 z-10 bg-gradient-to-l from-[var(--bg-secondary)] to-transparent" />
                 <div ref={scrollRef} className="flex items-center gap-4 h-full" style={{ transform: "translateX(0px)", transition: "none" }}>
                   {unboxingReel.map((player, index) => (
                     <div key={`${player.id}-${index}`} className="flex-shrink-0 rounded-xl p-4 text-center bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ width: "100px" }}>
-                      <div className="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border-2 border-purple-500/30">
+                      <div className="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border-2 border-[var(--accent-primary)]/30">
                         {playerAvatars[player.playerSteamId64] ? (
                           <img src={playerAvatars[player.playerSteamId64]} alt={player.playerName} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/30 to-pink-500/30">
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--accent-primary)]/30 to-[var(--accent-primary)]/30">
                             <User className="w-6 h-6 text-[var(--text-muted)]" />
                           </div>
                         )}
@@ -766,7 +766,7 @@ export default function GiveawaysPage() {
               </div>
               <div className="flex justify-center mt-4">
                 <span className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-                  <Gift className="w-4 h-4 animate-spin text-purple-400" />Rolling...
+                  <Gift className="w-4 h-4 animate-spin text-[var(--accent-primary)]" />Rolling...
                 </span>
               </div>
             </div>
@@ -835,13 +835,13 @@ export default function GiveawaysPage() {
                     value: "global",
                     label: "All Servers",
                     description: "Available on every server",
-                    icon: <Globe className="w-4 h-4 text-blue-400" />
+                    icon: <Globe className="w-4 h-4 text-[var(--accent-primary)]" />
                   },
                   {
                     value: "specific",
                     label: "Specific Servers",
                     description: "Choose which servers",
-                    icon: <Server className="w-4 h-4 text-purple-400" />
+                    icon: <Server className="w-4 h-4 text-[var(--accent-primary)]" />
                   }
                 ]}
               />

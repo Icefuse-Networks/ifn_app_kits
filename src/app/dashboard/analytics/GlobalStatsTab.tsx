@@ -158,19 +158,19 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }:
 
 function ServerCard({ server }: { server: ProcessedServer }) {
   return (
-    <div className="anim-fade-slide-up bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-purple-500/30 transition-all duration-300 flex flex-col h-full">
+    <div className="anim-fade-slide-up bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-[var(--accent-primary)]/30 transition-all duration-300 flex flex-col h-full">
       {server.headerImage && (
-        <div className="relative h-28 bg-zinc-800 shrink-0">
+        <div className="relative h-28 bg-[var(--bg-elevated)] shrink-0">
           <img src={server.headerImage} alt={`${server.name} banner`} className="w-full h-full object-cover"
             onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
         </div>
       )}
       <div className="p-4 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-sm font-bold text-purple-400 truncate pr-2" title={server.name}>{server.name}</h3>
+          <h3 className="text-sm font-bold text-[var(--accent-primary)] truncate pr-2" title={server.name}>{server.name}</h3>
           <div className="flex items-center gap-2 shrink-0">
             <Badge variant="secondary" size="sm">{server.region}</Badge>
-            <span className={`w-2.5 h-2.5 rounded-full ${server.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className={`w-2.5 h-2.5 rounded-full ${server.status === 'online' ? 'bg-[var(--status-success)]' : 'bg-[var(--status-error)]'}`} />
           </div>
         </div>
         <div className="flex flex-wrap gap-1 mb-3 text-xs">
@@ -180,14 +180,14 @@ function ServerCard({ server }: { server: ProcessedServer }) {
           {server.hasKits && <Badge variant="secondary" size="sm">Kits</Badge>}
           {!server.hasBlueprints && <Badge variant="error" size="sm">No BPs</Badge>}
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-zinc-400 mb-3">
-          <p className="flex items-center col-span-2"><Users size={12} className="mr-1.5 text-purple-400" />{server.players}/{server.maxPlayers} ({server.playerPercentage}%)</p>
-          <p className="flex items-center"><Shield size={12} className="mr-1.5 text-purple-400" />{server.teamLimit}</p>
-          <p className="flex items-center"><Axe size={12} className="mr-1.5 text-purple-400" />{formatRate(server.rates.gather)}</p>
-          <p className="flex items-center col-span-2"><CalendarDays size={12} className="mr-1.5 text-purple-400" />{server.wipeSchedule}</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-[var(--text-muted)] mb-3">
+          <p className="flex items-center col-span-2"><Users size={12} className="mr-1.5 text-[var(--accent-primary)]" />{server.players}/{server.maxPlayers} ({server.playerPercentage}%)</p>
+          <p className="flex items-center"><Shield size={12} className="mr-1.5 text-[var(--accent-primary)]" />{server.teamLimit}</p>
+          <p className="flex items-center"><Axe size={12} className="mr-1.5 text-[var(--accent-primary)]" />{formatRate(server.rates.gather)}</p>
+          <p className="flex items-center col-span-2"><CalendarDays size={12} className="mr-1.5 text-[var(--accent-primary)]" />{server.wipeSchedule}</p>
         </div>
         <div className="mt-auto flex gap-2 pt-2 border-t border-white/5">
-          <a href={server.connectUrl} className="flex-grow text-center bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Connect</a>
+          <a href={server.connectUrl} className="flex-grow text-center bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Connect</a>
           {server.serverUrl && (
             <a href={server.serverUrl} target="_blank" rel="noopener noreferrer" className="bg-white/5 hover:bg-white/10 text-white p-1.5 rounded-lg transition-colors" title="Website/Discord">
               <ExternalLink size={14} />
@@ -382,20 +382,20 @@ export default function GlobalStatsTab() {
           <div className="anim-fade-slide-up mb-6 p-5 rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Server Name</label>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Server Name</label>
                 <div className="relative">
                   <input type="text" placeholder="e.g., pvp, 2x, vanilla" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 pl-10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-sm" />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 pl-10 text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] text-sm" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
                 </div>
               </div>
-              <div><label className="block text-sm font-medium text-zinc-400 mb-2">Region</label>
+              <div><label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Region</label>
                 <Dropdown value={selectedRegion} options={regionOptions.map(c => ({ value: c, label: c || "All Regions" }))} onChange={(val) => setSelectedRegion(val || '')} /></div>
-              <div><label className="block text-sm font-medium text-zinc-400 mb-2">Gamemode</label>
+              <div><label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Gamemode</label>
                 <Dropdown value={selectedGamemode} options={gamemodeOptions.map(c => ({ value: c, label: c || "All Gamemodes" }))} onChange={(val) => setSelectedGamemode(val || '')} /></div>
-              <div><label className="block text-sm font-medium text-zinc-400 mb-2">Team Limit</label>
+              <div><label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Team Limit</label>
                 <Dropdown value={selectedTeamLimit} options={teamLimitOptions.map(c => ({ value: c, label: c || "All Limits" }))} onChange={(val) => setSelectedTeamLimit(val || '')} /></div>
-              <div><label className="block text-sm font-medium text-zinc-400 mb-2">Type</label>
+              <div><label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Type</label>
                 <Dropdown value={selectedPVE} options={[{ value: '', label: 'All Types' }, { value: 'false', label: 'PVP' }, { value: 'true', label: 'PVE' }]} onChange={(val) => setSelectedPVE(val || '')} /></div>
             </div>
             <div className="mt-4 flex justify-end">
@@ -406,9 +406,9 @@ export default function GlobalStatsTab() {
 
       {loading && <Loading size="lg" text="Analyzing global player distribution..." />}
       {error && !loading && (
-        <div className="text-center py-10 bg-red-500/10 border border-red-500/30 p-6 rounded-xl">
-          <AlertTriangle className="h-10 w-10 mx-auto text-red-400 mb-4" />
-          <p className="text-lg font-semibold text-red-300 mb-4">Error: {error}</p>
+        <div className="text-center py-10 bg-[var(--status-error)]/10 border border-[var(--status-error)]/30 p-6 rounded-xl">
+          <AlertTriangle className="h-10 w-10 mx-auto text-[var(--status-error)] mb-4" />
+          <p className="text-lg font-semibold text-[var(--status-error)] mb-4">Error: {error}</p>
           <Button onClick={fetchServers} variant="primary">Try Again</Button>
         </div>
       )}
@@ -417,9 +417,9 @@ export default function GlobalStatsTab() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <StatCard label="Total Players" value={overallStats.totalPlayers} subtitle="Currently online" icon={Users} delay={0} />
-            <StatCard label="Online Servers" value={overallStats.onlineServers} icon={Server} iconColor="text-green-400" iconBgColor="bg-green-500/20" delay={0.1} />
-            <StatCard label="Avg Players/Server" value={overallStats.averagePlayersPerOnlineServer.toFixed(1)} icon={Activity} iconColor="text-blue-400" iconBgColor="bg-blue-500/20" delay={0.2} />
-            <StatCard label="Pop. Avg Gather" value={`${overallStats.avgGatherRatePop.toFixed(2)}x`} icon={TrendingUp} iconColor="text-yellow-400" iconBgColor="bg-yellow-500/20" delay={0.3} />
+            <StatCard label="Online Servers" value={overallStats.onlineServers} icon={Server} iconColor="text-[var(--status-success)]" iconBgColor="bg-[var(--status-success)]/20" delay={0.1} />
+            <StatCard label="Avg Players/Server" value={overallStats.averagePlayersPerOnlineServer.toFixed(1)} icon={Activity} iconColor="text-[var(--accent-primary)]" iconBgColor="bg-[var(--accent-primary)]/20" delay={0.2} />
+            <StatCard label="Pop. Avg Gather" value={`${overallStats.avgGatherRatePop.toFixed(2)}x`} icon={TrendingUp} iconColor="text-[var(--status-warning)]" iconBgColor="bg-[var(--status-warning)]/20" delay={0.3} />
           </div>
 
           <CollapsibleSection title="Server Health & Popularity" icon={Gauge}>
@@ -466,12 +466,12 @@ export default function GlobalStatsTab() {
 
           <CollapsibleSection title="Keyword Cloud" icon={Tag} defaultOpen={false}>
             <div className="p-4 rounded-lg bg-white/[0.02] border border-white/5">
-              <h4 className="text-sm font-semibold text-purple-400 mb-4">Top 50 Keywords (Click to search)</h4>
+              <h4 className="text-sm font-semibold text-[var(--accent-primary)] mb-4">Top 50 Keywords (Click to search)</h4>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(overallStats.keywordFrequency).sort(([, a], [, b]) => b - a).slice(0, 50).map(([k, v]) => (
                   <button key={k} onClick={() => handleKeywordClick(k)}
-                    className="text-zinc-400 hover:text-white text-sm px-3 py-1 rounded-full transition-all bg-white/[0.03] border border-white/5 hover:border-purple-500/30">
-                    {k}<span className="ml-2 text-xs text-purple-400 font-mono px-1.5 py-0.5 rounded bg-purple-500/20">{v}</span>
+                    className="text-[var(--text-muted)] hover:text-white text-sm px-3 py-1 rounded-full transition-all bg-white/[0.03] border border-white/5 hover:border-[var(--accent-primary)]/30">
+                    {k}<span className="ml-2 text-xs text-[var(--accent-primary)] font-mono px-1.5 py-0.5 rounded bg-[var(--accent-primary)]/20">{v}</span>
                   </button>
                 ))}
               </div>

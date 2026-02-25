@@ -300,11 +300,11 @@ export default function LeaderboardsPage() {
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                           index === 0
-                            ? 'bg-yellow-500/20 text-yellow-400'
+                            ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                             : index === 1
-                            ? 'bg-gray-400/20 text-gray-300'
+                            ? 'bg-[var(--text-muted)]/20 text-[var(--text-secondary)]'
                             : index === 2
-                            ? 'bg-orange-500/20 text-orange-400'
+                            ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                             : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
                         }`}
                       >
@@ -379,11 +379,11 @@ export default function LeaderboardsPage() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                         index === 0
-                          ? 'bg-yellow-500/20 text-yellow-400'
+                          ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                           : index === 1
-                          ? 'bg-gray-400/20 text-gray-300'
+                          ? 'bg-[var(--text-muted)]/20 text-[var(--text-secondary)]'
                           : index === 2
-                          ? 'bg-orange-500/20 text-orange-400'
+                          ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                           : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
                       }`}
                     >
@@ -445,11 +445,11 @@ export default function LeaderboardsPage() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
                         index === 0
-                          ? 'bg-yellow-500/20 text-yellow-400'
+                          ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                           : index === 1
-                          ? 'bg-gray-400/20 text-gray-300'
+                          ? 'bg-[var(--text-muted)]/20 text-[var(--text-secondary)]'
                           : index === 2
-                          ? 'bg-orange-500/20 text-orange-400'
+                          ? 'bg-[var(--status-warning)]/20 text-[var(--status-warning)]'
                           : 'bg-[var(--bg-input)] text-[var(--text-muted)]'
                       }`}
                     >
