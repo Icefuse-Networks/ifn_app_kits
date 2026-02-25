@@ -4,7 +4,6 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import {
   BarChart3, Server, Users, TrendingUp, RefreshCw, Clock, Activity, Zap, ChevronDown, Check, Sparkles
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, Column,
 } from "@/components/analytics";
@@ -88,10 +87,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder = "Selec
         <span className={selected.length === 0 ? "text-zinc-400" : "text-white"}>{displayText}</span>
         <ChevronDown className={`h-4 w-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
-      <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.15 }}
-            className="absolute z-50 mt-2 w-80 rounded-lg bg-zinc-900 border border-white/10 shadow-xl overflow-hidden">
+          <div className="anim-fade-slide-up absolute z-50 mt-2 w-80 rounded-lg bg-zinc-900 border border-white/10 shadow-xl overflow-hidden">
             <div className="p-2 border-b border-white/5">
               <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search servers..."
                 className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500" />
@@ -117,9 +114,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder = "Selec
                   );
                 })}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 }

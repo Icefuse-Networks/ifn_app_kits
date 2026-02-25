@@ -5,7 +5,6 @@ import {
   ShoppingCart, RefreshCw, Search, ChevronLeft, ChevronRight, Filter, Download, Server, User, Package, DollarSign, Clock, Hash,
   TrendingUp, BarChart3, PieChart as PieChartIcon, Calendar, Award, Zap, Users, Activity, Trash2
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, ShareBar, RankBadge, Column,
 } from "@/components/analytics";
@@ -237,7 +236,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
               <ChartCard title="Top Items by Revenue" icon={DollarSign} delay={0.8}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {analytics.topItems.slice(0, 8).map((item, idx) => (
-                    <motion.div key={item.item} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 + idx * 0.05 }} className="p-4 rounded-xl transition-all hover:scale-[1.03] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 hover:border-purple-500/30">
+                    <div key={item.item} className="anim-stagger-item p-4 rounded-xl transition-all hover:scale-[1.03] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 hover:border-purple-500/30" style={{ animationDelay: `${idx * 50}ms` }}>
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: `linear-gradient(135deg, ${COLORS[idx % COLORS.length]}, ${COLORS[(idx + 1) % COLORS.length]})` }}>{idx + 1}</div>
                         <div className="flex-1 min-w-0">
@@ -246,7 +245,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
                           <div className="text-xs text-zinc-500 mt-1">{item.buyers} buyers</div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </ChartCard>
@@ -262,22 +261,20 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
             <Button variant="secondary" onClick={exportCSV} disabled={purchases.length === 0} icon={<Download className="h-4 w-4" />}>Export CSV</Button>
           </div>
 
-          <AnimatePresence>
             {showFilters && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 p-6 rounded-xl overflow-hidden bg-white/[0.02] border border-white/10">
+              <div className="anim-fade-slide-up mb-4 p-6 rounded-xl overflow-hidden bg-white/[0.02] border border-white/10">
                 <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                   <SearchInput label="Search" placeholder="Player, SteamID, or Item..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   <Dropdown value={serverFilter} onChange={val => { setCurrentPage(1); }} options={servers.map(s => ({ value: s, label: s }))} placeholder="All Servers" emptyOption="All Servers" />
                   <div className="flex gap-2"><Button type="submit" variant="primary" className="flex-1">Search</Button><Button type="button" variant="ghost" onClick={resetFilters}>Reset</Button></div>
                 </form>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
 
           {error && <Alert variant="error">{error}</Alert>}
 
           {loading ? <Loading text="Loading transactions..." size="lg" /> : (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
+            <div className="anim-fade-slide-up rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -294,7 +291,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
                   </thead>
                   <tbody>
                     {purchases.map((purchase, idx) => (
-                      <motion.tr key={`${purchase.steamid64}-${purchase.timestamp}-${idx}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02 }} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                      <tr key={`${purchase.steamid64}-${purchase.timestamp}-${idx}`} className="anim-stagger-item border-b border-white/5 hover:bg-white/[0.03] transition-colors" style={{ animationDelay: `${idx * 20}ms` }}>
                         <td className="px-6 py-4 text-sm text-zinc-400">{purchase.timestamp}</td>
                         <td className="px-6 py-4 text-sm text-white">{purchase.server_name}</td>
                         <td className="px-6 py-4 text-sm text-white font-medium">{purchase.player_name}</td>
@@ -303,7 +300,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
                         <td className="px-6 py-4 text-sm text-center text-white">{purchase.amount}</td>
                         <td className="px-6 py-4 text-sm text-center"><span className="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">{purchase.currency}</span></td>
                         <td className="px-6 py-4 text-sm text-right text-green-400 font-semibold">{purchase.cost.toLocaleString()}</td>
-                      </motion.tr>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
@@ -316,7 +313,7 @@ export default function ShopTab({ timeFilter, serverFilter }: ShopTabProps) {
                   <Button variant="secondary" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} size="sm"><ChevronRight className="h-5 w-5" /></Button>
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
         </>
       )}

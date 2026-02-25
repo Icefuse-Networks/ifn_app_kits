@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRightLeft, Settings, Activity, RefreshCw, Save,
   Users, Clock, AlertTriangle,
@@ -122,12 +121,7 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
   }, [onClose]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed bottom-4 right-4 z-[10000]"
-    >
+    <div className="anim-fade-slide-up fixed bottom-4 right-4 z-[10000]">
       <Alert
         variant={type === "success" ? "success" : "error"}
         dismissible
@@ -135,7 +129,7 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
       >
         {message}
       </Alert>
-    </motion.div>
+    </div>
   );
 }
 
@@ -549,7 +543,7 @@ export default function RedirectionPage() {
 
   return (
     <div className="p-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="anim-fade-slide-up">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -582,15 +576,10 @@ export default function RedirectionPage() {
           className="mb-6"
         />
 
-        <AnimatePresence mode="wait">
           {activeTab === "settings" && (
-            <motion.div
+            <div
               key="settings"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
+              className="anim-fade-slide-up space-y-6"
             >
               <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
@@ -916,17 +905,13 @@ export default function RedirectionPage() {
                   Save Configuration
                 </Button>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {activeTab === "logs" && (
-            <motion.div
+            <div
               key="logs"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
+              className="anim-fade-slide-up space-y-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard label="Total Redirects" value={stats.total} icon={ArrowRightLeft} color="purple" />
@@ -1119,17 +1104,13 @@ export default function RedirectionPage() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {activeTab === "analytics" && (
-            <motion.div
+            <div
               key="analytics"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
+              className="anim-fade-slide-up space-y-6"
             >
               {/* Controls */}
               <div className="flex flex-wrap items-center gap-4">
@@ -1312,14 +1293,11 @@ export default function RedirectionPage() {
                   )}
                 </>
               )}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      </AnimatePresence>
     </div>
   );
 }

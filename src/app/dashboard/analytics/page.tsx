@@ -5,7 +5,6 @@ import {
   BarChart3, Castle, Trophy, ShoppingCart, TrendingUp,
   Server as ServerIcon
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Tabs } from "@/components/ui/Tabs";
 import BasesTab from "./BasesTab";
@@ -62,7 +61,7 @@ export default function CentralAnalyticsPage() {
 
   return (
     <div className="p-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="anim-fade-slide-up">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -127,13 +126,11 @@ export default function CentralAnalyticsPage() {
           {activeCategory === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {overviewCards.map((card, idx) => (
-                <motion.div
+                <div
                   key={card.category}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * (idx + 1) }}
                   onClick={() => setActiveCategory(card.category)}
-                  className={`group cursor-pointer rounded-xl bg-gradient-to-br ${card.bgFrom} ${card.bgTo} border ${card.borderColor} p-8 transition-all hover:scale-105`}
+                  className={`anim-stagger-item group cursor-pointer rounded-xl bg-gradient-to-br ${card.bgFrom} ${card.bgTo} border ${card.borderColor} p-8 transition-all hover:scale-105`}
+                  style={{ animationDelay: `${(idx + 1) * 100}ms` }}
                 >
                   <div className="flex flex-col items-center text-center">
                     <div className="p-4 rounded-2xl bg-white/10 mb-4 group-hover:bg-white/15 transition-colors">
@@ -142,7 +139,7 @@ export default function CentralAnalyticsPage() {
                     <h2 className="text-2xl font-bold text-white mb-2">{card.title}</h2>
                     <p className="text-zinc-400 text-sm">{card.desc}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
@@ -158,7 +155,7 @@ export default function CentralAnalyticsPage() {
           {activeCategory === 'shop' && <ShopTab timeFilter={timeFilter} serverFilter={serverFilter} />}
           {activeCategory === 'global' && <GlobalStatsTab />}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

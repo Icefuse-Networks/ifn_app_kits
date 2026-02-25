@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Package, Plus, Trash2, Upload, Download, Search, X, ChevronDown, Copy, Clipboard,
@@ -721,7 +720,7 @@ export default function LootManagerPage() {
                     const container = data.ContainerItems[name];
                     const isSelected = selectedContainer === name;
                     return (
-                      <motion.div key={name} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                      <div key={name}
                         className={`group relative rounded-lg cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" : "bg-white/[0.02] text-zinc-500 hover:bg-white/5"}`}
                         onClick={() => setSelectedContainer(name)}
                       >
@@ -732,7 +731,7 @@ export default function LootManagerPage() {
                           </div>
                           <span className="text-xs opacity-60 flex-shrink-0">{container.Items.length}</span>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -777,7 +776,7 @@ export default function LootManagerPage() {
                     const liveMappings = serverMappings.filter(m => m.isLive);
                     const isSelected = selectedMappingServerId === server.id;
                     return (
-                      <motion.div
+                      <div
                         key={server.id}
                         onClick={() => setSelectedMappingServerId(server.id)}
                         className={`rounded-lg p-3 cursor-pointer transition-all ${isSelected ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30" : "bg-white/[0.02] border border-transparent hover:bg-white/[0.04]"}`}
@@ -795,7 +794,7 @@ export default function LootManagerPage() {
                             ) : null}
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -1210,7 +1209,6 @@ export default function LootManagerPage() {
 
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
 
-      <AnimatePresence>
         {showAddItem && selectedContainer && (
           <Modal onClose={() => { setShowAddItem(false); setAddItemSearch(""); }} title="Add Item">
             <div className="relative mb-4">
@@ -1229,9 +1227,7 @@ export default function LootManagerPage() {
             )}
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showMultiplierModal && (
           <Modal onClose={() => setShowMultiplierModal(false)} title="Multiplier">
             <div className="space-y-4">
@@ -1273,9 +1269,7 @@ export default function LootManagerPage() {
             </div>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showNewContainerModal && (
           <Modal onClose={() => { setShowNewContainerModal(false); setNewContainerName(""); }} title="New Container">
             <input type="text" value={newContainerName} onChange={(e) => setNewContainerName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNewContainer()} placeholder="e.g., crate_elite" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-white placeholder-zinc-500 focus:outline-none" autoFocus />
@@ -1286,9 +1280,7 @@ export default function LootManagerPage() {
             </div>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showSaveModal && (
           <Modal onClose={() => { setShowSaveModal(false); setSaveName(""); setSaveDescription(""); }} title="Save Configuration">
             <div className="space-y-4">
@@ -1309,9 +1301,7 @@ export default function LootManagerPage() {
             </div>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showUnstagedModal && (
           <Modal onClose={() => setShowUnstagedModal(false)} title="Unstaged Changes" wide>
             <div className="max-h-96 overflow-y-auto space-y-2">
@@ -1343,9 +1333,7 @@ export default function LootManagerPage() {
             <button onClick={() => setShowUnstagedModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Close</button>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showLoadModal && (
           <Modal onClose={() => setShowLoadModal(false)} title="Load Configuration" wide>
             <div className="mb-4">
@@ -1382,9 +1370,7 @@ export default function LootManagerPage() {
             <button onClick={() => setShowLoadModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Cancel</button>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showAddMappingModal && (
           <Modal onClose={closeAddMappingModal} title={editingMappingId ? "Edit Mapping" : "Assign Server to Loot Table"}>
             <div className="space-y-4">
@@ -1493,9 +1479,7 @@ export default function LootManagerPage() {
             </div>
           </Modal>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {showVersionHistoryModal && (
           <Modal onClose={() => setShowVersionHistoryModal(false)} title="Version History" wide>
             <div className="max-h-96 overflow-y-auto space-y-2">
@@ -1530,29 +1514,28 @@ export default function LootManagerPage() {
             <button onClick={() => setShowVersionHistoryModal(false)} className="w-full mt-4 px-4 py-2 bg-white/5 text-white rounded-lg">Close</button>
           </Modal>
         )}
-      </AnimatePresence>
     </div>
   );
 }
 
 function Modal({ children, onClose, title, wide = false }: { children: React.ReactNode; onClose: () => void; title: string; wide?: boolean }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className={`bg-zinc-900 rounded-xl border border-white/10 p-6 w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e) => e.stopPropagation()}>
+    <div className="anim-fade-scale fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className={`bg-zinc-900 rounded-xl border border-white/10 p-6 w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">{title}</h3>
           <button onClick={onClose} className="p-1 text-zinc-500 hover:text-white transition-colors"><X className="h-5 w-5" /></button>
         </div>
         {children}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
 function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: LootItem; index: number; containerName: string; onUpdate: (c: string, i: number, u: Partial<LootItem>) => void; onRemove: (c: string, i: number) => void }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
+    <div className="anim-fade-scale rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-12 h-12 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -1572,9 +1555,8 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
         </div>
         <div className="mt-2"><label className="text-xs text-zinc-600">Chance</label><input type="number" value={item["Chance to spawn"]} onChange={(e) => onUpdate(containerName, index, { "Chance to spawn": parseInt(e.target.value) || 0 })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
         <button onClick={() => setExpanded(!expanded)} className="w-full mt-3 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-white transition-colors">{expanded ? "Less" : "More"}<ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} /></button>
-        <AnimatePresence>
           {expanded && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="overflow-hidden">
               <div className="pt-3 mt-3 space-y-2 border-t border-white/5">
                 <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="Is Blueprint" />
                 <div className="grid grid-cols-2 gap-2">
@@ -1583,17 +1565,16 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
                 </div>
                 <div><label className="text-xs text-zinc-600">Times per container</label><input type="text" value={item["Times allowed to spawn per container"]} onChange={(e) => onUpdate(containerName, index, { "Times allowed to spawn per container": e.target.value })} className="w-full rounded px-2 py-1 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" /></div>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item: LootItem; index: number; containerName: string; onUpdate: (c: string, i: number, u: Partial<LootItem>) => void; onRemove: (c: string, i: number) => void }) {
   return (
-    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="rounded-lg p-3 flex items-center gap-4 bg-white/[0.02] border border-white/5">
+    <div className="rounded-lg p-3 flex items-center gap-4 bg-white/[0.02] border border-white/5">
       <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-10 h-10 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       <div className="flex-1 min-w-0"><span className="text-sm font-medium text-white truncate block">{getItemShortname(item)}</span></div>
       <div className="flex items-center gap-3">
@@ -1606,6 +1587,6 @@ function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item:
         <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="BP" />
         <button onClick={() => onRemove(containerName, index)} className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="h-4 w-4" /></button>
       </div>
-    </motion.div>
+    </div>
   );
 }

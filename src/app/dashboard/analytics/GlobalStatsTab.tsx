@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Server, Users, MapPin, Globe, Shield, ExternalLink, RefreshCw, AlertTriangle,
   Search, Filter as FilterIcon, X, TrendingUp,
@@ -159,8 +158,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }:
 
 function ServerCard({ server }: { server: ProcessedServer }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-purple-500/30 transition-all duration-300 flex flex-col h-full">
+    <div className="anim-fade-slide-up bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-purple-500/30 transition-all duration-300 flex flex-col h-full">
       {server.headerImage && (
         <div className="relative h-28 bg-zinc-800 shrink-0">
           <img src={server.headerImage} alt={`${server.name} banner`} className="w-full h-full object-cover"
@@ -197,7 +195,7 @@ function ServerCard({ server }: { server: ProcessedServer }) {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -380,10 +378,8 @@ export default function GlobalStatsTab() {
         <Button onClick={fetchServers} disabled={loading} loading={loading} icon={<RefreshCw className="h-4 w-4" />} variant="primary">Refresh</Button>
       </div>
 
-      <AnimatePresence>
         {showFilters && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="mb-6 p-5 rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden">
+          <div className="anim-fade-slide-up mb-6 p-5 rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">Server Name</label>
@@ -405,9 +401,8 @@ export default function GlobalStatsTab() {
             <div className="mt-4 flex justify-end">
               <Button onClick={handleResetFilters} variant="ghost" size="sm" icon={<X className="h-4 w-4" />}>Reset Filters</Button>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
       {loading && <Loading size="lg" text="Analyzing global player distribution..." />}
       {error && !loading && (
@@ -484,7 +479,7 @@ export default function GlobalStatsTab() {
           </CollapsibleSection>
 
           {filteredServers.length > 0 ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <div className="anim-fade-slide-up">
               <h3 className="text-xl font-semibold text-center text-white mb-6 mt-8">Server List ({filteredServers.length.toLocaleString()} servers)</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedServers.map(s => <ServerCard key={s.id} server={s} />)}
@@ -492,7 +487,7 @@ export default function GlobalStatsTab() {
               {totalPages > 1 && (
                 <div className="flex justify-center mt-8"><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} /></div>
               )}
-            </motion.div>
+            </div>
           ) : (
             <EmptyState icon={<Server className="h-12 w-12" />} title="No servers found matching your criteria"
               description={searchTerm ? `Your search for "${searchTerm}" yielded no results.` : undefined} />

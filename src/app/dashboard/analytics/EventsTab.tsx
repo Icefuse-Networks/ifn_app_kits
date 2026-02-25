@@ -5,7 +5,6 @@ import {
   Trophy, RefreshCw, Clock, TrendingUp, BarChart3, Calendar, Award, Users,
   Swords, MapPin, Crown, Target, Skull, ChevronDown, ChevronUp
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, RankBadge, Column,
 } from "@/components/analytics";
@@ -257,12 +256,13 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
             </div>
           )}
           {loading ? <Loading size="lg" text="Loading events..." /> : (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="anim-fade-slide-up space-y-4">
               {events.map((event, idx) => {
                 const isExpanded = expandedEvent === `${event.timestamp}-${event.winner_steam_id}`;
                 return (
-                  <motion.div key={`${event.timestamp}-${event.winner_steam_id}-${idx}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02 }}
-                    className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-amber-500/30 transition-colors">
+                  <div key={`${event.timestamp}-${event.winner_steam_id}-${idx}`}
+                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-amber-500/30 transition-colors"
+                    style={{ animationDelay: `${idx * 20}ms` }}>
                     <div className="p-4 cursor-pointer flex items-center justify-between"
                       onClick={() => setExpandedEvent(isExpanded ? null : `${event.timestamp}-${event.winner_steam_id}`)}>
                       <div className="flex items-center gap-4">
@@ -295,9 +295,8 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                         {isExpanded ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
                       </div>
                     </div>
-                    <AnimatePresence>
                       {isExpanded && event.participants?.length > 0 && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-white/5 overflow-hidden">
+                        <div className="border-t border-white/5 overflow-hidden">
                           <div className="p-4">
                             <h4 className="text-sm font-semibold text-zinc-400 mb-3">Participants</h4>
                             <div className="overflow-x-auto">
@@ -317,10 +316,9 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                               </table>
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </AnimatePresence>
-                  </motion.div>
+                  </div>
                 );
               })}
               {events.length === 0 && <EmptyState icon={<Trophy className="h-12 w-12" />} title="No events found" />}
@@ -329,7 +327,7 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                   <SimplePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
         </>
       )}

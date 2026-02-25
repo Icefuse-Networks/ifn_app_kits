@@ -5,7 +5,6 @@ import {
   Castle, RefreshCw, Clock, TrendingUp, BarChart3, Calendar, Users, Target, Skull,
   ChevronDown, ChevronUp, Shield, Hammer, Box, CheckCircle2
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, RankBadge, Column,
 } from "@/components/analytics";
@@ -296,13 +295,14 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
             </div>
           )}
           {loading ? <Loading size="lg" text="Loading raids..." /> : (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="anim-fade-slide-up space-y-4">
               {raids.map((raid, idx) => {
                 const raidKey = `${raid.timestamp_str}-${raid.base_id}`;
                 const isExpanded = expandedRaid === raidKey;
                 return (
-                  <motion.div key={`${raidKey}-${idx}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02 }}
-                    className="rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-red-500/30 transition-colors">
+                  <div key={`${raidKey}-${idx}`}
+                    className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-red-500/30 transition-colors"
+                    style={{ animationDelay: `${idx * 20}ms` }}>
                     <div className="p-4 cursor-pointer flex items-center justify-between" onClick={() => setExpandedRaid(isExpanded ? null : raidKey)}>
                       <div className="flex items-center gap-4">
                         <div className={`p-2 rounded-lg ${raid.was_completed ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
@@ -333,9 +333,8 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                         {isExpanded ? <ChevronUp className="h-5 w-5 text-zinc-500" /> : <ChevronDown className="h-5 w-5 text-zinc-500" />}
                       </div>
                     </div>
-                    <AnimatePresence>
                       {isExpanded && raid.raider_steam_ids?.length > 0 && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-white/5 overflow-hidden">
+                        <div className="border-t border-white/5 overflow-hidden">
                           <div className="p-4">
                             <h4 className="text-sm font-semibold text-zinc-400 mb-3">Raiders</h4>
                             <div className="overflow-x-auto">
@@ -355,10 +354,9 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                               </table>
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </AnimatePresence>
-                  </motion.div>
+                  </div>
                 );
               })}
               {raids.length === 0 && <EmptyState icon={<Castle className="h-12 w-12" />} title="No raids found" />}
@@ -367,7 +365,7 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                   <SimplePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
         </>
       )}
