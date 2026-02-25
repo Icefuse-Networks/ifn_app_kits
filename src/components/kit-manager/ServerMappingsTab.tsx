@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Server, AlertCircle, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
-import { MultiSelect } from '@/components/ui/MultiSelect'
 import { GlassContainer } from '@/components/global/GlassContainer'
+import { Dropdown } from '@/components/global/Dropdown'
 
 interface KitMapping {
   id: number
@@ -215,38 +215,34 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
 
       {/* Add New Mapping Section */}
       <div className="p-4 border-b border-[var(--glass-border)]">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: '2fr 3fr' }}>
           {/* Kit Config Dropdown */}
           <div>
             <label className="block text-xs text-[var(--text-muted)] mb-1.5">Kit Config</label>
-            <select
-              value={selectedConfig || ''}
-              onChange={(e) => setSelectedConfig(e.target.value || null)}
-              className="w-full px-3 py-2 rounded-lg text-sm text-white bg-[var(--bg-secondary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
-            >
-              <option value="">Select kit config...</option>
-              {savedConfigs.map((config) => (
-                <option key={config.id} value={config.id}>
-                  {config.name}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              value={selectedConfig}
+              onChange={setSelectedConfig}
+              options={savedConfigs.map((config) => ({ value: config.id, label: config.name }))}
+              placeholder="Select kit config..."
+              searchable
+            />
           </div>
 
           {/* Server Multi-Select */}
           <div>
             <label className="block text-xs text-[var(--text-muted)] mb-1.5">Servers</label>
-            <MultiSelect
-              value={selectedServers}
-              onChange={setSelectedServers}
+            <Dropdown
+              multiSelect
+              multiValue={selectedServers}
+              onMultiChange={setSelectedServers}
               options={servers.map((server) => ({
                 value: server.id,
                 label: server.name,
                 description: server.ip && server.port ? `${server.ip}:${server.port}` : server.hashedId,
               }))}
               placeholder="Select servers..."
-              searchable={true}
-              showSelectAll={true}
+              searchable
+              showSelectAll
             />
           </div>
         </div>
