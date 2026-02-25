@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import '../styles/animations.css';
+
 
 :root {
   /* Brand Colors */
@@ -18,20 +20,20 @@
   --color-medal-platinum: #E5E4E2;
   --color-medal-diamond: #B9F2FF;
 
-  /* Background Colors - Portal/Store Affirm Bunker (#101820) */
-  --bg-root: #101820;
-  --bg-page: #101820;
+  /* Background Colors - Pay Now Dark Navy */
+  --bg-root: #0a0a0f;
+  --bg-page: #0a0a0f;
   --bg-card: rgba(255, 255, 255, 0.03);
   --bg-card-hover: rgba(255, 255, 255, 0.05);
   --bg-card-dark: rgba(255, 255, 255, 0.02);
   --bg-input: rgba(255, 255, 255, 0.05);
   --bg-elevated: rgba(255, 255, 255, 0.08);
-  --bg-primary: #101820;
-  --bg-secondary: #111827;
-  --bg-tertiary: #1e293b;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #0f1419;
 
-  /* Solid Affirm Bunker */
-  --gradient-page: #101820;
+  /* Solid background */
+  --gradient-page: #0a0a0f;
 
   /* Text Colors - Portal brightness */
   --text-primary: #ffffff;
@@ -53,9 +55,16 @@
 
   /* Semantic/Status Colors */
   --color-success: #22c55e;
-  --color-warning: #fbbf24;
+  --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #38bdf8;
+
+  /* RGB companions (for rgba() usage in components) */
+  --accent-primary-rgb: 59, 130, 246;
+  --status-success-rgb: 34, 197, 94;
+  --status-error-rgb: 239, 68, 68;
+  --status-warning-rgb: 245, 158, 11;
+  --status-info-rgb: 56, 189, 248;
 
   /* Status Colors (component-friendly naming) */
   --status-success: #22c55e;
@@ -87,8 +96,8 @@
   --glass-frost-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   --gradient-primary: linear-gradient(to right, #3b82f6, #2563eb);
-  --gradient-header: linear-gradient(to right, #3b82f6, #6366f1, #ec4899);
-  --gradient-text: linear-gradient(to right, #3b82f6, #6366f1, #ec4899);
+  --gradient-header: linear-gradient(to right, #3b82f6, #2563eb);
+  --gradient-text: linear-gradient(to right, #3b82f6, #2563eb);
   --gradient-button-secondary: linear-gradient(to right, #3b82f6, #6366f1);
 
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -201,81 +210,10 @@ a {
    ============================================ */
 
 .portal-root {
-  /* Portal-specific CSS variables */
-  --portal-bg-root: #101820;
-  --portal-bg-surface: #111827;
-  --portal-bg-card: #1e293b;
-  --portal-bg-card-elevated: #283548;
-  --portal-bg-card-hover: #334155;
-
-  /* Accent - Blue matching product card buttons */
-  --portal-accent: #3b82f6;
-  --portal-accent-hover: #60a5fa;
-  --portal-accent-subtle: rgba(59, 130, 246, 0.20);
-  --portal-accent-glow: rgba(59, 130, 246, 0.40);
-
-  /* Secondary accent - Darker blue */
-  --portal-accent-secondary: #2563eb;
-  --portal-accent-secondary-glow: rgba(37, 99, 235, 0.35);
-
-  /* Card elevation */
-  --portal-border-subtle: rgba(255, 255, 255, 0.08);
-  --portal-border-medium: rgba(255, 255, 255, 0.12);
-  --portal-border-hover: rgba(255, 255, 255, 0.18);
-  --portal-glow-subtle: rgba(255, 255, 255, 0.04);
-
-  /* Glass effects */
-  --portal-glass-bg: rgba(255, 255, 255, 0.04);
-  --portal-glass-bg-hover: rgba(255, 255, 255, 0.08);
-  --portal-glass-border: rgba(255, 255, 255, 0.10);
-  --portal-glass-border-hover: rgba(255, 255, 255, 0.16);
-
-  /* Text hierarchy */
-  --portal-text-primary: #ffffff;
-  --portal-text-secondary: rgba(255, 255, 255, 0.85);
-  --portal-text-muted: rgba(255, 255, 255, 0.60);
-
-  /* Semantic colors */
-  --portal-success: #34d399;
-  --portal-warning: #fbbf24;
-  --portal-error: #f87171;
-  --portal-cyan: #22d3ee;
-
-  /* Shadows & Elevation */
-  --portal-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --portal-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --portal-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --portal-shadow-elevated:
-    0 4px 24px rgba(0, 0, 0, 0.4),
-    0 12px 48px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-
-  /* Border radius */
-  --portal-radius-sm: 8px;
-  --portal-radius-md: 12px;
-  --portal-radius-lg: 16px;
-  --portal-radius-xl: 20px;
-  --portal-radius-2xl: 28px;
-  --portal-radius-full: 9999px;
-
-  /* Easing */
-  --portal-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --portal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --portal-ease-out: cubic-bezier(0, 0, 0.2, 1);
-
-  /* Durations */
-  --portal-duration-fast: 150ms;
-  --portal-duration-normal: 250ms;
-  --portal-duration-slow: 400ms;
-}
-
-.portal-root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #101820;
-  color: var(--portal-text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   position: relative;
@@ -301,7 +239,7 @@ a {
   right: 0 !important;
   z-index: 9999 !important;
   flex-shrink: 0;
-  background: rgba(16, 24, 32, 0.95);
+  background: rgba(10, 10, 15, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -310,7 +248,7 @@ a {
   position: relative;
   z-index: 100;
   flex-shrink: 0;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(10, 10, 15, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -343,7 +281,7 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   position: relative;
-  transition: opacity var(--portal-duration-normal) var(--portal-ease-standard);
+  transition: opacity var(--transition-default);
 }
 
 .portal-logo:hover .portal-logo-ring {
@@ -353,7 +291,7 @@ a {
 .portal-logo-text {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--portal-text-primary);
+  color: var(--text-primary);
   letter-spacing: 0.02em;
 }
 
@@ -370,7 +308,7 @@ a {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  background: rgba(10, 16, 32, 0.9);
+  background: rgba(10, 10, 15, 0.9);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -386,7 +324,7 @@ a {
 
 .portal-footer-text {
   font-size: 0.875rem;
-  color: var(--portal-text-muted);
+  color: var(--text-muted);
 }
 
 .portal-footer-links {
@@ -397,13 +335,13 @@ a {
 
 .portal-footer-link {
   font-size: 0.8125rem;
-  color: var(--portal-text-muted);
+  color: var(--text-muted);
   text-decoration: none;
-  transition: all var(--portal-duration-fast) var(--portal-ease-standard);
+  transition: all var(--transition-fast);
 }
 
 .portal-footer-link:hover {
-  color: var(--portal-accent-hover);
+  color: var(--accent-primary);
 }
 
 /* Band Sections */
@@ -433,7 +371,7 @@ a {
   position: relative;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--portal-radius-2xl);
+  border-radius: 28px;
 }
 
 /* Value Grid */
@@ -463,8 +401,8 @@ a {
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--portal-radius-lg);
-  transition: all var(--portal-duration-normal) var(--portal-ease-standard);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-default);
 }
 
 .portal-value-card:hover {
