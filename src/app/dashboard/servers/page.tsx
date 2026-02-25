@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
 import {
   ArrowLeft, Server, Users, ChevronRight, Wifi, WifiOff, Plus,
   Folder, ChevronDown, Activity
@@ -155,7 +154,7 @@ export default function ServersPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <div className="anim-fade-slide-up">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard">
             <IconButton icon={<ArrowLeft className="w-5 h-5" />} label="Back to dashboard" />
@@ -188,29 +187,29 @@ export default function ServersPage() {
         </div>
 
         <div className="flex items-center gap-6 mb-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
             <div className="p-2 rounded-lg bg-emerald-500/10"><Activity className="w-4 h-4 text-emerald-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-emerald-400">{stats.online}</span>
               <span className="text-sm text-[var(--text-muted)]">/ {stats.live} online</span>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          </div>
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
             <div className="p-2 rounded-lg bg-purple-500/10"><Users className="w-4 h-4 text-purple-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.players}</span>
               <span className="text-sm text-[var(--text-muted)]">players</span>
             </div>
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
+        <div className="anim-fade-slide-up mb-6" style={{ animationDelay: '200ms' }}>
           <SearchInput
             placeholder="Search by name, IP, or ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </motion.div>
+        </div>
 
         {error && (
           <Alert variant="error" dismissible onDismiss={() => setError(null)} className="mb-6">
@@ -221,20 +220,20 @@ export default function ServersPage() {
         {loading ? (
           <Loading text="Loading servers..." />
         ) : filteredServers.length === 0 ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <div className="anim-fade-scale">
             <EmptyState
               icon={<Server className="w-12 h-12" />}
               title={search ? "No Results" : "No Live Servers"}
               description={search ? `No servers match "${search}"` : "Servers will appear here once they connect via the ServerID plugin."}
             />
-          </motion.div>
+          </div>
         ) : (
           <div className="space-y-8">
             {Object.entries(groupedByCategory).map(([category, categoryServers], catIndex) => {
               const catId = categories.find(c => c.name === category)?.id || 'uncategorized'
               const isCollapsed = collapsedCategories.has(catId)
               return (
-                <motion.div key={category} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + catIndex * 0.1 }}>
+                <div key={category} className="anim-stagger-item" style={{ animationDelay: `${250 + catIndex * 100}ms` }}>
                   <div className="flex items-center gap-3 mb-4 cursor-pointer" onClick={() => toggleCategoryCollapse(catId)}>
                     <button className="p-0.5">
                       {isCollapsed ? <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
@@ -251,7 +250,7 @@ export default function ServersPage() {
                       {categoryServers.map((server, idx) => {
                         const online = isOnline(server.lastPlayerUpdate)
                         return (
-                          <motion.div key={server.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + catIndex * 0.1 + idx * 0.03 }}>
+                          <div key={server.id} className="anim-stagger-item" style={{ animationDelay: `${300 + catIndex * 100 + idx * 30}ms` }}>
                             <Link href={`/dashboard/servers/${server.id}`} className="group block rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)] hover:bg-[var(--glass-bg-prominent)] hover:shadow-xl hover:shadow-black/10">
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -280,12 +279,12 @@ export default function ServersPage() {
                                 <span className="text-xs text-[var(--text-muted)]">{formatLastUpdate(server.lastPlayerUpdate)}</span>
                               </div>
                             </Link>
-                          </motion.div>
+                          </div>
                         )
                       })}
                     </div>
                   )}
-                </motion.div>
+                </div>
               )
             })}
           </div>
@@ -329,7 +328,7 @@ export default function ServersPage() {
             />
           </div>
         </Modal>
-      </motion.div>
+      </div>
     </div>
   )
 }

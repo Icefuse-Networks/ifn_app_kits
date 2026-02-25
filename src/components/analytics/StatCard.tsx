@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -23,11 +22,9 @@ export function StatCard({
   delay = 0,
 }: StatCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] bg-white/[0.02] border border-white/5"
+    <div
+      className="anim-fade-slide-up rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] bg-white/[0.02] border border-white/5"
+      style={{ animationDelay: `${delay * 1000}ms` }}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
@@ -43,6 +40,6 @@ export function StatCard({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

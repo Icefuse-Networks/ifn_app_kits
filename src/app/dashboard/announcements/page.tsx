@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   Save, MessageSquare, Plus, Trash2, Edit2, Globe, Server, Bell, BellOff,
@@ -46,7 +45,7 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
   const assignedServers = servers.filter((s) => announcement.serverAssignments.some((sa) => sa.serverId === s.id));
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="rounded-xl p-6 transition-all group bg-white/[0.02] border border-white/5">
+    <div className="anim-fade-scale rounded-xl p-6 transition-all group bg-white/[0.02] border border-white/5">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className={`p-2 rounded-lg ${isGlobal ? "bg-green-500/20" : "bg-purple-500/20"}`}>
@@ -83,7 +82,7 @@ const AnnouncementCard = ({ announcement, servers, onEdit, onDelete }: { announc
       <div className="rounded-lg p-3 bg-purple-500/10 border-l-4 border-purple-500">
         <p className="text-white whitespace-pre-wrap">{announcement.text}</p>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -316,7 +315,7 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="p-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="anim-fade-slide-up">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -327,7 +326,7 @@ export default function AnnouncementsPage() {
             </h1>
             <p className="text-zinc-500 mt-2">Manage announcements for individual servers, multiple servers, or all servers globally</p>
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <div>
             <Button
               variant="primary"
                icon={<Plus className="h-4 w-4" />}
@@ -336,7 +335,7 @@ export default function AnnouncementsPage() {
             >
               Add Announcement
             </Button>
-          </motion.div>
+          </div>
         </div>
 
         {loading ? (
@@ -379,11 +378,9 @@ export default function AnnouncementsPage() {
             )}
           </div>
         )}
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
-        {modalOpen && <AnnouncementModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSaveAnnouncement} announcement={editingAnnouncement} servers={servers} />}
-      </AnimatePresence>
+      {modalOpen && <AnnouncementModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSaveAnnouncement} announcement={editingAnnouncement} servers={servers} />}
     </div>
   );
 }

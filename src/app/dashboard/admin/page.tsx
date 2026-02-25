@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Server, Users, Activity, TrendingUp, Clock, Zap } from "lucide-react";
 import { StatCard } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Loading';
@@ -53,7 +52,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="anim-fade-slide-up">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
@@ -66,11 +65,10 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((card, index) => (
-            <motion.div
+            <div
               key={card.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              className="anim-stagger-item"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <StatCard
                 icon={<card.icon className="h-5 w-5" />}
@@ -78,16 +76,14 @@ export default function DashboardPage() {
                 value={card.value}
                 loading={loading}
               />
-            </motion.div>
+            </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-xl p-6 bg-white/[0.02] border border-white/5"
+          <div
+            className="anim-fade-slide-up rounded-xl p-6 bg-white/[0.02] border border-white/5"
+            style={{ animationDelay: '400ms' }}
           >
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-purple-400" />
@@ -117,13 +113,11 @@ export default function DashboardPage() {
                 <p>No recent activity</p>
               </div>
             )}
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="rounded-xl p-6 bg-white/[0.02] border border-white/5"
+          <div
+            className="anim-fade-slide-up rounded-xl p-6 bg-white/[0.02] border border-white/5"
+            style={{ animationDelay: '500ms' }}
           >
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-400" />
@@ -143,9 +137,9 @@ export default function DashboardPage() {
                 <span className="text-blue-400 font-semibold">--</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

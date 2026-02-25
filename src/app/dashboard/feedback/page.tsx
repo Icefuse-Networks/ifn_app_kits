@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowLeft, MessageCircle, RefreshCw, ChevronUp, ChevronDown, Check,
   Clock, Server,
@@ -62,11 +61,8 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
   }, [onClose])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed bottom-4 right-4 z-[10000]"
+    <div
+      className="anim-fade-slide-up fixed bottom-4 right-4 z-[10000]"
     >
       <Alert
         variant={type === "success" ? "success" : "error"}
@@ -75,7 +71,7 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
       >
         {message}
       </Alert>
-    </motion.div>
+    </div>
   )
 }
 
@@ -284,16 +280,14 @@ export default function FeedbackPage() {
     const currentReward = rewardAmounts[item.id] ?? 1000
 
     return (
-      <motion.div
+      <div
         key={item.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: idx * 0.03 }}
-        className={`rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
+        className={`anim-stagger-item rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
           isPending
             ? "border-amber-500/20 hover:border-amber-500/40"
             : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"
         }`}
+        style={{ animationDelay: `${idx * 30}ms` }}
       >
         <div
           className="flex items-center gap-4 p-4 cursor-pointer"
@@ -360,13 +354,8 @@ export default function FeedbackPage() {
           </div>
         </div>
 
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+        {isExpanded && (
+            <div
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 pt-0 border-t border-[var(--glass-border)]">
@@ -418,10 +407,9 @@ export default function FeedbackPage() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.div>
+      </div>
     )
   }
 
@@ -431,7 +419,7 @@ export default function FeedbackPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <div className="anim-fade-slide-up">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard" className="p-2.5 rounded-xl transition-all hover:scale-105 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]">
@@ -532,7 +520,7 @@ export default function FeedbackPage() {
 
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4">
+          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
                 <Inbox className="w-5 h-5 text-purple-400" />
@@ -542,8 +530,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-[var(--text-primary)]">{stats.total}</p>
               </div>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4">
+          </div>
+          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/10">
                 <Clock className="w-5 h-5 text-amber-400" />
@@ -553,8 +541,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
               </div>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4">
+          </div>
+          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '200ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-500/10">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -564,8 +552,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-emerald-400">{stats.accepted}</p>
               </div>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4">
+          </div>
+          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '250ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-500/10">
                 <XCircle className="w-5 h-5 text-red-400" />
@@ -575,7 +563,7 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-red-400">{stats.denied}</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Filter Bar */}
@@ -620,7 +608,7 @@ export default function FeedbackPage() {
         {loading ? (
           <Loading size="lg" text="Loading feedback..." />
         ) : feedbackList.length === 0 ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="anim-fade-slide-up" style={{ animationDelay: '300ms' }}>
             <EmptyState
               icon={<MessageCircle className="w-12 h-12" />}
               title="No Feedback Found"
@@ -630,7 +618,7 @@ export default function FeedbackPage() {
                   : "No feedback has been submitted for this server yet."
               }
             />
-          </motion.div>
+          </div>
         ) : (
           <>
             {pendingFeedback.length > 0 && (
@@ -639,9 +627,9 @@ export default function FeedbackPage() {
                   <Clock className="w-5 h-5" />
                   Unreviewed Feedback ({pendingFeedback.length})
                 </h2>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
+                <div className="anim-fade-slide-up space-y-3" style={{ animationDelay: '300ms' }}>
                   {pendingFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
-                </motion.div>
+                </div>
               </div>
             )}
 
@@ -651,9 +639,9 @@ export default function FeedbackPage() {
                   <CheckCircle2 className="w-5 h-5" />
                   Accepted Feedback ({acceptedFeedback.length})
                 </h2>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="space-y-3">
+                <div className="anim-fade-slide-up space-y-3" style={{ animationDelay: '350ms' }}>
                   {acceptedFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
-                </motion.div>
+                </div>
               </div>
             )}
 
@@ -667,19 +655,13 @@ export default function FeedbackPage() {
                   Denied Feedback ({deniedFeedback.length})
                   <ChevronDown className={`w-4 h-4 transition-transform ${showDenied ? "rotate-180" : ""}`} />
                 </button>
-                <AnimatePresence>
-                  {showDenied && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                {showDenied && (
+                    <div
                       className="space-y-3 overflow-hidden"
                     >
                       {deniedFeedback.map((item, idx) => renderFeedbackCard(item, idx))}
-                    </motion.div>
+                    </div>
                   )}
-                </AnimatePresence>
               </div>
             )}
           </>
@@ -701,11 +683,9 @@ export default function FeedbackPage() {
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
 
-      <AnimatePresence>
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      </AnimatePresence>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Package, Zap, ChevronRight, Activity, TrendingUp, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { dashboardSections } from '@/config/navigation'
@@ -16,7 +15,7 @@ const quickStats = [
 export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <div className="anim-fade-slide-up">
         <div className="mb-10">
           <div className="flex items-center gap-4 mb-2">
             <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20">
@@ -31,11 +30,10 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {quickStats.map((stat, i) => (
-            <motion.div
+            <div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              className="anim-stagger-item"
+              style={{ animationDelay: `${i * 50}ms` }}
             >
               <StatCard
                 icon={<stat.icon className="h-5 w-5" />}
@@ -44,17 +42,16 @@ export default function DashboardPage() {
                 change={stat.change}
                 changeType={stat.changeType}
               />
-            </motion.div>
+            </div>
           ))}
         </div>
 
         <div className="space-y-10">
           {dashboardSections.map((section, sectionIndex) => (
-            <motion.div
+            <div
               key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + sectionIndex * 0.1 }}
+              className="anim-stagger-item"
+              style={{ animationDelay: `${200 + sectionIndex * 100}ms` }}
             >
               <div className="mb-4">
                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">{section.title}</h2>
@@ -62,11 +59,10 @@ export default function DashboardPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {section.items.map((item, itemIndex) => (
-                  <motion.div
+                  <div
                     key={item.href}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 + sectionIndex * 0.1 + itemIndex * 0.05 }}
+                    className="anim-stagger-item"
+                    style={{ animationDelay: `${250 + sectionIndex * 100 + itemIndex * 50}ms` }}
                   >
                     <Link
                       href={item.href}
@@ -85,13 +81,13 @@ export default function DashboardPage() {
                         {item.desc}
                       </p>
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { motion } from "framer-motion"
 import {
   ArrowLeft, Gift, Users, Plus, Clock, Server, Eye,
   Trash2, User, RefreshCw, BarChart3, Activity,
@@ -353,7 +352,7 @@ export default function GiveawaysPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <div className="anim-fade-slide-up">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link href="/dashboard">
@@ -389,34 +388,34 @@ export default function GiveawaysPage() {
 
         {/* Stats */}
         <div className="flex items-center gap-6 mb-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
             <div className="p-2 rounded-lg bg-emerald-500/10"><Power className="w-4 h-4 text-emerald-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-emerald-400">{stats.active}</span>
               <span className="text-sm text-[var(--text-muted)]">active</span>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          </div>
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
             <div className="p-2 rounded-lg bg-purple-500/10"><Users className="w-4 h-4 text-purple-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.totalPlayers}</span>
               <span className="text-sm text-[var(--text-muted)]">entries</span>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          </div>
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '200ms' }}>
             <div className="p-2 rounded-lg bg-blue-500/10"><Clock className="w-4 h-4 text-blue-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{formatTime(stats.totalPlaytime)}</span>
               <span className="text-sm text-[var(--text-muted)]">playtime</span>
             </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          </div>
+          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '250ms' }}>
             <div className="p-2 rounded-lg bg-pink-500/10"><Server className="w-4 h-4 text-pink-400" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.uniqueServers}</span>
               <span className="text-sm text-[var(--text-muted)]">servers</span>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -440,7 +439,7 @@ export default function GiveawaysPage() {
           <Loading text="Loading giveaways..." />
         ) : tab === "giveaways" ? (
           /* Giveaways Tab */
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="anim-fade-slide-up" style={{ animationDelay: '300ms' }}>
             {giveaways.length === 0 ? (
               <EmptyState
                 icon={<Gift className="w-12 h-12" />}
@@ -450,7 +449,7 @@ export default function GiveawaysPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {giveaways.map((giveaway, idx) => (
-                  <motion.div key={giveaway.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + idx * 0.05 }}>
+                  <div key={giveaway.id} className="anim-stagger-item" style={{ animationDelay: `${300 + idx * 50}ms` }}>
                     <div className={`group rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border hover:shadow-xl hover:shadow-black/10 ${giveaway.isActive ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"}`}>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -524,14 +523,14 @@ export default function GiveawaysPage() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}
-          </motion.div>
+          </div>
         ) : (
           /* Players Tab */
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="anim-fade-slide-up" style={{ animationDelay: '300ms' }}>
             {/* Players toolbar */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -583,7 +582,7 @@ export default function GiveawaysPage() {
                             <span className="text-xs font-semibold text-[var(--text-primary)]">{count}</span>
                           </div>
                           <div className="w-full rounded-full h-1.5 bg-[var(--bg-input)]">
-                            <motion.div className="h-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.3 }} />
+                            <div className="h-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -616,7 +615,7 @@ export default function GiveawaysPage() {
                               <span className="text-xs font-semibold text-[var(--text-primary)]">{count}</span>
                             </div>
                             <div className="w-full rounded-full h-1.5 bg-[var(--bg-input)]">
-                              <motion.div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.3 }} />
+                              <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                         )
@@ -642,7 +641,7 @@ export default function GiveawaysPage() {
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, idx) => (
-                    <motion.tr key={player.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.02 * idx }} className="border-b border-[var(--glass-border)] last:border-b-0 hover:bg-[var(--glass-bg-prominent)] transition-colors">
+                    <tr key={player.id} className="anim-stagger-item border-b border-[var(--glass-border)] last:border-b-0 hover:bg-[var(--glass-bg-prominent)] transition-colors" style={{ animationDelay: `${20 * idx}ms` }}>
                       <td className="py-3 px-5">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border-2 border-[var(--glass-border)]">
@@ -676,7 +675,7 @@ export default function GiveawaysPage() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -688,21 +687,21 @@ export default function GiveawaysPage() {
                 />
               )}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Winner display */}
         {winners.length > 0 && !isPickingWinner && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setWinners([])}>
+          <div className="anim-fade-scale fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setWinners([])}>
             <div className="rounded-2xl p-8 max-w-md w-full bg-[var(--bg-secondary)] border-2 border-purple-500/30" onClick={e => e.stopPropagation()}>
               <div className="text-center">
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}>
+                <div className="anim-fade-scale" style={{ animationDelay: '200ms' }}>
                   <Trophy className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
-                </motion.div>
+                </div>
                 <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{winners.length > 1 ? "Winners!" : "Winner!"}</h3>
                 <div className="space-y-3 mb-6">
                   {winners.map((w, i) => (
-                    <motion.div key={w.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.15 }} className="rounded-xl p-4 bg-[var(--glass-bg)] border border-purple-500/20">
+                    <div key={w.id} className="anim-stagger-item rounded-xl p-4 bg-[var(--glass-bg)] border border-purple-500/20" style={{ animationDelay: `${300 + i * 150}ms` }}>
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full overflow-hidden border-3 border-purple-500/50 shrink-0">
                           {playerAvatars[w.playerSteamId64] ? (
@@ -722,7 +721,7 @@ export default function GiveawaysPage() {
                           {formatTime(w.playTime)}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
                 <button onClick={() => setWinners([])} className="px-6 py-2.5 rounded-xl font-medium text-sm bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
@@ -730,12 +729,12 @@ export default function GiveawaysPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Picking animation overlay */}
         {isPickingWinner && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="anim-fade-slide-up fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="rounded-2xl p-8 max-w-4xl w-full mx-4 bg-[var(--bg-secondary)] border-2 border-purple-500/30">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Selecting Winner...</h3>
@@ -771,7 +770,7 @@ export default function GiveawaysPage() {
                 </span>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Create giveaway modal */}
@@ -894,7 +893,7 @@ export default function GiveawaysPage() {
             </div>
           </div>
         </Modal>
-      </motion.div>
+      </div>
     </div>
   )
 }

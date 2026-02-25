@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { motion } from "framer-motion"
 import {
   Target, Users, Server, RefreshCw, Trash2, AlertTriangle, Search,
   ChevronLeft, ChevronRight, ArrowUpDown,
@@ -142,7 +141,7 @@ export default function StatsManagementPage() {
 
   return (
     <div className="p-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="anim-fade-slide-up">
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
           <div>
@@ -360,7 +359,7 @@ export default function StatsManagementPage() {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }
