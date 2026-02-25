@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, Pencil, Trash2, ChevronDown, Server, AlertCircle } from 'lucide-react'
+import { X, Plus, Pencil, Trash2, Server, AlertCircle } from 'lucide-react'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { GlassContainer } from '@/components/global/GlassContainer'
+import { Dropdown } from '@/components/global/Dropdown'
 
 interface KitMapping {
   id: number
@@ -45,7 +46,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
   const [editingId, setEditingId] = useState<number | null>(null)
   const [selectedConfig, setSelectedConfig] = useState<string | null>(null)
   const [selectedServers, setSelectedServers] = useState<string[]>([])
-  const [configDropdownOpen, setConfigDropdownOpen] = useState(false)
+
 
   useEffect(() => {
     fetchMappings()
@@ -214,9 +215,13 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
         className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
-        <div
-          className="bg-[var(--bg-secondary)] rounded-xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
+        <GlassContainer
+          variant="elevated"
+          padding="lg"
+          radius="lg"
+          features={{ shadow: true, hoverGlow: false }}
+          className="w-full max-w-4xl max-h-[80vh] flex flex-col"
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -334,12 +339,12 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
             </button>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors"
+              className="px-6 py-2 bg-[var(--glass-bg)] text-white rounded-lg hover:bg-[var(--glass-bg-prominent)] transition-colors border border-[var(--glass-border)]"
             >
               Close
             </button>
           </div>
-        </div>
+        </GlassContainer>
       </div>
 
       {/* Add/Edit Mapping Modal */}
@@ -348,9 +353,13 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
           className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]"
           onClick={closeAddModal}
         >
-          <div
-            className="bg-[var(--bg-secondary)] rounded-xl border border-white/10 p-6 w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
+          <GlassContainer
+            variant="elevated"
+            padding="lg"
+            radius="lg"
+            features={{ shadow: true, hoverGlow: false }}
+            className="w-full max-w-md"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">
@@ -368,45 +377,13 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
               {/* Kit Config Dropdown */}
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-2">Kit Config *</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setConfigDropdownOpen(!configDropdownOpen)}
-                    className="w-full bg-[var(--bg-secondary)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
-                  >
-                    <span className={selectedConfig ? 'text-white' : 'text-[var(--text-muted)]'}>
-                      {selectedConfig
-                        ? savedConfigs.find((c) => c.id === selectedConfig)?.name || 'Unknown'
-                        : 'Select a kit config...'}
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${
-                        configDropdownOpen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {configDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-secondary)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                      {savedConfigs.map((config) => (
-                        <button
-                          key={config.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedConfig(config.id)
-                            setConfigDropdownOpen(false)
-                          }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${
-                            selectedConfig === config.id
-                              ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'
-                              : 'text-white'
-                          }`}
-                        >
-                          {config.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Dropdown
+                  options={savedConfigs.map(c => ({ value: c.id, label: c.name }))}
+                  value={selectedConfig}
+                  onChange={setSelectedConfig}
+                  placeholder="Select a kit config..."
+                  searchable={savedConfigs.length > 5}
+                />
               </div>
 
               {/* Server Multi-Select */}
@@ -438,7 +415,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
             <div className="flex gap-3 mt-6">
               <button
                 onClick={closeAddModal}
-                className="flex-1 px-4 py-2 bg-white/5 text-white rounded-lg"
+                className="flex-1 px-4 py-2 bg-[var(--glass-bg)] text-white rounded-lg border border-[var(--glass-border)]"
               >
                 Cancel
               </button>
@@ -460,7 +437,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                 )}
               </button>
             </div>
-          </div>
+          </GlassContainer>
         </div>
       )}
     </>

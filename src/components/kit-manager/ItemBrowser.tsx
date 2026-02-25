@@ -77,7 +77,7 @@ export function ItemBrowser({
         features={{ hoverGlow: false, shadow: false }}
         interactive
         className="w-12 flex flex-col items-center py-3 shrink-0 !rounded-none"
-        style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
+        style={{ border: 'none', borderLeft: '1px solid var(--glass-border)' }}
         onClick={onToggle}
         title="Open Item Browser"
       >
@@ -92,12 +92,12 @@ export function ItemBrowser({
       variant="static"
       features={{ hoverGlow: false, shadow: false }}
       className="w-64 flex flex-col shrink-0 !rounded-none"
-      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
+      style={{ border: 'none', borderLeft: '1px solid var(--glass-border)' }}
     >
       {/* Header */}
       <div
         className="h-12 px-3 flex items-center justify-between shrink-0"
-        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
+        style={{ borderBottom: '1px solid var(--glass-border)' }}
       >
         <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
           <Package className="w-4 h-4 text-[var(--accent-primary)]" />

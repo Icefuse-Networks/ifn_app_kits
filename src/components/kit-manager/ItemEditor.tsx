@@ -75,12 +75,12 @@ export function ItemEditor({
       variant="static"
       features={{ hoverGlow: false, shadow: false }}
       className="w-64 flex flex-col shrink-0 !rounded-none"
-      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
+      style={{ border: 'none', borderLeft: '1px solid var(--glass-border)' }}
     >
       {/* Header */}
       <div
         className="h-12 px-3 flex items-center justify-between shrink-0"
-        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
+        style={{ borderBottom: '1px solid var(--glass-border)' }}
       >
         <h3 className="text-sm font-bold text-[var(--text-primary)]">
           Edit Item
@@ -232,7 +232,7 @@ export function ItemEditorEmpty() {
       variant="static"
       features={{ hoverGlow: false, shadow: false }}
       className="w-64 flex flex-col items-center justify-center shrink-0 !rounded-none"
-      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
+      style={{ border: 'none', borderLeft: '1px solid var(--glass-border)' }}
     >
       <Package className="w-10 h-10 mb-3 text-[var(--text-muted)] opacity-50" />
       <p className="text-sm text-[var(--text-muted)] text-center px-4">

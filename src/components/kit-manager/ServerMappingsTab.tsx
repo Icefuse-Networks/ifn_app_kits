@@ -185,10 +185,10 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header with Back Button */}
-      <div className="p-4 border-b border-white/10 flex items-center gap-3">
+      <div className="p-4 border-b border-[var(--glass-border)] flex items-center gap-3">
         <button
           onClick={onBack}
-          className="p-2 rounded-lg transition-colors hover:bg-white/10"
+          className="p-2 rounded-lg transition-colors hover:bg-[var(--glass-bg)]"
           title="Back to kits"
         >
           <ArrowLeft className="w-4 h-4 text-[var(--text-muted)]" />
@@ -214,7 +214,7 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
       )}
 
       {/* Add New Mapping Section */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-[var(--glass-border)]">
         <div className="grid grid-cols-2 gap-3">
           {/* Kit Config Dropdown */}
           <div>
@@ -222,7 +222,7 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
             <select
               value={selectedConfig || ''}
               onChange={(e) => setSelectedConfig(e.target.value || null)}
-              className="w-full px-3 py-2 rounded-lg text-sm text-white bg-[var(--bg-secondary)] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+              className="w-full px-3 py-2 rounded-lg text-sm text-white bg-[var(--bg-secondary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
             >
               <option value="">Select kit config...</option>
               {savedConfigs.map((config) => (
@@ -292,7 +292,7 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
               {/* Config Header */}
               <button
                 onClick={() => toggleConfig(config.id)}
-                className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between p-3 hover:bg-[var(--glass-bg-subtle)] transition-colors"
               >
                 <div className="flex items-center gap-2">
                   {isExpanded ? (
@@ -309,17 +309,17 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
 
               {/* Mappings for this config */}
               {isExpanded && (
-                <div className="border-t border-white/10">
+                <div className="border-t border-[var(--glass-border)]">
                   {configMappings.length === 0 ? (
                     <div className="p-4 text-center text-sm text-[var(--text-muted)]">
                       No servers mapped yet
                     </div>
                   ) : (
-                    <div className="divide-y divide-white/10">
+                    <div className="divide-y divide-[var(--glass-border)]">
                       {configMappings.map((mapping) => (
                         <div
                           key={mapping.id}
-                          className="flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                          className="flex items-center justify-between p-3 hover:bg-[var(--glass-bg-subtle)] transition-colors"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">

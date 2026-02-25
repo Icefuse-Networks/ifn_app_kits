@@ -117,34 +117,93 @@ export function CategorySelector({
   return (
     <div
       ref={dropdownRef}
-      className="relative"
-      style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}
+      style={{ borderBottom: '1px solid var(--glass-border)' }}
     >
       {/* Active Category Display */}
       <div className="px-3 py-3">
         {/* Category name + dropdown toggle */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          disabled={loading}
-          className="w-full flex items-center gap-2 p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
-          style={{
-            background: isOpen ? 'var(--bg-card-hover)' : 'transparent',
-          }}
-        >
-          <FolderOpen className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
-          <span className="flex-1 text-sm font-medium text-[var(--text-primary)] text-left truncate">
-            {activeCategory ? activeCategory.name : 'No Category'}
-          </span>
-          {loading ? (
-            <Loader2 className="w-3.5 h-3.5 text-[var(--text-muted)] animate-spin shrink-0" />
-          ) : (
-            <ChevronDown
-              className={`w-3.5 h-3.5 text-[var(--text-muted)] shrink-0 transition-transform ${
-                isOpen ? 'rotate-180' : ''
-              }`}
-            />
+        <div className="relative">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            disabled={loading}
+            className="w-full flex items-center gap-2 p-2 rounded-lg transition-colors hover:bg-[var(--bg-card-hover)]"
+            style={{
+              background: isOpen ? 'var(--bg-card-hover)' : 'transparent',
+            }}
+          >
+            <FolderOpen className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
+            <span className="flex-1 text-sm font-medium text-[var(--text-primary)] text-left truncate">
+              {activeCategory ? activeCategory.name : 'No Category'}
+            </span>
+            {loading ? (
+              <Loader2 className="w-3.5 h-3.5 text-[var(--text-muted)] animate-spin shrink-0" />
+            ) : (
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-[var(--text-muted)] shrink-0 transition-transform ${
+                  isOpen ? 'rotate-180' : ''
+                }`}
+              />
+            )}
+          </button>
+
+          {/* Dropdown Panel */}
+          {isOpen && categories.length > 0 && (
+            <div
+              className="absolute left-0 right-0 top-full z-50 mt-1 rounded-2xl overflow-hidden max-h-80 overflow-y-auto"
+              style={{
+                background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
+                border: '1px solid var(--glass-border)',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              }}
+            >
+              {categories.map((cat) => {
+                const isActive = cat.id === activeCategoryId
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      onSwitch(cat.id)
+                      setIsOpen(false)
+                    }}
+                    className={`w-full text-left px-3 py-2.5 transition-colors duration-150 ${
+                      isActive
+                        ? 'bg-[var(--accent-primary)]/10'
+                        : 'hover:bg-[var(--glass-bg-prominent)]'
+                    }`}
+                    style={{
+                      borderLeft: isActive
+                        ? '2px solid var(--accent-primary)'
+                        : '2px solid transparent',
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm font-medium truncate ${
+                          isActive
+                            ? 'text-[var(--accent-primary)]'
+                            : 'text-[var(--text-primary)]'
+                        }`}
+                      >
+                        {cat.name}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-muted)] shrink-0">
+                        {cat.kitCount} kit{cat.kitCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {cat.description && (
+                      <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">
+                        {cat.description}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                      {formatDate(cat.updatedAt)}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
           )}
-        </button>
+        </div>
 
         {/* Action buttons */}
         {activeCategory && (
@@ -230,68 +289,6 @@ export function CategorySelector({
           </div>
         )}
       </div>
-
-      {/* Dropdown Panel */}
-      {isOpen && categories.length > 0 && (
-        <div
-          className="absolute left-2 right-2 top-full z-50 mt-1 rounded-xl overflow-hidden max-h-80 overflow-y-auto"
-          style={{
-            background:
-              'linear-gradient(145deg, rgba(20, 35, 60, 0.95) 0%, rgba(15, 28, 50, 0.97) 50%, rgba(12, 22, 42, 0.98) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.20)',
-            backdropFilter: 'blur(60px) saturate(150%)',
-            WebkitBackdropFilter: 'blur(60px) saturate(150%)',
-            boxShadow:
-              '0 4px 20px rgba(0, 0, 0, 0.30), 0 8px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-          }}
-        >
-          {categories.map((cat) => {
-            const isActive = cat.id === activeCategoryId
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  onSwitch(cat.id)
-                  setIsOpen(false)
-                }}
-                className={`w-full text-left px-3 py-2.5 transition-colors duration-150 ${
-                  isActive
-                    ? 'bg-[var(--accent-primary)]/10'
-                    : 'hover:bg-[var(--glass-bg-prominent)]'
-                }`}
-                style={{
-                  borderLeft: isActive
-                    ? '2px solid var(--accent-primary)'
-                    : '2px solid transparent',
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-sm font-medium truncate ${
-                      isActive
-                        ? 'text-[var(--accent-primary)]'
-                        : 'text-[var(--text-primary)]'
-                    }`}
-                  >
-                    {cat.name}
-                  </span>
-                  <span className="text-[10px] text-[var(--text-muted)] shrink-0">
-                    {cat.kitCount} kit{cat.kitCount !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {cat.description && (
-                  <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">
-                    {cat.description}
-                  </p>
-                )}
-                <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                  {formatDate(cat.updatedAt)}
-                </p>
-              </button>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }

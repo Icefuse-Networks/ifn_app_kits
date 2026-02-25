@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Edit3, FolderOpen, ArrowRight } from 'lucide-react'
-import { Dropdown } from '@/components/ui/Dropdown'
+import { Dropdown } from '@/components/global/Dropdown'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
