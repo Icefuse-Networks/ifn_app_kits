@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/Modal'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Loading } from '@/components/ui/Loading'
+import { GlassContainer } from '@/components/global/GlassContainer'
 
 interface SavedConfig {
   id: number
@@ -94,13 +95,13 @@ export function LoadModal({
           ) : (
             <div className="space-y-2">
               {filteredConfigs.map((config) => (
-                <div
+                <GlassContainer
                   key={config.id}
-                  className="rounded-lg p-4 transition-colors group hover:bg-[var(--bg-card-hover)]"
-                  style={{
-                    background: 'var(--glass-bg)',
-                    border: '1px solid var(--glass-border)',
-                  }}
+                  variant="default"
+                  padding="md"
+                  radius="sm"
+                  interactive
+                  className="group"
                 >
                   <div className="flex items-start justify-between">
                     <div
@@ -141,7 +142,7 @@ export function LoadModal({
                       />
                     </div>
                   </div>
-                </div>
+                </GlassContainer>
               ))}
             </div>
           )}

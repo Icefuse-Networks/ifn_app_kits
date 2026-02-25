@@ -10,6 +10,7 @@ import {
   ITEM_CATEGORIES,
   type RustItem,
 } from '@/lib/rust-items'
+import { GlassContainer } from '@/components/global/GlassContainer'
 
 // =============================================================================
 // Types
@@ -70,27 +71,28 @@ export function ItemBrowser({
   // Collapsed state - minimal icon strip
   if (collapsed) {
     return (
-      <aside
-        className="w-12 flex flex-col items-center py-3 shrink-0 cursor-pointer hover:bg-[var(--bg-card-hover)] transition-colors"
-        style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-        }}
+      <GlassContainer
+        as="aside"
+        variant="static"
+        features={{ hoverGlow: false, shadow: false }}
+        interactive
+        className="w-12 flex flex-col items-center py-3 shrink-0 !rounded-none"
+        style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
         onClick={onToggle}
         title="Open Item Browser"
       >
         <Package className="w-5 h-5 text-[var(--accent-primary)]" />
-      </aside>
+      </GlassContainer>
     )
   }
 
   return (
-    <aside
-      className="w-64 flex flex-col shrink-0"
-      style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-      }}
+    <GlassContainer
+      as="aside"
+      variant="static"
+      features={{ hoverGlow: false, shadow: false }}
+      className="w-64 flex flex-col shrink-0 !rounded-none"
+      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
     >
       {/* Header */}
       <div
@@ -214,6 +216,6 @@ export function ItemBrowser({
           </div>
         )}
       </div>
-    </aside>
+    </GlassContainer>
   )
 }

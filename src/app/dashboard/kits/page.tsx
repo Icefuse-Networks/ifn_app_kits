@@ -51,6 +51,7 @@ import {
   PerksModal,
 } from '@/components/kit-manager/modals'
 import type { PerksData } from '@/components/kit-manager/modals'
+import { GlassContainer } from '@/components/global/GlassContainer'
 import { Switch } from '@/components/ui/Switch'
 import type { Kit, KitItem, KitsData } from '@/types/kit'
 import {
@@ -1403,12 +1404,11 @@ export default function KitsPage() {
   // ---------------------------------------------------------------------------
 
   const renderHeader = () => (
-    <header
-      className="h-12 flex items-center justify-between px-3 shrink-0"
-      style={{
-        background: 'rgba(255, 255, 255, 0.04)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
-      }}
+    <GlassContainer
+      variant="elevated"
+      features={{ hoverGlow: false, shadow: false }}
+      className="h-12 flex items-center justify-between px-3 shrink-0 !rounded-none"
+      style={{ border: 'none', borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
     >
       {/* Left: Back + Title */}
       <div className="flex items-center gap-2.5">
@@ -1511,7 +1511,7 @@ export default function KitsPage() {
           <span>Save</span>
         </button>
       </div>
-    </header>
+    </GlassContainer>
   )
 
   // ---------------------------------------------------------------------------
@@ -1625,12 +1625,12 @@ export default function KitsPage() {
   // ---------------------------------------------------------------------------
 
   const renderKitSidebar = () => (
-    <aside
-      className={`${sidebarCollapsed ? 'w-12' : 'w-64'} shrink-0 flex flex-col transition-all duration-200`}
-      style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.10)',
-      }}
+    <GlassContainer
+      as="aside"
+      variant="static"
+      features={{ hoverGlow: false, shadow: false }}
+      className={`${sidebarCollapsed ? 'w-12' : 'w-64'} shrink-0 flex flex-col !rounded-none`}
+      style={{ border: 'none', borderRight: '1px solid rgba(255, 255, 255, 0.10)' }}
     >
       {sidebarCollapsed ? (
         <div className="flex flex-col items-center py-3 gap-3">
@@ -2053,7 +2053,7 @@ export default function KitsPage() {
           </div>
         </>
       )}
-    </aside>
+    </GlassContainer>
   )
 
   // ---------------------------------------------------------------------------
@@ -2109,12 +2109,11 @@ export default function KitsPage() {
     return (
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Kit Properties Bar */}
-        <div
-          className="px-4 py-2 flex flex-wrap items-center gap-2 shrink-0"
-          style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.10)',
-          }}
+        <GlassContainer
+          variant="elevated"
+          features={{ hoverGlow: false, shadow: false }}
+          className="px-4 py-2 flex flex-wrap items-center gap-2 shrink-0 !rounded-none overflow-visible"
+          style={{ border: 'none', borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
         >
           {/* Group: Core Settings */}
           <div className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
@@ -2312,12 +2311,14 @@ export default function KitsPage() {
             icon={<Paintbrush className="w-3 h-3" />}
             size="sm"
           />
-        </div>
+        </GlassContainer>
 
         {/* Inventory Grid */}
-        <div
-          className="flex-1 overflow-auto p-6"
-          style={{ background: 'rgba(255, 255, 255, 0.02)' }}
+        <GlassContainer
+          variant="subtle"
+          features={{ hoverGlow: false, shadow: false }}
+          className="flex-1 overflow-auto p-6 !rounded-none"
+          style={{ border: 'none' }}
         >
           <div className="flex justify-center">
             <RustInventory
@@ -2335,7 +2336,7 @@ export default function KitsPage() {
               onContextMenu={handleContextMenu}
             />
           </div>
-        </div>
+        </GlassContainer>
       </div>
     )
   }

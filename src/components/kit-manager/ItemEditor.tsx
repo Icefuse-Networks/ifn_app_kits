@@ -2,6 +2,7 @@
 
 import { X, Trash2, Package } from 'lucide-react'
 import { getItemImageUrl } from '@/lib/rust-items'
+import { GlassContainer } from '@/components/global/GlassContainer'
 import type { KitItem } from '@/types/kit'
 
 // =============================================================================
@@ -69,12 +70,12 @@ export function ItemEditor({
   onClose,
 }: ItemEditorProps) {
   return (
-    <aside
-      className="w-64 flex flex-col shrink-0"
-      style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-      }}
+    <GlassContainer
+      as="aside"
+      variant="static"
+      features={{ hoverGlow: false, shadow: false }}
+      className="w-64 flex flex-col shrink-0 !rounded-none"
+      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
     >
       {/* Header */}
       <div
@@ -216,7 +217,7 @@ export function ItemEditor({
           Remove Item
         </button>
       </div>
-    </aside>
+    </GlassContainer>
   )
 }
 
@@ -226,17 +227,17 @@ export function ItemEditor({
 
 export function ItemEditorEmpty() {
   return (
-    <aside
-      className="w-64 flex flex-col items-center justify-center shrink-0"
-      style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.10)',
-      }}
+    <GlassContainer
+      as="aside"
+      variant="static"
+      features={{ hoverGlow: false, shadow: false }}
+      className="w-64 flex flex-col items-center justify-center shrink-0 !rounded-none"
+      style={{ border: 'none', borderLeft: '1px solid rgba(255, 255, 255, 0.10)' }}
     >
       <Package className="w-10 h-10 mb-3 text-[var(--text-muted)] opacity-50" />
       <p className="text-sm text-[var(--text-muted)] text-center px-4">
         Select a kit to start editing
       </p>
-    </aside>
+    </GlassContainer>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Server, AlertCircle, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 import { MultiSelect } from '@/components/ui/MultiSelect'
+import { GlassContainer } from '@/components/global/GlassContainer'
 
 interface KitMapping {
   id: number
@@ -281,13 +282,12 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
           const isExpanded = expandedConfigs.has(config.id)
 
           return (
-            <div
+            <GlassContainer
               key={config.id}
-              className="mb-3 rounded-lg overflow-hidden"
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--glass-border)',
-              }}
+              variant="default"
+              radius="sm"
+              features={{ hoverGlow: false }}
+              className="mb-3"
             >
               {/* Config Header */}
               <button
@@ -348,7 +348,7 @@ export function ServerMappingsTab({ savedConfigs, onBack }: ServerMappingsTabPro
                   )}
                 </div>
               )}
-            </div>
+            </GlassContainer>
           )
         })}
       </div>

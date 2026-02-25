@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { InventorySlot, type ItemSlot } from './InventorySlot'
+import { GlassContainer } from '@/components/global/GlassContainer'
 import type { Kit, KitItem } from '@/types/kit'
 import {
   WEAR_SLOT_NAMES,
@@ -159,12 +160,13 @@ export function RustInventory({
   return (
     <div className="inline-flex gap-4 items-start">
       {/* Left: Clothing / Armor (8 slots, 2x4 with labels) */}
-      <section
-        className="rounded-xl p-4 self-start"
-        style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-        }}
+      <GlassContainer
+        as="section"
+        variant="prominent"
+        padding="md"
+        radius="md"
+        features={{ hoverGlow: false, shadow: false }}
+        className="self-start"
       >
         <header className="flex items-center gap-2 mb-3">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
@@ -196,17 +198,17 @@ export function RustInventory({
             </div>
           ))}
         </div>
-      </section>
+      </GlassContainer>
 
       {/* Right: Main Inventory + Belt */}
       <div className="flex flex-col gap-4">
         {/* Main Inventory (24 slots, 6x4) */}
-        <section
-          className="rounded-xl p-4"
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-          }}
+        <GlassContainer
+          as="section"
+          variant="prominent"
+          padding="md"
+          radius="md"
+          features={{ hoverGlow: false, shadow: false }}
         >
           <header className="flex items-center gap-2 mb-3">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
@@ -230,15 +232,15 @@ export function RustInventory({
               />
             ))}
           </div>
-        </section>
+        </GlassContainer>
 
         {/* Belt - Hotbar (6 slots) */}
-        <section
-          className="rounded-xl p-4"
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-          }}
+        <GlassContainer
+          as="section"
+          variant="prominent"
+          padding="md"
+          radius="md"
+          features={{ hoverGlow: false, shadow: false }}
         >
           <header className="flex items-center gap-2 mb-3">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
@@ -262,7 +264,7 @@ export function RustInventory({
               />
             ))}
           </div>
-        </section>
+        </GlassContainer>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Pencil, Trash2, ChevronDown, Server, AlertCircle } from 'lucide-react'
 import { MultiSelect } from '@/components/ui/MultiSelect'
+import { GlassContainer } from '@/components/global/GlassContainer'
 
 interface KitMapping {
   id: number
@@ -263,9 +264,13 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
             ) : (
               <div className="space-y-2">
                 {mappings.map((mapping) => (
-                  <div
+                  <GlassContainer
                     key={mapping.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                    variant="subtle"
+                    padding="sm"
+                    radius="sm"
+                    features={{ hoverGlow: false }}
+                    className="flex items-center justify-between"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -312,7 +317,7 @@ export function ServerMappingsModal({ onClose, savedConfigs }: ServerMappingsMod
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
+                  </GlassContainer>
                 ))}
               </div>
             )}
