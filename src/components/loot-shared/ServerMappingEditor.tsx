@@ -5,9 +5,10 @@ import { Plus, Trash2, Server, Link2, Clock, Pencil } from "lucide-react";
 import type { MappingRecord, ServerIdentifierRecord, SavedConfig } from "./types";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Dropdown, DropdownOption } from "@/components/global/Dropdown";
 import { Switch } from "@/components/ui/Switch";
 import { Modal } from "@/components/ui/Modal";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 const formatDuration = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
@@ -240,7 +241,7 @@ export default function ServerMappingEditor({
             ) : (
               <div className="space-y-2">
                 {selectedServerMappings.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                  <GlassContainer key={m.id} variant="default" radius="md" className="flex items-center gap-3 p-3" features={{ hoverGlow: false }}>
                     <Switch
                       checked={m.isLive}
                       onChange={() => handleToggleLive(m)}
@@ -272,7 +273,7 @@ export default function ServerMappingEditor({
                       size="sm"
                       className="text-[var(--text-muted)] hover:text-[var(--status-error)]"
                     />
-                  </div>
+                  </GlassContainer>
                 ))}
               </div>
             )}
@@ -281,7 +282,7 @@ export default function ServerMappingEditor({
             {selectedServerMappings.filter(m => m.isLive).length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Timeline Preview</h3>
-                <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
+                <GlassContainer variant="subtle" radius="md" className="p-4" features={{ hoverGlow: false }}>
                   <div className="relative pl-4 border-l-2 border-[var(--accent-primary)]/30 space-y-3">
                     {selectedServerMappings.filter(m => m.isLive).map((m) => (
                       <div key={m.id} className="relative">
@@ -293,7 +294,7 @@ export default function ServerMappingEditor({
                       </div>
                     ))}
                   </div>
-                </div>
+                </GlassContainer>
               </div>
             )}
           </div>

@@ -3,9 +3,10 @@ import { useState, useEffect, useMemo } from "react";
 import { ChevronRight, Plus } from "lucide-react";
 import { RustItem, fetchRustItems, getItemImageUrl, ITEM_CATEGORIES, searchItems, ItemCategory } from "@/lib/rust-items";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Dropdown, DropdownOption } from "@/components/global/Dropdown";
 import { IconButton } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 interface LootItemBrowserProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
   const iconColor = "text-[var(--accent-primary)]";
 
   return (
-    <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${isOpen ? "w-72" : "w-10"}`}>
+    <GlassContainer as="aside" variant="subtle" radius="sm" className={`flex flex-col border-l border-white/5 transition-all duration-300 !rounded-none ${isOpen ? "w-72" : "w-10"}`} features={{ hoverGlow: false }}>
       <IconButton
         icon={<ChevronRight className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
         onClick={onToggle}
@@ -101,6 +102,6 @@ export default function LootItemBrowser({ isOpen, onToggle, onAddItem, accentCol
           </div>
         </>
       )}
-    </div>
+    </GlassContainer>
   );
 }

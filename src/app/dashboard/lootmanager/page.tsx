@@ -8,7 +8,8 @@ import {
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { RustItem, fetchRustItems, getItemImageUrl, ITEM_CATEGORIES, searchItems, groupItemsByCategory, ItemCategory } from "@/lib/rust-items";
 import { CheckboxSwitch } from "@/components/ui/Switch";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 interface LootItem {
   "Item Shortname"?: string;
@@ -646,7 +647,7 @@ export default function LootManagerPage() {
 
   return (
     <div className="flex h-[calc(100vh-5rem)] bg-[var(--bg-root)] overflow-hidden">
-      <div className="w-72 flex flex-col bg-white/[0.02] border-r border-white/5">
+      <GlassContainer as="aside" variant="subtle" radius="sm" className="w-72 flex flex-col border-r border-white/5 !rounded-none" features={{ hoverGlow: false }}>
         <div className="p-4 border-b border-white/5">
           <div className="flex gap-1 mb-4 p-1 rounded-lg bg-white/5">
             <button
@@ -802,7 +803,7 @@ export default function LootManagerPage() {
             </div>
           </>
         )}
-      </div>
+      </GlassContainer>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "tables" && (
@@ -861,7 +862,7 @@ export default function LootManagerPage() {
               </div>
             ) : (
               <>
-                <div className="p-4 bg-white/[0.02] border-b border-white/5">
+                <GlassContainer variant="subtle" className="p-4 border-b border-white/5 !rounded-none" features={{ hoverGlow: false }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <h1 className="text-2xl font-bold text-white">{selectedContainer}</h1>
@@ -884,15 +885,15 @@ export default function LootManagerPage() {
                       { label: "Min Scrap", key: "Min Scrap" as const },
                       { label: "Max Scrap", key: "Max Scrap" as const },
                     ].map(({ label, key }) => (
-                      <div key={key} className="rounded-lg p-3 bg-white/[0.02] border border-white/5">
+                      <GlassContainer key={key} variant="subtle" radius="sm" className="p-3" features={{ hoverGlow: false }}>
                         <label className="block text-xs text-[var(--text-muted)] mb-1">{label}</label>
                         <input type="number" value={currentContainer?.[key] ?? 0} onChange={(e) => updateContainer(selectedContainer, { [key]: parseInt(e.target.value) || 0 })} className="w-full rounded px-3 py-2 text-white text-sm bg-white/[0.02] border border-white/5 focus:outline-none" />
-                      </div>
+                      </GlassContainer>
                     ))}
                   </div>
-                </div>
+                </GlassContainer>
 
-                <div className="px-4 py-3 flex items-center justify-between bg-white/[0.02] border-b border-white/5">
+                <GlassContainer variant="subtle" className="px-4 py-3 flex items-center justify-between border-b border-white/5 !rounded-none" features={{ hoverGlow: false }}>
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
@@ -905,7 +906,7 @@ export default function LootManagerPage() {
                     <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-colors ${viewMode === "list" ? "bg-[var(--accent-primary)] text-white" : "bg-white/5 text-[var(--text-muted)]"}`}><List className="h-4 w-4" /></button>
                     <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium bg-[var(--accent-primary)]"><Plus className="h-4 w-4" />Add Item</button>
                   </div>
-                </div>
+                </GlassContainer>
 
                 <div className="flex-1 overflow-y-auto p-4">
                   {filteredItems.length === 0 ? (
@@ -964,7 +965,7 @@ export default function LootManagerPage() {
                         <p className="text-xs text-[var(--text-muted)]">Enable/disable tables without removing them from rotation</p>
                       </div>
                     </div>
-                    <div className="rounded-xl bg-white/[0.02] border border-white/5 p-5">
+                    <GlassContainer variant="subtle" radius="md" className="p-5" features={{ hoverGlow: false }}>
                       <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-4 flex items-center gap-2">
                         <Clock className="h-4 w-4 text-[var(--accent-primary)]" />Example Rotation Schedule
                       </h4>
@@ -982,7 +983,7 @@ export default function LootManagerPage() {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </GlassContainer>
                     <p className="text-center text-[var(--text-tertiary)] text-sm mt-6">Select a server from the sidebar to configure its rotation</p>
                   </div>
                 </div>
@@ -1031,7 +1032,7 @@ export default function LootManagerPage() {
                   <div className="flex-1 overflow-y-auto">
                     <div className="p-4">
                       {serverMappings.length === 0 ? (
-                        <div className="text-center py-16 rounded-xl bg-white/[0.01] border border-dashed border-white/10">
+                        <GlassContainer variant="subtle" radius="md" className="text-center py-16 border border-dashed border-white/10" features={{ hoverGlow: false }}>
                           <div className="p-4 rounded-full bg-[var(--accent-primary)]/10 w-fit mx-auto mb-4">
                             <Link2 className="h-8 w-8 text-[var(--accent-primary)]" />
                           </div>
@@ -1044,7 +1045,7 @@ export default function LootManagerPage() {
                           >
                             <Plus className="h-4 w-4" />Add First Table
                           </button>
-                        </div>
+                        </GlassContainer>
                       ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div>
@@ -1105,7 +1106,7 @@ export default function LootManagerPage() {
 
                           <div>
                             <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">Timeline Preview</h3>
-                            <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4">
+                            <GlassContainer variant="subtle" radius="md" className="p-4" features={{ hoverGlow: false }}>
                               <div className="relative pl-4 border-l-2 border-[var(--accent-primary)]/30 space-y-3">
                                 {serverMappings.filter(m => m.isLive).map((m, i) => (
                                   <div key={m.id} className="relative">
@@ -1120,7 +1121,7 @@ export default function LootManagerPage() {
                                   <div className="text-sm text-[var(--text-tertiary)] italic">No active tables in rotation</div>
                                 )}
                               </div>
-                            </div>
+                            </GlassContainer>
                           </div>
                         </div>
                       )}
@@ -1134,7 +1135,7 @@ export default function LootManagerPage() {
       </div>
 
       {activeTab === "tables" && selectedContainer && (
-        <div className={`flex flex-col bg-white/[0.02] border-l border-white/5 transition-all duration-300 ${showItemBrowser ? "w-72" : "w-10"}`}>
+        <GlassContainer as="aside" variant="subtle" radius="sm" className={`flex flex-col border-l border-white/5 transition-all duration-300 !rounded-none ${showItemBrowser ? "w-72" : "w-10"}`} features={{ hoverGlow: false }}>
           <button
             onClick={() => setShowItemBrowser(!showItemBrowser)}
             className="p-2 text-[var(--text-muted)] hover:text-white border-b border-white/5 flex items-center justify-center"
@@ -1204,7 +1205,7 @@ export default function LootManagerPage() {
               </div>
             </>
           )}
-        </div>
+        </GlassContainer>
       )}
 
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
@@ -1315,7 +1316,7 @@ export default function LootManagerPage() {
                     </button>
                   </div>
                   {unstagedConfigs.map((config) => (
-                    <div key={config.id} className="bg-white/5 rounded-lg border border-white/10 p-4">
+                    <GlassContainer key={config.id} variant="prominent" radius="sm" className="p-4" features={{ hoverGlow: false }}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <h4 className="text-white font-medium truncate">{config.name}</h4>
@@ -1325,7 +1326,7 @@ export default function LootManagerPage() {
                           <CloudUpload className="h-4 w-4" />Publish
                         </button>
                       </div>
-                    </div>
+                    </GlassContainer>
                   ))}
                 </>
               )}
@@ -1346,7 +1347,7 @@ export default function LootManagerPage() {
                 <div className="text-center py-12 text-[var(--text-muted)]"><FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No saved configs yet</p></div>
               ) : (
                 savedConfigs.map((config) => (
-                  <div key={config.id} className="bg-white/5 rounded-lg border border-white/10 p-4 hover:border-white/20 transition-colors group">
+                  <GlassContainer key={config.id} variant="prominent" interactive radius="sm" className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadConfig(config)}>
                         <div className="flex items-center gap-2">
@@ -1363,7 +1364,7 @@ export default function LootManagerPage() {
                         <button onClick={() => handleDeleteConfig(config.id)} className="p-2 bg-[var(--status-error)]/20 hover:bg-[var(--status-error)]/30 rounded-lg text-[var(--status-error)] transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
-                  </div>
+                  </GlassContainer>
                 ))
               )}
             </div>
@@ -1489,7 +1490,7 @@ export default function LootManagerPage() {
                 <div className="text-center py-12 text-[var(--text-muted)]"><History className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No version history</p></div>
               ) : (
                 versions.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                  <GlassContainer key={v.id} variant="prominent" radius="sm" className="flex items-center justify-between p-3" features={{ hoverGlow: false }}>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-medium ${v.version === currentConfigVersion ? "text-[var(--accent-primary)]" : "text-white"}`}>
                         v{v.version}
@@ -1506,7 +1507,7 @@ export default function LootManagerPage() {
                         <RotateCcw className="h-3.5 w-3.5" />Restore
                       </button>
                     )}
-                  </div>
+                  </GlassContainer>
                 ))
               )}
             </div>
@@ -1535,7 +1536,7 @@ function Modal({ children, onClose, title, wide = false }: { children: React.Rea
 function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: LootItem; index: number; containerName: string; onUpdate: (c: string, i: number, u: Partial<LootItem>) => void; onRemove: (c: string, i: number) => void }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="anim-fade-scale rounded-xl overflow-hidden bg-white/[0.02] border border-white/5">
+    <GlassContainer variant="subtle" radius="md" className="anim-fade-scale" features={{ hoverGlow: false }}>
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-12 h-12 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -1568,13 +1569,13 @@ function ItemCard({ item, index, containerName, onUpdate, onRemove }: { item: Lo
             </div>
           )}
       </div>
-    </div>
+    </GlassContainer>
   );
 }
 
 function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item: LootItem; index: number; containerName: string; onUpdate: (c: string, i: number, u: Partial<LootItem>) => void; onRemove: (c: string, i: number) => void }) {
   return (
-    <div className="rounded-lg p-3 flex items-center gap-4 bg-white/[0.02] border border-white/5">
+    <GlassContainer variant="subtle" radius="sm" className="p-3 flex items-center gap-4" features={{ hoverGlow: false }}>
       <img src={getItemImageUrl(getItemShortname(item))} alt={getItemShortname(item)} referrerPolicy="no-referrer" className="w-10 h-10 object-contain rounded-lg p-1 bg-black/30" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       <div className="flex-1 min-w-0"><span className="text-sm font-medium text-white truncate block">{getItemShortname(item)}</span></div>
       <div className="flex items-center gap-3">
@@ -1587,6 +1588,6 @@ function ItemListRow({ item, index, containerName, onUpdate, onRemove }: { item:
         <CheckboxSwitch checked={item["Is Blueprint"]} onChange={(checked) => onUpdate(containerName, index, { "Is Blueprint": checked })} label="BP" />
         <button onClick={() => onRemove(containerName, index)} className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors"><Trash2 className="h-4 w-4" /></button>
       </div>
-    </div>
+    </GlassContainer>
   );
 }

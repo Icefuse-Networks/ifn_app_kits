@@ -7,6 +7,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { Button, IconButton, ButtonGroup } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CheckboxSwitch } from "@/components/ui/Switch";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 interface LootTableEditorProps {
   tableName: string;
@@ -80,7 +81,7 @@ export default function LootTableEditor({
       </div>
 
       {/* Table settings */}
-      <div className="shrink-0 flex items-center gap-4 px-4 py-2 border-b border-white/5 bg-white/[0.01]">
+      <GlassContainer variant="subtle" className="shrink-0 flex items-center gap-4 px-4 py-2 border-b border-white/5 !rounded-none" features={{ hoverGlow: false }}>
         {minItems !== undefined && maxItems !== undefined && onUpdateTableSettings && (
           <>
             <Input
@@ -112,7 +113,7 @@ export default function LootTableEditor({
         >
           Add Item
         </Button>
-      </div>
+      </GlassContainer>
 
       {/* Items */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -163,7 +164,7 @@ export default function LootTableEditor({
 
       {/* Add item inline */}
       {showAddItem && (
-        <div className="shrink-0 border-t border-white/5 p-3 bg-white/[0.02]">
+        <GlassContainer variant="subtle" className="shrink-0 border-t border-white/5 p-3 !rounded-none" features={{ hoverGlow: false }}>
           <div className="flex items-center gap-2">
             <Input
               type="text"
@@ -203,7 +204,7 @@ export default function LootTableEditor({
               Cancel
             </Button>
           </div>
-        </div>
+        </GlassContainer>
       )}
     </div>
   );
@@ -223,7 +224,7 @@ function ItemCard({
   extraFields: ExtraFieldDef[];
 }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors p-3">
+    <GlassContainer variant="default" radius="md" className="p-3">
       <div className="flex items-start gap-3 mb-3">
         <img
           src={getItemImageUrl(item.shortname)}
@@ -294,7 +295,7 @@ function ItemCard({
           </div>
         ))}
       </div>
-    </div>
+    </GlassContainer>
   );
 }
 

@@ -7,6 +7,7 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Loading } from "@/components/ui/Loading";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 interface ConfigManagerProps {
   apiBasePath: string;
@@ -115,7 +116,7 @@ export default function ConfigManager({
     <>
       {/* Current config info */}
       {currentConfigId && (
-        <div className="px-3 py-2 border-t border-white/5 bg-white/[0.02]">
+        <GlassContainer variant="subtle" className="px-3 py-2 border-t border-white/5 !rounded-none" features={{ hoverGlow: false }}>
           <div className="flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 text-[var(--text-muted)]" />
             <span className="text-xs text-white font-medium truncate">{currentConfigName}</span>
@@ -128,7 +129,7 @@ export default function ConfigManager({
               </span>
             )}
           </div>
-        </div>
+        </GlassContainer>
       )}
 
       {/* Action buttons */}
@@ -253,7 +254,7 @@ export default function ConfigManager({
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {savedConfigs.map((config) => (
-              <div key={config.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors">
+              <GlassContainer key={config.id} variant="default" interactive radius="sm" className="flex items-center gap-3 p-3">
                 <button onClick={() => { onLoad(config); setShowLoadModal(false); }} className="flex-1 text-left min-w-0">
                   <p className="text-sm font-medium text-white truncate">{config.name}</p>
                   <p className="text-xs text-[var(--text-muted)]">v{config.currentVersion} {config.publishedVersion !== null && `(pub v${config.publishedVersion})`}</p>
@@ -265,7 +266,7 @@ export default function ConfigManager({
                   size="sm"
                   className="text-[var(--text-muted)] hover:text-[var(--status-error)]"
                 />
-              </div>
+              </GlassContainer>
             ))}
           </div>
         )}
@@ -285,7 +286,7 @@ export default function ConfigManager({
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {versions.map((v) => (
-              <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5">
+              <GlassContainer key={v.id} variant="default" radius="sm" className="flex items-center gap-3 p-3" features={{ hoverGlow: false }}>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white">Version {v.version}</p>
                   <p className="text-xs text-[var(--text-muted)]">{new Date(v.createdAt).toLocaleString()}</p>
@@ -302,7 +303,7 @@ export default function ConfigManager({
                     Restore
                   </Button>
                 )}
-              </div>
+              </GlassContainer>
             ))}
           </div>
         )}
@@ -322,7 +323,7 @@ export default function ConfigManager({
       >
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {unstagedConfigs.map((config) => (
-            <div key={config.id} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5">
+            <GlassContainer key={config.id} variant="default" radius="sm" className="flex items-center gap-3 p-3" features={{ hoverGlow: false }}>
               <div className="flex-1">
                 <p className="text-sm font-medium text-white">{config.name}</p>
                 <p className="text-xs text-[var(--text-muted)]">v{config.currentVersion} (published: {config.publishedVersion ?? "never"})</p>
@@ -335,7 +336,7 @@ export default function ConfigManager({
               >
                 Publish
               </Button>
-            </div>
+            </GlassContainer>
           ))}
         </div>
       </Modal>
