@@ -152,7 +152,7 @@ export function CheckboxSwitch({
       ? `bg-${pillColor}/20 border-${pillColor} text-${pillColor.replace('-500', '-300')}`
       : 'bg-[var(--accent-primary)]/20 border-[var(--accent-primary)] text-[var(--accent-primary)]'
 
-    const inactiveClass = 'bg-white/5 border-white/10 text-zinc-400'
+    const inactiveClass = 'bg-white/5 border-white/10 text-[var(--text-muted)]'
 
     return (
       <label

@@ -17,7 +17,7 @@ export function ChartCard({
   children,
   className = "",
   delay = 0,
-  iconColor = "text-purple-400",
+  iconColor = "text-[var(--accent-primary)]",
 }: ChartCardProps) {
   return (
     <div

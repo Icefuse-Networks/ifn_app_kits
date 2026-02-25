@@ -19,7 +19,7 @@ export function EChartWrapper({
   if (!option) {
     return (
       <div
-        className={`flex items-center justify-center text-zinc-500 ${className}`}
+        className={`flex items-center justify-center text-[var(--text-muted)] ${className}`}
         style={{ height }}
       >
         {emptyMessage}

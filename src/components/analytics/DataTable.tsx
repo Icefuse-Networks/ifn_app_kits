@@ -34,7 +34,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-zinc-500">
+      <div className="text-center py-12 text-[var(--text-muted)]">
         {emptyIcon && <div className="mb-3">{emptyIcon}</div>}
         <p>{emptyMessage}</p>
       </div>
@@ -49,7 +49,7 @@ export function DataTable<T>({
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className={`px-4 py-3 text-xs font-semibold text-zinc-400 uppercase ${
+                className={`px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase ${
                   col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
                 } ${col.headerClassName || ""}`}
               >
@@ -120,7 +120,7 @@ export function ShareBar({ value, total, colorIndex = 0, colors = DEFAULT_COLORS
           style={{ width: `${share}%`, background: `linear-gradient(90deg, ${color1}, ${color2})` }}
         />
       </div>
-      <span className="text-xs text-zinc-400 w-12">{share.toFixed(1)}%</span>
+      <span className="text-xs text-[var(--text-muted)] w-12">{share.toFixed(1)}%</span>
     </div>
   );
 }
@@ -131,13 +131,13 @@ interface RankBadgeProps {
 
 export function RankBadge({ rank }: RankBadgeProps) {
   if (rank > 3) {
-    return <span className="text-zinc-500 pl-2">{rank}</span>;
+    return <span className="text-[var(--text-muted)] pl-2">{rank}</span>;
   }
 
   const colors = {
-    1: "bg-yellow-500/20 text-yellow-400",
-    2: "bg-gray-400/20 text-gray-300",
-    3: "bg-orange-500/20 text-orange-400",
+    1: "bg-[var(--color-medal-gold)]/20 text-[var(--color-medal-gold)]",
+    2: "bg-[var(--color-medal-silver)]/20 text-[var(--color-medal-silver)]",
+    3: "bg-[var(--color-medal-bronze)]/20 text-[var(--color-medal-bronze)]",
   };
 
   return (

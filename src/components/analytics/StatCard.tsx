@@ -16,8 +16,8 @@ export function StatCard({
   label,
   value,
   icon: Icon,
-  iconColor = "text-purple-400",
-  iconBgColor = "bg-purple-500/20",
+  iconColor = "text-[var(--accent-primary)]",
+  iconBgColor = "bg-[var(--accent-primary)]/20",
   subtitle,
   delay = 0,
 }: StatCardProps) {
@@ -28,11 +28,11 @@ export function StatCard({
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-zinc-500 text-sm font-medium mb-1">{label}</p>
+          <p className="text-[var(--text-muted)] text-sm font-medium mb-1">{label}</p>
           <p className="text-2xl font-bold text-white mb-1">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
-          {subtitle && <p className="text-xs text-purple-400">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-[var(--accent-primary)]">{subtitle}</p>}
         </div>
         {Icon && (
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconBgColor}`}>

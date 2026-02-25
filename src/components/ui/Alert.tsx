@@ -33,9 +33,9 @@ export function Alert({
   const variantConfig = {
     info: {
       icon: <Info className="w-5 h-5" />,
-      background: 'rgba(59, 130, 246, 0.1)',
-      border: '1px solid rgb(59, 130, 246)',
-      color: 'rgb(59, 130, 246)',
+      background: 'rgba(var(--status-info-rgb), 0.1)',
+      border: '1px solid var(--status-info)',
+      color: 'var(--status-info)',
       textColor: 'var(--text-primary)',
     },
     success: {

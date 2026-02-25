@@ -23,11 +23,11 @@ export function HeatMap({ data, maxValue, showLabels = true }: HeatMapProps) {
 
     const intensity = Math.min(value / calculatedMax, 1)
 
-    // Use cyan accent with varying opacity
-    if (intensity < 0.25) return 'rgba(0, 213, 255, 0.2)'
-    if (intensity < 0.5) return 'rgba(0, 213, 255, 0.4)'
-    if (intensity < 0.75) return 'rgba(0, 213, 255, 0.6)'
-    return 'rgba(0, 213, 255, 0.9)'
+    // Use themed accent with varying opacity
+    if (intensity < 0.25) return 'rgba(var(--status-info-rgb), 0.2)'
+    if (intensity < 0.5) return 'rgba(var(--status-info-rgb), 0.4)'
+    if (intensity < 0.75) return 'rgba(var(--status-info-rgb), 0.6)'
+    return 'rgba(var(--status-info-rgb), 0.9)'
   }
 
   if (!data || data.length !== 7) {
@@ -91,19 +91,19 @@ export function HeatMap({ data, maxValue, showLabels = true }: HeatMapProps) {
           />
           <div
             className="w-3 h-3 rounded-[2px]"
-            style={{ background: 'rgba(0, 213, 255, 0.2)' }}
+            style={{ background: 'rgba(var(--status-info-rgb), 0.2)' }}
           />
           <div
             className="w-3 h-3 rounded-[2px]"
-            style={{ background: 'rgba(0, 213, 255, 0.4)' }}
+            style={{ background: 'rgba(var(--status-info-rgb), 0.4)' }}
           />
           <div
             className="w-3 h-3 rounded-[2px]"
-            style={{ background: 'rgba(0, 213, 255, 0.6)' }}
+            style={{ background: 'rgba(var(--status-info-rgb), 0.6)' }}
           />
           <div
             className="w-3 h-3 rounded-[2px]"
-            style={{ background: 'rgba(0, 213, 255, 0.9)' }}
+            style={{ background: 'rgba(var(--status-info-rgb), 0.9)' }}
           />
         </div>
         <span>More</span>
