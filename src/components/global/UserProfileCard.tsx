@@ -43,6 +43,7 @@ import {
   BarChart2,
 } from 'lucide-react'
 import { accountRoutes } from '@/config/routes'
+import { GlassContainer } from '@/components/global/GlassContainer'
 
 // ============================================================================
 // Types
@@ -390,25 +391,24 @@ export function UserProfileCard({
 
       {/* Dropdown Menu */}
       {isOpen && typeof document !== 'undefined' && createPortal(
-        <div
+        <GlassContainer
           ref={menuRef}
-          className="rounded-xl overflow-hidden"
+          variant="elevated"
+          padding="none"
+          radius="lg"
+          features={{ shadow: true, hoverGlow: false }}
+          className="overflow-hidden"
           style={{
             position: 'fixed',
             top: menuPosition.top,
             left: menuPosition.left,
             width: 240,
             zIndex: 9999,
-            background: 'linear-gradient(145deg, rgba(20, 35, 60, 0.95) 0%, rgba(15, 28, 50, 0.97) 50%, rgba(12, 22, 42, 0.98) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.20)',
-            backdropFilter: 'blur(60px) saturate(150%)',
-            WebkitBackdropFilter: 'blur(60px) saturate(150%)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.30), 0 8px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
           }}
         >
           {/* User Info Header */}
           {showHeader && (
-            <div className="p-3" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}>
+            <div className="p-3" style={{ borderBottom: '1px solid var(--glass-border)' }}>
               <p className="font-medium text-white">{displayName}</p>
               {showHeaderEmail && displayEmail && (
                 <p className="text-sm text-[var(--text-tertiary)]">{displayEmail}</p>
@@ -426,7 +426,7 @@ export function UserProfileCard({
                 return (
                   <div
                     key={item.id}
-                    style={{ borderTop: '1px solid rgba(255, 255, 255, 0.10)' }}
+                    style={{ borderTop: '1px solid var(--glass-border)' }}
                   />
                 )
               }
@@ -450,7 +450,7 @@ export function UserProfileCard({
               return (
                 <div key={item.id}>
                   {needsDivider && (
-                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.10)' }} />
+                    <div style={{ borderTop: '1px solid var(--glass-border)' }} />
                   )}
                   {item.href ? (
                     <Link href={item.href} {...linkProps}>
@@ -469,7 +469,7 @@ export function UserProfileCard({
           </div>
 
           {/* Sign Out */}
-          <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.10)' }}>
+          <div style={{ borderTop: '1px solid var(--glass-border)' }}>
             <button
               onClick={handleSignOut}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 text-[var(--status-error)] hover:bg-[var(--status-error)]/15"
@@ -478,7 +478,7 @@ export function UserProfileCard({
               <span>Sign Out</span>
             </button>
           </div>
-        </div>,
+        </GlassContainer>,
         document.body
       )}
     </div>

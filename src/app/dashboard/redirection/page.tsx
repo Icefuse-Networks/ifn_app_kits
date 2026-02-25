@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input, NumberInput } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
+import { Dropdown, DropdownOption } from "@/components/global/Dropdown";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
@@ -21,6 +21,7 @@ import { PieChart } from "@/components/analytics/PieChart";
 import { TimeSeriesChart } from "@/components/analytics/TimeSeriesChart";
 import { BarChart } from "@/components/analytics/BarChart";
 import { ChartCard } from "@/components/analytics/ChartCard";
+import { GlassContainer } from "@/components/global/GlassContainer";
 
 interface RedirectConfig {
   id?: string;
@@ -151,7 +152,7 @@ function StatCard({ label, value, icon: Icon, subtitle, color = "purple" }: {
   const colors = colorClasses[color] || colorClasses.purple;
 
   return (
-    <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4">
+    <GlassContainer variant="static" padding="md" radius="md">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${colors.bg}`}>
           <Icon className={`h-5 w-5 ${colors.icon}`} />
@@ -162,7 +163,7 @@ function StatCard({ label, value, icon: Icon, subtitle, color = "purple" }: {
           {subtitle && <p className="text-xs text-[var(--text-muted)]">{subtitle}</p>}
         </div>
       </div>
-    </div>
+    </GlassContainer>
   );
 }
 
@@ -581,7 +582,7 @@ export default function RedirectionPage() {
               key="settings"
               className="anim-fade-slide-up space-y-6"
             >
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Shield className="h-5 w-5 text-[var(--status-warning)]" />
                   AFK Redirect
@@ -630,9 +631,9 @@ export default function RedirectionPage() {
                     />
                   </div>
                 </div>
-              </div>
+              </GlassContainer>
 
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Users className="h-5 w-5 text-[var(--accent-primary)]" />
                   Population Thresholds
@@ -653,9 +654,9 @@ export default function RedirectionPage() {
                     onChange={(v) => setConfig({ ...config, maxPlayersForEmptyServer: v })}
                   />
                 </div>
-              </div>
+              </GlassContainer>
 
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-[var(--status-error)]" />
                   Wipe Redirect
@@ -809,9 +810,9 @@ export default function RedirectionPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </GlassContainer>
 
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Server className="h-5 w-5 text-[var(--status-success)]" />
                   Target Server Selection
@@ -872,9 +873,9 @@ export default function RedirectionPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </GlassContainer>
 
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <Zap className="h-5 w-5 text-[var(--status-warning)]" />
                   Global Settings
@@ -890,7 +891,7 @@ export default function RedirectionPage() {
                     step="0.1"
                   />
                 </div>
-              </div>
+              </GlassContainer>
 
               <div className="flex justify-end">
                 <Button
@@ -920,7 +921,7 @@ export default function RedirectionPage() {
                 <StatCard label="Avg AFK Time" value={formatTime(stats.avgAfkTime)} icon={Clock} color="green" />
               </div>
 
-              <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+              <GlassContainer variant="static" padding="lg" radius="md">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Activity className="h-5 w-5 text-[var(--accent-primary)]" />
@@ -1103,7 +1104,7 @@ export default function RedirectionPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </GlassContainer>
             </div>
           )}
 
@@ -1246,7 +1247,7 @@ export default function RedirectionPage() {
 
                   {/* Per-server table */}
                   {analyticsData.byServer.length > 0 && (
-                    <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
+                    <GlassContainer variant="static" padding="lg" radius="md">
                       <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                         <Server className="h-5 w-5 text-[var(--accent-primary)]" />
                         Per-Server Breakdown
@@ -1289,7 +1290,7 @@ export default function RedirectionPage() {
                           </tbody>
                         </table>
                       </div>
-                    </div>
+                    </GlassContainer>
                   )}
                 </>
               )}

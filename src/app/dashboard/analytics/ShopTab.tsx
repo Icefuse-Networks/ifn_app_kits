@@ -8,7 +8,8 @@ import {
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, ShareBar, RankBadge, Column,
 } from "@/components/analytics";
-import { ConfirmModal, Button, SearchInput, Tabs, Loading, EmptyState, Alert, Dropdown } from "@/components/ui";
+import { ConfirmModal, Button, SearchInput, Tabs, Loading, EmptyState, Alert } from "@/components/ui";
+import { Dropdown } from "@/components/global/Dropdown";
 
 interface ShopPurchase {
   timestamp: string; server_name: string; player_name: string; steamid64: string;

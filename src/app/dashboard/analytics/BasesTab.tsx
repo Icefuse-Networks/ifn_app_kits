@@ -8,7 +8,7 @@ import {
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, RankBadge, Column,
 } from "@/components/analytics";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Tabs } from "@/components/ui/Tabs";

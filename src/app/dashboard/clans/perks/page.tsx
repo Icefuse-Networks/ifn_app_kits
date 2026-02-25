@@ -23,7 +23,7 @@ import {
 import Link from 'next/link'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Textarea, NumberInput } from '@/components/ui/Input'
-import { Dropdown } from '@/components/ui/Dropdown'
+import { Dropdown } from '@/components/global/Dropdown'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Loading } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'

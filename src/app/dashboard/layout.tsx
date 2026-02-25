@@ -12,6 +12,7 @@ import { auth } from '@/lib/icefuse-auth'
 import { requireAdmin } from '@icefuse/auth'
 import { Header } from '@/components/global/Header'
 import { Footer } from '@/components/global/Footer'
+import { PageBackground } from '@/components/global/PageBackground'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import Sidebar from './Sidebar'
 import DashboardContent from './DashboardContent'
@@ -36,12 +37,12 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="portal-root">
+      <PageBackground className="portal-root">
         <Header />
         <Sidebar />
         <DashboardContent>{children}</DashboardContent>
         <Footer />
-      </div>
+      </PageBackground>
     </SidebarProvider>
   )
 }

@@ -9,7 +9,7 @@ import {
 } from "@/components/analytics";
 import { EChartWrapper } from "@/components/analytics/EChartWrapper";
 import type { EChartsOption } from "echarts";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
 import { Button } from "@/components/ui/Button";
 import { Tabs } from "@/components/ui/Tabs";
 import { Loading } from "@/components/ui/Loading";

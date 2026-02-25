@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
-  ArrowLeft, MessageCircle, RefreshCw, ChevronUp, ChevronDown, Check,
+  ArrowLeft, MessageCircle, RefreshCw, ChevronUp, ChevronDown,
   Clock, Server,
   Inbox, CheckCircle2, XCircle, Bug, MessageSquare,
-  DollarSign, Layers, Trash2, EyeOff, Eye
+  DollarSign, Trash2, EyeOff, Eye
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/Button"
@@ -15,6 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { Alert } from "@/components/ui/Alert"
 import { NumberInput } from "@/components/ui/Input"
 import { SimplePagination } from "@/components/ui/Pagination"
+import { GlassContainer } from "@/components/global/GlassContainer"
+import { Dropdown } from "@/components/global/Dropdown"
 
 interface FeedbackItem {
   id: string
@@ -79,7 +81,7 @@ export default function FeedbackPage() {
   const [feedbackList, setFeedbackList] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
   const [servers, setServers] = useState<ServerIdentifier[]>([])
-  const [selectedServer, setSelectedServer] = useState<string>("__all__")
+  const [selectedServer, setSelectedServer] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
@@ -89,8 +91,6 @@ export default function FeedbackPage() {
   const [rewardAmounts, setRewardAmounts] = useState<Record<string, number>>({})
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
-  const [serverDropdownOpen, setServerDropdownOpen] = useState(false)
-  const serverDropdownRef = useRef<HTMLDivElement>(null)
   const [showDenied, setShowDenied] = useState(false)
 
   const limit = 20
@@ -102,25 +102,6 @@ export default function FeedbackPage() {
     accepted: feedbackList.filter(f => f.status === "accepted").length,
     denied: feedbackList.filter(f => f.status === "denied").length,
   }
-
-  // Close server dropdown on outside click / escape
-  useEffect(() => {
-    if (!serverDropdownOpen) return
-    const handleClick = (e: MouseEvent) => {
-      if (serverDropdownRef.current && !serverDropdownRef.current.contains(e.target as Node)) {
-        setServerDropdownOpen(false)
-      }
-    }
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setServerDropdownOpen(false)
-    }
-    document.addEventListener("mousedown", handleClick)
-    document.addEventListener("keydown", handleEscape)
-    return () => {
-      document.removeEventListener("mousedown", handleClick)
-      document.removeEventListener("keydown", handleEscape)
-    }
-  }, [serverDropdownOpen])
 
   const fetchServers = useCallback(async () => {
     try {
@@ -135,7 +116,7 @@ export default function FeedbackPage() {
     }
   }, [])
 
-  const isAllServers = selectedServer === "__all__"
+  const isAllServers = selectedServer === null
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -280,14 +261,17 @@ export default function FeedbackPage() {
     const currentReward = rewardAmounts[item.id] ?? 1000
 
     return (
-      <div
+      <GlassContainer
         key={item.id}
-        className={`anim-stagger-item rounded-xl bg-[var(--glass-bg)] border transition-all duration-200 hover:shadow-lg hover:shadow-black/10 ${
-          isPending
-            ? "border-[var(--status-warning)]/20 hover:border-[var(--status-warning)]/40"
-            : "border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]"
-        }`}
-        style={{ animationDelay: `${idx * 30}ms` }}
+        variant={isPending ? "default" : "static"}
+        padding="none"
+        radius="md"
+        className="anim-stagger-item"
+        style={{
+          animationDelay: `${idx * 30}ms`,
+          ...(isPending ? { borderColor: 'rgba(245, 158, 11, 0.2)' } : {}),
+        }}
+        features={{ hoverGlow: isPending, shadow: false }}
       >
         <div
           className="flex items-center gap-4 p-4 cursor-pointer"
@@ -409,7 +393,7 @@ export default function FeedbackPage() {
               </div>
             </div>
           )}
-      </div>
+      </GlassContainer>
     )
   }
 
@@ -422,8 +406,10 @@ export default function FeedbackPage() {
       <div className="anim-fade-slide-up">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2.5 rounded-xl transition-all hover:scale-105 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)]">
-            <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+          <Link href="/dashboard">
+            <GlassContainer variant="default" padding="none" radius="md" interactive className="p-2.5" features={{ hoverGlow: true, hoverLift: false }}>
+              <ArrowLeft className="w-5 h-5 text-[var(--text-secondary)]" />
+            </GlassContainer>
           </Link>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
@@ -435,78 +421,19 @@ export default function FeedbackPage() {
             <p className="text-[var(--text-muted)] text-sm ml-[52px]">Review player feedback and bug reports</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative" ref={serverDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setServerDropdownOpen(!serverDropdownOpen)}
-                className="flex items-center gap-2 pl-3 pr-8 py-2 rounded-xl text-sm font-medium bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-[var(--glass-border-prominent)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors cursor-pointer min-w-[180px]"
-              >
-                {isAllServers ? (
-                  <Layers className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
-                ) : (
-                  <Server className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
-                )}
-                <span className="truncate">
-                  {isAllServers
-                    ? "All Servers"
-                    : servers.find(s => s.hashedId === selectedServer)?.name || "Select server"}
-                </span>
-                <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${serverDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
-              {serverDropdownOpen && (
-                <div
-                  className="absolute right-0 top-full z-[9999] mt-1 min-w-full w-max rounded-xl overflow-hidden"
-                  style={{
-                    background: "linear-gradient(145deg, rgba(20, 35, 60, 0.95) 0%, rgba(15, 28, 50, 0.97) 50%, rgba(12, 22, 42, 0.98) 100%)",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    backdropFilter: "blur(60px) saturate(150%)",
-                    WebkitBackdropFilter: "blur(60px) saturate(150%)",
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.30), 0 8px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                  }}
-                >
-                  <div className="py-1 max-h-[300px] overflow-y-auto">
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedServer("__all__"); setServerDropdownOpen(false) }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
-                        isAllServers
-                          ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]"
-                          : "text-[var(--text-secondary)] hover:bg-white/5"
-                      }`}
-                    >
-                      <Layers className="w-4 h-4 shrink-0" />
-                      <span className="flex-1">All Servers</span>
-                      {isAllServers && <Check className="w-4 h-4 shrink-0" />}
-                    </button>
-                    {servers.length > 0 && (
-                      <div className="mx-3 my-1 border-t border-white/10" />
-                    )}
-                    {servers.map((s) => {
-                      const isSelected = selectedServer === s.hashedId
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => { setSelectedServer(s.hashedId); setServerDropdownOpen(false) }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
-                            isSelected
-                              ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]"
-                              : "text-[var(--text-secondary)] hover:bg-white/5"
-                          }`}
-                        >
-                          <Server className="w-4 h-4 shrink-0" />
-                          <span className="flex-1 truncate">{s.name}</span>
-                          {isSelected && <Check className="w-4 h-4 shrink-0" />}
-                        </button>
-                      )
-                    })}
-                    {servers.length === 0 && (
-                      <p className="px-3 py-2 text-xs text-[var(--text-muted)] italic">No servers available</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <Dropdown
+              options={servers.map((s) => ({
+                value: s.hashedId,
+                label: s.name,
+                icon: <Server className="w-4 h-4" />,
+              }))}
+              value={selectedServer}
+              onChange={setSelectedServer}
+              emptyOption="All Servers"
+              placeholder="Select server"
+              searchable={servers.length > 5}
+              className="min-w-[180px]"
+            />
             <Button
               onClick={() => fetchData()}
               disabled={loading}
@@ -520,7 +447,7 @@ export default function FeedbackPage() {
 
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '100ms' }}>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10">
                 <Inbox className="w-5 h-5 text-[var(--accent-primary)]" />
@@ -530,8 +457,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-[var(--text-primary)]">{stats.total}</p>
               </div>
             </div>
-          </div>
-          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '150ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[var(--status-warning)]/10">
                 <Clock className="w-5 h-5 text-[var(--status-warning)]" />
@@ -541,8 +468,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-[var(--status-warning)]">{stats.pending}</p>
               </div>
             </div>
-          </div>
-          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '200ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item" style={{ animationDelay: '200ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[var(--status-success)]/10">
                 <CheckCircle2 className="w-5 h-5 text-[var(--status-success)]" />
@@ -552,8 +479,8 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-[var(--status-success)]">{stats.accepted}</p>
               </div>
             </div>
-          </div>
-          <div className="anim-stagger-item bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-4" style={{ animationDelay: '250ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item" style={{ animationDelay: '250ms' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[var(--status-error)]/10">
                 <XCircle className="w-5 h-5 text-[var(--status-error)]" />
@@ -563,12 +490,12 @@ export default function FeedbackPage() {
                 <p className="text-2xl font-bold text-[var(--status-error)]">{stats.denied}</p>
               </div>
             </div>
-          </div>
+          </GlassContainer>
         </div>
 
         {/* Filter Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          <GlassContainer variant="static" padding="none" radius="md" className="flex items-center gap-1 p-1" features={{ shadow: false }}>
             {(["all", "pending", "accepted", "denied"] as const).map((s) => (
               <button
                 key={s}
@@ -582,8 +509,8 @@ export default function FeedbackPage() {
                 {s === "all" ? "All Status" : s}
               </button>
             ))}
-          </div>
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          </GlassContainer>
+          <GlassContainer variant="static" padding="none" radius="md" className="flex items-center gap-1 p-1" features={{ shadow: false }}>
             {([
               { key: "all", label: "All Types" },
               { key: "server_feedback", label: "Server Feedback" },
@@ -601,7 +528,7 @@ export default function FeedbackPage() {
                 {c.label}
               </button>
             ))}
-          </div>
+          </GlassContainer>
         </div>
 
         {/* Content */}

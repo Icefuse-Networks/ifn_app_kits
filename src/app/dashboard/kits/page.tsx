@@ -1408,7 +1408,7 @@ export default function KitsPage() {
       variant="elevated"
       features={{ hoverGlow: false, shadow: false }}
       className="h-12 flex items-center justify-between px-3 shrink-0 !rounded-none"
-      style={{ border: 'none', borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
+      style={{ border: 'none', borderBottom: '1px solid var(--glass-border)' }}
     >
       {/* Left: Back + Title */}
       <div className="flex items-center gap-2.5">
@@ -1627,10 +1627,11 @@ export default function KitsPage() {
   const renderKitSidebar = () => (
     <GlassContainer
       as="aside"
-      variant="static"
+      variant="elevated"
+      padding="none"
       features={{ hoverGlow: false, shadow: false }}
-      className={`${sidebarCollapsed ? 'w-12' : 'w-64'} shrink-0 flex flex-col !rounded-none`}
-      style={{ border: 'none', borderRight: '1px solid rgba(255, 255, 255, 0.10)' }}
+      className={`${sidebarCollapsed ? 'w-12' : 'w-64'} shrink-0 flex flex-col !rounded-none !overflow-visible`}
+      style={{ borderTop: 'none', borderBottom: 'none', borderLeft: 'none' }}
     >
       {sidebarCollapsed ? (
         <div className="flex flex-col items-center py-3 gap-3">
@@ -1666,7 +1667,7 @@ export default function KitsPage() {
           {/* Sidebar Header */}
           <div
             className="h-12 px-3 flex items-center justify-between shrink-0"
-            style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
+            style={{ borderBottom: '1px solid var(--glass-border)' }}
           >
             <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Package className="w-4 h-4 text-[var(--accent-primary)]" />
@@ -2113,7 +2114,7 @@ export default function KitsPage() {
           variant="elevated"
           features={{ hoverGlow: false, shadow: false }}
           className="px-4 py-2 flex flex-wrap items-center gap-2 shrink-0 !rounded-none overflow-visible"
-          style={{ border: 'none', borderBottom: '1px solid rgba(255, 255, 255, 0.10)' }}
+          style={{ border: 'none', borderBottom: '1px solid var(--glass-border)' }}
         >
           {/* Group: Core Settings */}
           <div className="flex items-center gap-2 px-2 py-1 rounded-lg" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
@@ -2315,7 +2316,7 @@ export default function KitsPage() {
 
         {/* Inventory Grid */}
         <GlassContainer
-          variant="subtle"
+          variant="default"
           features={{ hoverGlow: false, shadow: false }}
           className="flex-1 overflow-auto p-6 !rounded-none"
           style={{ border: 'none' }}

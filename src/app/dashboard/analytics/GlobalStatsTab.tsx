@@ -7,7 +7,7 @@ import {
   CalendarDays, Gamepad2, Axe, Gauge, Layers, KeySquare, Tag, Activity, BarChart3, Box
 } from "lucide-react";
 import { StatCard, ChartCard, BarChart } from "@/components/analytics";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";

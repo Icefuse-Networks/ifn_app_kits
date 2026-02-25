@@ -15,8 +15,9 @@ import {
   Loading,
   EmptyState,
   Alert,
-  Dropdown
 } from "@/components/ui"
+import { Dropdown } from "@/components/global/Dropdown"
+import { GlassContainer } from "@/components/global/GlassContainer"
 
 interface IdentifierCategory {
   id: string
@@ -187,20 +188,20 @@ export default function ServersPage() {
         </div>
 
         <div className="flex items-center gap-6 mb-8">
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
+          <GlassContainer variant="static" padding="none" radius="md" className="anim-stagger-item flex items-center gap-3 px-4 py-3" style={{ animationDelay: '100ms' }}>
             <div className="p-2 rounded-lg bg-[var(--status-success)]/10"><Activity className="w-4 h-4 text-[var(--status-success)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--status-success)]">{stats.online}</span>
               <span className="text-sm text-[var(--text-muted)]">/ {stats.live} online</span>
             </div>
-          </div>
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="none" radius="md" className="anim-stagger-item flex items-center gap-3 px-4 py-3" style={{ animationDelay: '150ms' }}>
             <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Users className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.players}</span>
               <span className="text-sm text-[var(--text-muted)]">players</span>
             </div>
-          </div>
+          </GlassContainer>
         </div>
 
         <div className="anim-fade-slide-up mb-6" style={{ animationDelay: '200ms' }}>
@@ -251,7 +252,8 @@ export default function ServersPage() {
                         const online = isOnline(server.lastPlayerUpdate)
                         return (
                           <div key={server.id} className="anim-stagger-item" style={{ animationDelay: `${300 + catIndex * 100 + idx * 30}ms` }}>
-                            <Link href={`/dashboard/servers/${server.id}`} className="group block rounded-2xl p-5 transition-all duration-200 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-[var(--glass-border-prominent)] hover:bg-[var(--glass-bg-prominent)] hover:shadow-xl hover:shadow-black/10">
+                            <Link href={`/dashboard/servers/${server.id}`} className="group block">
+                            <GlassContainer variant="default" padding="lg" radius="lg" interactive features={{ hoverGlow: true, hoverLift: false }}>
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                   <div className={`relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${online ? 'bg-[var(--status-success)]/20 border border-[var(--status-success)]/30' : 'bg-[var(--bg-input)] border border-[var(--glass-border)]'}`}>
@@ -278,6 +280,7 @@ export default function ServersPage() {
                                 </div>
                                 <span className="text-xs text-[var(--text-muted)]">{formatLastUpdate(server.lastPlayerUpdate)}</span>
                               </div>
+                            </GlassContainer>
                             </Link>
                           </div>
                         )

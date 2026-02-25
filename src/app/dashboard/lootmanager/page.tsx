@@ -186,8 +186,6 @@ export default function LootManagerPage() {
   const [selectedMappingHours, setSelectedMappingHours] = useState<string>("");
   const [selectedMappingMinutes, setSelectedMappingMinutes] = useState<string>("");
   const [editingMappingId, setEditingMappingId] = useState<number | null>(null);
-  const [configDropdownOpen, setConfigDropdownOpen] = useState(false);
-  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
   const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
   const [versions, setVersions] = useState<ConfigVersion[]>([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
@@ -487,8 +485,6 @@ export default function LootManagerPage() {
     setSelectedMappingHours("");
     setSelectedMappingMinutes("");
     setEditingMappingId(null);
-    setConfigDropdownOpen(false);
-    setServerDropdownOpen(false);
   };
 
   const handleEditMapping = (mapping: LootMapping) => {
@@ -646,7 +642,7 @@ export default function LootManagerPage() {
   }, [data.ContainerItems, updateContainer]);
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] bg-[var(--bg-root)] overflow-hidden">
+    <div className="flex h-[calc(100vh-5rem)] overflow-hidden">
       <GlassContainer as="aside" variant="subtle" radius="sm" className="w-72 flex flex-col border-r border-white/5 !rounded-none" features={{ hoverGlow: false }}>
         <div className="p-4 border-b border-white/5">
           <div className="flex gap-1 mb-4 p-1 rounded-lg bg-white/5">
@@ -837,8 +833,15 @@ export default function LootManagerPage() {
                       {savedConfigs.map((config) => (
                         <button
                           key={config.id}
+                          className="group text-left w-full"
                           onClick={() => handleLoadConfig(config)}
-                          className="group text-left p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/5 transition-all"
+                        >
+                        <GlassContainer
+                          variant="default"
+                          padding="md"
+                          radius="lg"
+                          interactive
+                          features={{ hoverGlow: true, hoverLift: false }}
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 className="font-medium text-white group-hover:text-[var(--accent-primary)] transition-colors truncate">{config.name}</h3>
@@ -854,6 +857,7 @@ export default function LootManagerPage() {
                           <div className="text-xs text-[var(--text-tertiary)]">
                             Updated {new Date(config.updatedAt).toLocaleDateString()}
                           </div>
+                        </GlassContainer>
                         </button>
                       ))}
                     </div>
@@ -1377,66 +1381,30 @@ export default function LootManagerPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-2">Loot Table *</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setConfigDropdownOpen(!configDropdownOpen)}
-                    className="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none flex items-center justify-between"
-                  >
-                    <span className={selectedMappingConfig ? "text-white" : "text-[var(--text-muted)]"}>
-                      {selectedMappingConfig
-                        ? savedConfigs.find(c => c.id === selectedMappingConfig)?.name + (savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion ? ` (v${savedConfigs.find(c => c.id === selectedMappingConfig)?.publishedVersion})` : " (unpublished)")
-                        : "Select a loot table..."}
-                    </span>
-                    <ChevronDown className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${configDropdownOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {configDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-elevated)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                      {savedConfigs.map((config) => (
-                        <button
-                          key={config.id}
-                          type="button"
-                          onClick={() => { setSelectedMappingConfig(config.id); setConfigDropdownOpen(false); }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingConfig === config.id ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]" : "text-white"}`}
-                        >
-                          {config.name} {config.publishedVersion ? `(v${config.publishedVersion})` : "(unpublished)"}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Dropdown
+                  options={savedConfigs.map(c => ({
+                    value: c.id.toString(),
+                    label: `${c.name} ${c.publishedVersion ? `(v${c.publishedVersion})` : "(unpublished)"}`,
+                  }))}
+                  value={selectedMappingConfig?.toString() ?? null}
+                  onChange={(val) => setSelectedMappingConfig(val ? parseInt(val) : null)}
+                  placeholder="Select a loot table..."
+                  searchable={savedConfigs.length > 5}
+                />
               </div>
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-2">Server *</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => !editingMappingId && setServerDropdownOpen(!serverDropdownOpen)}
-                    disabled={!!editingMappingId}
-                    className="w-full bg-[var(--bg-elevated)] border border-white/10 rounded-lg px-3 py-3 text-left text-white focus:outline-none disabled:opacity-50 flex items-center justify-between"
-                  >
-                    <span className={selectedMappingServer ? "text-white" : "text-[var(--text-muted)]"}>
-                      {selectedMappingServer
-                        ? `${servers.find(s => s.id === selectedMappingServer)?.name} (${servers.find(s => s.id === selectedMappingServer)?.ip}:${servers.find(s => s.id === selectedMappingServer)?.port})`
-                        : "Select a server..."}
-                    </span>
-                    <ChevronDown className={`h-4 w-4 text-[var(--text-muted)] transition-transform ${serverDropdownOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {serverDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-[var(--bg-elevated)] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                      {servers.map((server) => (
-                        <button
-                          key={server.id}
-                          type="button"
-                          onClick={() => { setSelectedMappingServer(server.id); setServerDropdownOpen(false); }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors ${selectedMappingServer === server.id ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]" : "text-white"}`}
-                        >
-                          {server.name} ({server.ip}:{server.port})
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Dropdown
+                  options={servers.map(s => ({
+                    value: s.id,
+                    label: `${s.name} (${s.ip}:${s.port})`,
+                  }))}
+                  value={selectedMappingServer}
+                  onChange={setSelectedMappingServer}
+                  placeholder="Select a server..."
+                  disabled={!!editingMappingId}
+                  searchable={servers.length > 5}
+                />
               </div>
               <div>
                 <label className="block text-sm text-[var(--text-muted)] mb-2">Time After Wipe (optional)</label>
@@ -1522,13 +1490,13 @@ export default function LootManagerPage() {
 function Modal({ children, onClose, title, wide = false }: { children: React.ReactNode; onClose: () => void; title: string; wide?: boolean }) {
   return (
     <div className="anim-fade-scale fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className={`bg-[var(--bg-elevated)] rounded-xl border border-white/10 p-6 w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e) => e.stopPropagation()}>
+      <GlassContainer variant="elevated" padding="lg" radius="lg" className={`w-full ${wide ? "max-w-2xl" : "max-w-md"}`} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white">{title}</h3>
           <button onClick={onClose} className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"><X className="h-5 w-5" /></button>
         </div>
         {children}
-      </div>
+      </GlassContainer>
     </div>
   );
 }

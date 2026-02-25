@@ -17,9 +17,10 @@ import {
   Loading,
   EmptyState,
   Alert,
-  Dropdown,
   NumberInput
 } from "@/components/ui"
+import { Dropdown } from "@/components/global/Dropdown"
+import { GlassContainer } from "@/components/global/GlassContainer"
 
 interface GiveawayPlayer {
   id: string
@@ -388,34 +389,34 @@ export default function GiveawaysPage() {
 
         {/* Stats */}
         <div className="flex items-center gap-6 mb-8">
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '100ms' }}>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item flex items-center gap-3" style={{ animationDelay: '100ms' }}>
             <div className="p-2 rounded-lg bg-[var(--status-success)]/10"><Power className="w-4 h-4 text-[var(--status-success)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--status-success)]">{stats.active}</span>
               <span className="text-sm text-[var(--text-muted)]">active</span>
             </div>
-          </div>
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '150ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item flex items-center gap-3" style={{ animationDelay: '150ms' }}>
             <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Users className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.totalPlayers}</span>
               <span className="text-sm text-[var(--text-muted)]">entries</span>
             </div>
-          </div>
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '200ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item flex items-center gap-3" style={{ animationDelay: '200ms' }}>
             <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Clock className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{formatTime(stats.totalPlaytime)}</span>
               <span className="text-sm text-[var(--text-muted)]">playtime</span>
             </div>
-          </div>
-          <div className="anim-stagger-item flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ animationDelay: '250ms' }}>
+          </GlassContainer>
+          <GlassContainer variant="static" padding="md" radius="md" className="anim-stagger-item flex items-center gap-3" style={{ animationDelay: '250ms' }}>
             <div className="p-2 rounded-lg bg-[var(--accent-primary)]/10"><Server className="w-4 h-4 text-[var(--accent-primary)]" /></div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-bold text-[var(--text-primary)]">{stats.uniqueServers}</span>
               <span className="text-sm text-[var(--text-muted)]">servers</span>
             </div>
-          </div>
+          </GlassContainer>
         </div>
 
         {/* Tabs */}
@@ -566,7 +567,7 @@ export default function GiveawaysPage() {
             {/* Charts row */}
             {Object.keys(playersByServer).length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                <div className="rounded-xl p-5 bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+                <GlassContainer variant="static" padding="lg" radius="md">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-1.5 rounded-lg bg-[var(--accent-primary)]/10"><Server className="w-4 h-4 text-[var(--accent-primary)]" /></div>
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">Players by Server</h3>
@@ -588,8 +589,8 @@ export default function GiveawaysPage() {
                       )
                     })}
                   </div>
-                </div>
-                <div className="rounded-xl p-5 bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+                </GlassContainer>
+                <GlassContainer variant="static" padding="lg" radius="md">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-1.5 rounded-lg bg-[var(--accent-primary)]/10"><BarChart3 className="w-4 h-4 text-[var(--accent-primary)]" /></div>
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">Playtime Distribution</h3>
@@ -622,12 +623,12 @@ export default function GiveawaysPage() {
                       })
                     })()}
                   </div>
-                </div>
+                </GlassContainer>
               </div>
             )}
 
             {/* Players table */}
-            <div className="rounded-2xl overflow-hidden bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+            <GlassContainer variant="static" padding="none" radius="lg" className="overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[var(--glass-border)]">
@@ -686,7 +687,7 @@ export default function GiveawaysPage() {
                   description={search ? "No players found matching your search" : undefined}
                 />
               )}
-            </div>
+            </GlassContainer>
           </div>
         )}
 
@@ -746,7 +747,7 @@ export default function GiveawaysPage() {
                 <div className="absolute top-0 bottom-0 right-0 w-24 z-10 bg-gradient-to-l from-[var(--bg-secondary)] to-transparent" />
                 <div ref={scrollRef} className="flex items-center gap-4 h-full" style={{ transform: "translateX(0px)", transition: "none" }}>
                   {unboxingReel.map((player, index) => (
-                    <div key={`${player.id}-${index}`} className="flex-shrink-0 rounded-xl p-4 text-center bg-[var(--glass-bg)] border border-[var(--glass-border)]" style={{ width: "100px" }}>
+                    <GlassContainer key={`${player.id}-${index}`} variant="static" padding="md" radius="md" className="flex-shrink-0 text-center" style={{ width: "100px" }}>
                       <div className="w-12 h-12 rounded-full overflow-hidden mx-auto mb-2 border-2 border-[var(--accent-primary)]/30">
                         {playerAvatars[player.playerSteamId64] ? (
                           <img src={playerAvatars[player.playerSteamId64]} alt={player.playerName} className="w-full h-full object-cover" />
@@ -760,7 +761,7 @@ export default function GiveawaysPage() {
                       <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-0.5 mt-1">
                         <Clock className="w-2.5 h-2.5" />{formatTime(player.playTime)}
                       </p>
-                    </div>
+                    </GlassContainer>
                   ))}
                 </div>
               </div>

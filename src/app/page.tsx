@@ -1,10 +1,11 @@
 import { Package, Settings, Server, Shield } from "lucide-react";
 import { Header } from "@/components/global/Header";
 import { Footer } from "@/components/global/Footer";
+import { PageBackground } from "@/components/global/PageBackground";
 
 export default function Home() {
   return (
-    <div className="portal-root">
+    <PageBackground className="portal-root">
       <Header />
 
       {/* Main Content with padding for fixed header */}
@@ -82,6 +83,6 @@ export default function Home() {
       </main>
 
       <Footer />
-    </div>
+    </PageBackground>
   );
 }

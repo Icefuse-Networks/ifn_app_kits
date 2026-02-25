@@ -4,7 +4,7 @@ import { useState, useEffect, use, useCallback } from 'react'
 import { ArrowLeft, Users, Clock, Activity, Copy, Check, Globe, Terminal, Settings, BarChart2, ArrowRightLeft, X, CheckSquare, Square, Edit3, Trash2, Calendar, Plus, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Dropdown } from '@/components/ui/Dropdown'
+import { Dropdown } from '@/components/global/Dropdown'
 
 interface IdentifierCategory {
   id: string

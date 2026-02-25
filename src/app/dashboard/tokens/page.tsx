@@ -34,9 +34,10 @@ import {
   Loading,
   EmptyState,
   Alert,
-  Dropdown
 } from "@/components/ui"
-import { CheckboxSwitch } from "@/components/ui/Switch"
+import { Dropdown } from "@/components/global/Dropdown"
+import { GlassContainer } from "@/components/global/GlassContainer"
+import { Switch } from "@/components/ui/Switch"
 
 export default function TokensPage() {
   const router = useRouter()
@@ -443,6 +444,7 @@ export default function TokensPage() {
         onClose={() => setShowCreateModal(false)}
         title="Create API Token"
         icon={<Key className="h-5 w-5" />}
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
@@ -460,7 +462,7 @@ export default function TokensPage() {
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Input
             label="Token Name"
             value={createName}
@@ -479,17 +481,18 @@ export default function TokensPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+            <label className="block text-sm font-semibold text-[var(--text-primary)] mb-3">
               Permissions
             </label>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {API_SCOPES.map((scope) => (
-                <CheckboxSwitch
+                <Switch
                   key={scope}
                   checked={createScopes.includes(scope)}
                   onChange={() => toggleCreateScope(scope)}
                   label={scope}
                   description={SCOPE_DESCRIPTIONS[scope]}
+                  size="sm"
                 />
               ))}
             </div>
@@ -510,6 +513,7 @@ export default function TokensPage() {
         onClose={() => setShowEditModal(false)}
         title="Edit Token"
         icon={<Edit className="h-5 w-5" />}
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowEditModal(false)}>
@@ -528,7 +532,7 @@ export default function TokensPage() {
         }
       >
         {editToken && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <Input
               label="Token Name"
               value={editName}
@@ -545,17 +549,18 @@ export default function TokensPage() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              <label className="block text-sm font-semibold text-[var(--text-primary)] mb-3">
                 Permissions
               </label>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {API_SCOPES.map((scope) => (
-                  <CheckboxSwitch
+                  <Switch
                     key={scope}
                     checked={editScopes.includes(scope)}
                     onChange={() => toggleEditScope(scope)}
                     label={scope}
                     description={SCOPE_DESCRIPTIONS[scope]}
+                    size="sm"
                   />
                 ))}
               </div>
@@ -688,13 +693,13 @@ export default function TokensPage() {
 
           {/* Filtered but no results */}
           {filterCategory && filteredTokens.length === 0 && (
-            <div className="text-center py-12 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl">
+            <GlassContainer variant="static" padding="none" radius="md" className="text-center py-12">
               <FolderOpen className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-4" />
               <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No tokens in this category</h3>
               <p className="text-[var(--text-muted)]">
                 Create a token and assign it to this category.
               </p>
-            </div>
+            </GlassContainer>
           )}
         </div>
       )}
@@ -722,10 +727,11 @@ function TokenCard({
   const isDisabled = token.isRevoked || token.isExpired
 
   return (
-    <div
-      className={`p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl ${
-        isDisabled ? 'opacity-60' : ''
-      }`}
+    <GlassContainer
+      variant="static"
+      padding="md"
+      radius="md"
+      className={isDisabled ? 'opacity-60' : ''}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -794,6 +800,6 @@ function TokenCard({
           )}
         </div>
       </div>
-    </div>
+    </GlassContainer>
   )
 }

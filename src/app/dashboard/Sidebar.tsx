@@ -38,8 +38,8 @@ export default function Sidebar() {
             isCompact ? 'justify-center p-2.5' : 'px-3 py-2.5'
           } ${
             pathname === '/dashboard'
-              ? 'bg-gradient-to-r from-[var(--accent-primary)]/20 to-[var(--accent-primary)]/5 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-prominent)] border border-transparent'
+              ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-prominent)]'
           }`}
           title="Dashboard"
         >
@@ -66,8 +66,8 @@ export default function Sidebar() {
                       isCompact ? 'justify-center p-2.5' : 'px-3 py-2'
                     } ${
                       isActive
-                        ? 'bg-gradient-to-r from-[var(--accent-primary)]/20 to-[var(--accent-primary)]/5 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-prominent)] border border-transparent'
+                        ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-prominent)]'
                     }`}
                     title={isCompact ? item.label : item.desc}
                   >

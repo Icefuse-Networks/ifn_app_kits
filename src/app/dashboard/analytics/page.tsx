@@ -5,7 +5,7 @@ import {
   BarChart3, Castle, Trophy, ShoppingCart, TrendingUp,
   Server as ServerIcon
 } from "lucide-react";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
 import { Tabs } from "@/components/ui/Tabs";
 import BasesTab from "./BasesTab";
 import EventsTab from "./EventsTab";

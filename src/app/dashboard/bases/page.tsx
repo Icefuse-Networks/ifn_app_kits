@@ -11,7 +11,7 @@ import {
   ConfigManager,
 } from "@/components/loot-shared";
 import type { GenericLootItem, ExtraFieldDef, SavedConfig, MappingRecord, ServerIdentifierRecord } from "@/components/loot-shared";
-import { Dropdown } from "@/components/ui/Dropdown";
+import { Dropdown } from "@/components/global/Dropdown";
 import { CheckboxSwitch } from "@/components/ui/Switch";
 
 // ─── IcefuseBases data types ──────────────────────────────────────────────────

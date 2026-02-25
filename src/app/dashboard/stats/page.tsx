@@ -7,7 +7,7 @@ import {
 } from "lucide-react"
 import { StatCard } from "@/components/analytics"
 import { STAT_COLUMNS } from "@/lib/validations/stats"
-import { Dropdown } from "@/components/ui/Dropdown"
+import { Dropdown } from "@/components/global/Dropdown"
 import { SearchInput } from "@/components/ui/SearchInput"
 import { Loading, Skeleton } from "@/components/ui/Loading"
 import { EmptyState } from "@/components/ui/EmptyState"

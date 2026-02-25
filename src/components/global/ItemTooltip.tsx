@@ -172,8 +172,8 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
       style={{
         left: position.x,
         top: position.y,
-        background: 'var(--portal-bg-card-elevated)',
-        border: '1px solid var(--portal-glass-border)',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--glass-border)',
         borderRadius: 'var(--radius-lg)',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
         minWidth: 280,
@@ -182,24 +182,24 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
     >
       {loading ? (
         <div className="p-4 text-center">
-          <div className="inline-block w-5 h-5 border-2 border-[var(--portal-accent)] border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-5 h-5 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : data ? (
         <div className="p-4">
           {/* Header */}
-          <div className="flex items-start gap-3 mb-3 pb-3 border-b border-[var(--portal-glass-border)]">
+          <div className="flex items-start gap-3 mb-3 pb-3 border-b border-[var(--glass-border)]">
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-[var(--portal-text-primary)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 {data.Name}
               </h3>
-              <p className="text-xs text-[var(--portal-text-muted)] font-mono mt-0.5">
+              <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
                 {data.shortname}
               </p>
             </div>
             <span
               className="px-2 py-0.5 text-[10px] font-medium rounded-full"
               style={{
-                background: 'var(--portal-accent)',
+                background: 'var(--accent-primary)',
                 color: 'white',
               }}
             >
@@ -209,7 +209,7 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
 
           {/* Description */}
           {data.Description && (
-            <p className="text-xs text-[var(--portal-text-secondary)] mb-3 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] mb-3 leading-relaxed">
               {data.Description}
             </p>
           )}
@@ -232,7 +232,7 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
           </div>
 
           {/* Flags */}
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--portal-glass-border)]">
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--glass-border)]">
             {data.isWearable && <Flag label="Wearable" />}
             {data.isHoldable && <Flag label="Holdable" />}
             {data.isUsable && <Flag label="Usable" />}
@@ -242,7 +242,7 @@ export function ItemTooltip({ shortname, visible, x, y }: ItemTooltipProps) {
         </div>
       ) : (
         <div className="p-4 text-center">
-          <p className="text-xs text-[var(--portal-text-muted)]">
+          <p className="text-xs text-[var(--text-muted)]">
             No data available for {shortname}
           </p>
         </div>
@@ -267,8 +267,8 @@ function StatRow({
 }) {
   return (
     <div className="flex justify-between items-center">
-      <span className="text-[var(--portal-text-muted)]">{label}</span>
-      <span className="text-[var(--portal-text-primary)] font-medium">{value}</span>
+      <span className="text-[var(--text-muted)]">{label}</span>
+      <span className="text-[var(--text-primary)] font-medium">{value}</span>
     </div>
   )
 }
@@ -283,14 +283,14 @@ function Flag({
   const colors = {
     default: {
       bg: 'rgba(255, 255, 255, 0.1)',
-      text: 'var(--portal-text-secondary)',
+      text: 'var(--text-secondary)',
     },
     accent: {
-      bg: 'var(--portal-accent)',
+      bg: 'var(--accent-primary)',
       text: 'white',
     },
     warning: {
-      bg: 'var(--portal-warning)',
+      bg: 'var(--status-warning)',
       text: 'white',
     },
   }

@@ -6,20 +6,19 @@
  * Auth check still runs from the parent dashboard layout.
  */
 
+import { PageBackground } from '@/components/global/PageBackground'
+
 export default function KitsEditorLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div
-      className="relative z-[100] flex flex-col overflow-hidden"
-      style={{
-        background: '#141c28',
-        height: 'calc(100vh - 5rem)',
-      }}
+    <PageBackground
+      className="z-[100] flex flex-col overflow-hidden"
+      style={{ height: 'calc(100vh - 5rem)' }}
     >
       {children}
-    </div>
+    </PageBackground>
   )
 }
