@@ -20,9 +20,11 @@ import { validatePrefixedId } from '@/lib/id'
 const kitItemSchemaBase = z.object({
   Shortname: z.string().min(1).max(100),
   Skin: z.union([z.number(), z.string()]),
-  Amount: z.number().int().min(1).max(1000000),
-  Condition: z.number().min(0).max(1),
-  MaxCondition: z.number().min(0).max(1),
+  // Amount: no upper cap — some configs use very high stack counts (30M+)
+  Amount: z.number().int().min(1),
+  // Condition/MaxCondition: Rust plugin stores as 0–100 (not 0–1)
+  Condition: z.number().min(0).max(100),
+  MaxCondition: z.number().min(0).max(100),
   Ammo: z.number().int().min(0),
   Ammotype: z.string().nullable(),
   Position: z.number().int().min(-1),
@@ -420,12 +422,123 @@ export const deleteKitSchema = z.object({
   kitName: z.string().min(1).max(100),
 })
 
+// =============================================================================
+// Category & Group Schemas (kitData._categories)
+// =============================================================================
+
+/**
+ * Create a kit category (top-level group in the kit list UI)
+ */
+export const createKitCategorySchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  order: z.number().int().min(0).optional(),
+})
+
+/**
+ * Update a kit category — rename and/or reorder
+ */
+export const updateKitCategorySchema = z.object({
+  catId: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).trim().optional(),
+  order: z.number().int().min(0).optional(),
+})
+
+/**
+ * Delete a kit category — also clears Category/Subcategory from all affected kits
+ */
+export const deleteKitCategorySchema = z.object({
+  catId: z.string().min(1).max(100),
+})
+
+/**
+ * Create a kit group (subcategory within a category)
+ */
+export const createKitGroupSchema = z.object({
+  catId: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).trim(),
+  order: z.number().int().min(0).optional(),
+})
+
+/**
+ * Update a kit group — rename and/or reorder
+ */
+export const updateKitGroupSchema = z.object({
+  catId: z.string().min(1).max(100),
+  groupId: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).trim().optional(),
+  order: z.number().int().min(0).optional(),
+})
+
+/**
+ * Delete a kit group — also clears Subcategory from all affected kits
+ */
+export const deleteKitGroupSchema = z.object({
+  catId: z.string().min(1).max(100),
+  groupId: z.string().min(1).max(100),
+})
+
+// =============================================================================
+// Perk Schemas
+// =============================================================================
+
+/**
+ * Individual perk entry (displayed as a bullet point in the kit UI)
+ */
+export const perkSchema = z.object({
+  id: z.string().min(1).max(100),
+  text: z.string().min(1).max(1000),
+})
+
+/**
+ * A named group of perks
+ */
+export const perkCategorySchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(100),
+  perks: z.array(perkSchema),
+  collapsed: z.boolean().optional(),
+})
+
+/**
+ * Full perks structure stored in storeData.perks[kitId]
+ */
+export const perksDataSchema = z.object({
+  categories: z.array(perkCategorySchema),
+  uncategorized: z.array(perkSchema),
+})
+
+/**
+ * PUT body — replace all perks for a kit
+ */
+export const putKitPerksSchema = z.object({
+  kitId: z.string().min(1).max(100),
+  perks: perksDataSchema,
+})
+
+/**
+ * DELETE body — remove all perks for a kit
+ */
+export const deleteKitPerksSchema = z.object({
+  kitId: z.string().min(1).max(100),
+})
+
 export type CreateKitConfigInput = z.infer<typeof createKitConfigSchema>
 export type UpdateKitConfigInput = z.infer<typeof updateKitConfigSchema>
 export type CloneKitConfigInput = z.infer<typeof cloneKitConfigSchema>
 export type PatchKitInput = z.infer<typeof patchKitSchema>
 export type AddKitInput = z.infer<typeof addKitSchema>
 export type DeleteKitInput = z.infer<typeof deleteKitSchema>
+export type CreateKitCategoryInput = z.infer<typeof createKitCategorySchema>
+export type UpdateKitCategoryInput = z.infer<typeof updateKitCategorySchema>
+export type DeleteKitCategoryInput = z.infer<typeof deleteKitCategorySchema>
+export type CreateKitGroupInput = z.infer<typeof createKitGroupSchema>
+export type UpdateKitGroupInput = z.infer<typeof updateKitGroupSchema>
+export type DeleteKitGroupInput = z.infer<typeof deleteKitGroupSchema>
+export type PerkInput = z.infer<typeof perkSchema>
+export type PerkCategoryInput = z.infer<typeof perkCategorySchema>
+export type PerksDataInput = z.infer<typeof perksDataSchema>
+export type PutKitPerksInput = z.infer<typeof putKitPerksSchema>
+export type DeleteKitPerksInput = z.infer<typeof deleteKitPerksSchema>
 export type CreateGameServerInput = z.infer<typeof createGameServerSchema>
 export type UpdateGameServerInput = z.infer<typeof updateGameServerSchema>
 export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
