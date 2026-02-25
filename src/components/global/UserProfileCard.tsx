@@ -43,7 +43,6 @@ import {
   BarChart2,
 } from 'lucide-react'
 import { accountRoutes } from '@/config/routes'
-import { GlassContainer } from '@/components/global/GlassContainer'
 
 // ============================================================================
 // Types
@@ -101,10 +100,14 @@ export function UserProfileCard({
 }: UserProfileCardProps) {
   const { data: session, status } = useSession()
   const [isOpen, setIsOpen] = useState(false)
+  const [panelVisible, setPanelVisible] = useState(false)
+  const [panelEntering, setPanelEntering] = useState(false)
+  const [panelClosing, setPanelClosing] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const closeAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Get user display info from session
   const user = session?.user
@@ -113,10 +116,33 @@ export function UserProfileCard({
   const displaySubtext = (user as { steamId?: string })?.steamId || displayEmail
   const avatarUrl = user?.image
 
+  const openPanel = () => {
+    if (closeAnimTimerRef.current) clearTimeout(closeAnimTimerRef.current)
+    setPanelEntering(true)
+    setPanelClosing(false)
+    setPanelVisible(true)
+    setIsOpen(true)
+    requestAnimationFrame(() => setPanelEntering(false))
+  }
+
+  const closePanel = () => {
+    setPanelClosing(true)
+    setIsOpen(false)
+    closeAnimTimerRef.current = setTimeout(() => {
+      setPanelVisible(false)
+      setPanelClosing(false)
+    }, 160)
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { if (closeAnimTimerRef.current) clearTimeout(closeAnimTimerRef.current) }
+  }, [])
+
   // Handle sign out
   const handleSignOut = () => {
     console.log('[UserProfileCard] Sign out clicked')
-    setIsOpen(false)
+    closePanel()
     if (onSignOut) {
       console.log('[UserProfileCard] Calling custom onSignOut handler')
       onSignOut()
@@ -146,41 +172,37 @@ export function UserProfileCard({
         top: rect.bottom + 8,
         left: rect.right - menuWidth,
       })
+      openPanel()
+    } else {
+      closePanel()
     }
-    setIsOpen(!isOpen)
   }
 
   // Close on click outside
   useEffect(() => {
+    if (!panelVisible) return
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node
       if (
         containerRef.current && !containerRef.current.contains(target) &&
         menuRef.current && !menuRef.current.contains(target)
       ) {
-        setIsOpen(false)
+        closePanel()
       }
     }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen])
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [panelVisible])
 
   // Close on escape key
   useEffect(() => {
+    if (!panelVisible) return
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-      }
+      if (event.key === 'Escape') closePanel()
     }
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
-    }
-  }, [isOpen])
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [panelVisible])
 
   // Check admin status from session
   const userAny = user as Record<string, unknown> | undefined
@@ -390,20 +412,24 @@ export function UserProfileCard({
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && typeof document !== 'undefined' && createPortal(
-        <GlassContainer
+      {panelVisible && typeof document !== 'undefined' && createPortal(
+        <div
           ref={menuRef}
-          variant="elevated"
-          padding="none"
-          radius="lg"
-          features={{ shadow: true, hoverGlow: false }}
-          className="overflow-hidden"
           style={{
             position: 'fixed',
             top: menuPosition.top,
             left: menuPosition.left,
             width: 240,
             zIndex: 9999,
+            background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+            overflow: 'hidden',
+            transition: 'opacity 160ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1)',
+            opacity: panelEntering || panelClosing ? 0 : 1,
+            transform: panelEntering || panelClosing ? 'translateY(-6px) scaleY(0.97)' : 'translateY(0) scaleY(1)',
+            transformOrigin: 'top right',
           }}
         >
           {/* User Info Header */}
@@ -439,7 +465,7 @@ export function UserProfileCard({
                     : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg-prominent)] hover:text-white'
                 }`,
                 onClick: () => {
-                  setIsOpen(false)
+                  closePanel()
                   item.onClick?.()
                 },
               }
@@ -478,7 +504,7 @@ export function UserProfileCard({
               <span>Sign Out</span>
             </button>
           </div>
-        </GlassContainer>,
+        </div>,
         document.body
       )}
     </div>
