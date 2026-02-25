@@ -12,8 +12,8 @@ const VALID_TYPES = ["timeseries", "servers", "current", "aggregate", "totals", 
 
 const querySchema = z.object({
   server: z.string().max(500).optional(),
-  from: z.string().max(50).optional(),
-  to: z.string().max(50).optional(),
+  from: z.string().max(50).regex(/^[\d\-T:Z+.]+$/, "Invalid date format").optional(),
+  to: z.string().max(50).regex(/^[\d\-T:Z+.]+$/, "Invalid date format").optional(),
   groupBy: z.enum(VALID_GROUP_BY).optional().default("hour"),
   type: z.enum(VALID_TYPES).optional().default("timeseries"),
   timezone: z.string().max(50).optional().default("UTC"),
@@ -71,16 +71,22 @@ export async function GET(request: NextRequest) {
   const { server, from, to, groupBy, type, timezone } = parsed.data;
 
   try {
+    // SECURITY: Build parameterized WHERE clause to prevent SQL injection
     let whereClause = "WHERE 1=1";
+    const queryParams: Record<string, unknown> = {};
+
     if (server && server !== "all") {
-      const serverList = server.split(",").map(s => `'${s.replace(/'/g, "")}'`).join(",");
-      whereClause += ` AND server_ip IN (${serverList})`;
+      const serverIps = server.split(",").map(s => s.trim()).filter(Boolean);
+      whereClause += ` AND server_ip IN ({server_ips:Array(String)})`;
+      queryParams.server_ips = serverIps;
     }
     if (from) {
-      whereClause += ` AND timestamp >= parseDateTimeBestEffort('${from.replace(/'/g, "")}')`;
+      whereClause += ` AND timestamp >= parseDateTimeBestEffort({from_date:String})`;
+      queryParams.from_date = from;
     }
     if (to) {
-      whereClause += ` AND timestamp <= parseDateTimeBestEffort('${to.replace(/'/g, "")}')`;
+      whereClause += ` AND timestamp <= parseDateTimeBestEffort({to_date:String})`;
+      queryParams.to_date = to;
     }
 
     if (type === "servers") {
@@ -132,6 +138,7 @@ export async function GET(request: NextRequest) {
           GROUP BY time_bucket, server_id
           ORDER BY time_bucket ASC
         `,
+        query_params: queryParams,
         format: "JSONEachRow",
       });
       const data = await result.json<{
@@ -165,6 +172,7 @@ export async function GET(request: NextRequest) {
           GROUP BY server_id
           ORDER BY avg_players DESC
         `,
+        query_params: queryParams,
         format: "JSONEachRow",
       });
       const data = await result.json();
@@ -193,6 +201,7 @@ export async function GET(request: NextRequest) {
           GROUP BY time_bucket
           ORDER BY time_bucket ASC
         `,
+        query_params: queryParams,
         format: "JSONEachRow",
       });
       const data = await result.json<{
@@ -224,6 +233,7 @@ export async function GET(request: NextRequest) {
           GROUP BY day_of_week, hour
           ORDER BY day_of_week, hour
         `,
+        query_params: queryParams,
         format: "JSONEachRow",
       });
       const data = await result.json<{
@@ -247,6 +257,7 @@ export async function GET(request: NextRequest) {
           GROUP BY server_ip, server_name
           ORDER BY peak_players DESC
         `,
+        query_params: queryParams,
         format: "JSONEachRow",
       });
       const data = await result.json();

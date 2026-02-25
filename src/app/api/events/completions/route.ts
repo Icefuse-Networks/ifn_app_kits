@@ -75,12 +75,15 @@ export async function GET(request: NextRequest) {
   const { start, length, server_id, event_type, hours, days } = parsed.data;
 
   try {
-    // Build time filter
+    // SECURITY: Use parameterized interval to prevent SQL injection
     let timeFilter = "";
+    const timeParams: Record<string, unknown> = {};
     if (hours) {
-      timeFilter = `AND timestamp >= now64(3) - INTERVAL ${hours} HOUR`;
+      timeFilter = `AND timestamp >= now64(3) - INTERVAL {interval_val:UInt32} HOUR`;
+      timeParams.interval_val = hours;
     } else if (days) {
-      timeFilter = `AND timestamp >= now64(3) - INTERVAL ${days} DAY`;
+      timeFilter = `AND timestamp >= now64(3) - INTERVAL {interval_val:UInt32} DAY`;
+      timeParams.interval_val = days;
     }
 
     const cacheKey = `events:${server_id}:${event_type}:${hours ?? days ?? "all"}:${start}:${length}`;
@@ -92,6 +95,7 @@ export async function GET(request: NextRequest) {
     // Total count
     const totalCountResult = await clickhouse.query({
       query: `SELECT COUNT(*) as count FROM event_completions WHERE 1=1 ${timeFilter}`,
+      query_params: { ...timeParams },
       format: "JSONEachRow",
     });
     const totalCountRows = await totalCountResult.json<{ count: string }>();
@@ -100,7 +104,7 @@ export async function GET(request: NextRequest) {
     // Filtered count
     const filteredCountResult = await clickhouse.query({
       query: `SELECT COUNT(*) as count FROM event_completions WHERE 1=1 ${timeFilter} AND ({server_id:String} = '' OR server_id = {server_id:String}) AND ({event_type:String} = '' OR event_type = {event_type:String})`,
-      query_params: { server_id, event_type },
+      query_params: { ...timeParams, server_id, event_type },
       format: "JSONEachRow",
     });
     const filteredCountRows = await filteredCountResult.json<{ count: string }>();
@@ -129,7 +133,7 @@ export async function GET(request: NextRequest) {
         ORDER BY timestamp DESC
         LIMIT {length:UInt32} OFFSET {start:UInt32}
       `,
-      query_params: { server_id, event_type, length, start },
+      query_params: { ...timeParams, server_id, event_type, length, start },
       format: "JSONEachRow",
     });
     const events = await dataResult.json();

@@ -186,7 +186,9 @@ export async function POST(request: NextRequest) {
         let mergedWeaponKills: Record<string, number> = {}
         try {
           mergedWeaponKills = JSON.parse((existing?.weapon_kills as string) || '{}')
-        } catch { /* empty */ }
+        } catch (err) {
+          logger.admin.warn('Failed to parse weapon_kills JSON from ClickHouse — resetting to empty', err)
+        }
         for (const [weapon, count] of Object.entries(delta.weapon_kills)) {
           mergedWeaponKills[weapon] = (mergedWeaponKills[weapon] || 0) + count
         }

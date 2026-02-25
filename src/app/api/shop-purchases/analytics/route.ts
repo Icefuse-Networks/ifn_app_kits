@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const dateWhere = `timestamp >= now() - INTERVAL ${intervalHours} HOUR`;
+    // SECURITY: Use parameterized interval
+    const dateWhere = `timestamp >= now() - INTERVAL {interval_hours:UInt32} HOUR`;
+    const intervalParams = { interval_hours: intervalHours };
     let groupByExpr: string;
     let dateFormat: string;
     if (intervalHours <= 1) {
@@ -92,42 +94,42 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       clickhouse.query({
         query: `SELECT COUNT(*) as total_purchases, SUM(cost) as total_revenue, COUNT(DISTINCT steamid64) as unique_players, COUNT(DISTINCT server_name) as active_servers, COUNT(DISTINCT item_name) as unique_items, ROUND(AVG(cost)) as avg_purchase_value, MAX(cost) as max_purchase_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String})`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT ${dateFormat} as date, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr} ORDER BY ${groupByExpr} ASC`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT server_name, COUNT(*) as purchases, SUM(cost) as revenue, COUNT(DISTINCT steamid64) as players, COUNT(DISTINCT item_name) as items_sold, ROUND(AVG(cost)) as avg_value FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY server_name ORDER BY purchases DESC`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT item_name, COUNT(*) as count, SUM(cost) as revenue, SUM(amount) as total_amount, COUNT(DISTINCT steamid64) as buyers FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY item_name ORDER BY count DESC LIMIT 20`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT toHour(timestamp) as hour, toDayOfWeek(timestamp) as day_of_week, COUNT(*) as count FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY hour, day_of_week ORDER BY day_of_week, hour`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT currency, COUNT(*) as count, SUM(cost) as total FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY currency ORDER BY count DESC`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT steamid64, any(player_name) as player_name, COUNT(*) as purchases, SUM(cost) as total_spent, COUNT(DISTINCT item_name) as unique_items FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY steamid64 ORDER BY total_spent DESC LIMIT 15`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
       clickhouse.query({
         query: `SELECT ${dateFormat} as date, server_name, COUNT(*) as purchases FROM shop_purchases WHERE ${dateWhere} AND ({server:String} = '' OR server_name = {server:String}) GROUP BY ${groupByExpr}, server_name ORDER BY ${groupByExpr} ASC`,
-        query_params: { server },
+        query_params: { ...intervalParams, server },
         format: "JSONEachRow",
       }),
     ]);

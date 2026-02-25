@@ -71,11 +71,15 @@ export async function GET(request: NextRequest) {
   const { start, length, server_id, base_type, hours, days } = parsed.data;
 
   try {
+    // SECURITY: Use parameterized interval to prevent SQL injection
     let timeFilter = "";
+    const timeParams: Record<string, unknown> = {};
     if (hours) {
-      timeFilter = `AND timestamp >= now() - INTERVAL ${hours} HOUR`;
+      timeFilter = `AND timestamp >= now() - INTERVAL {interval_val:UInt32} HOUR`;
+      timeParams.interval_val = hours;
     } else if (days) {
-      timeFilter = `AND timestamp >= now() - INTERVAL ${days} DAY`;
+      timeFilter = `AND timestamp >= now() - INTERVAL {interval_val:UInt32} DAY`;
+      timeParams.interval_val = days;
     }
 
     const cacheKey = `raids:${server_id}:${base_type}:${hours ?? days ?? "all"}:${start}:${length}`;
@@ -86,6 +90,7 @@ export async function GET(request: NextRequest) {
 
     const totalCountResult = await clickhouse.query({
       query: `SELECT COUNT(*) as count FROM bases_raid_events WHERE 1=1 ${timeFilter}`,
+      query_params: { ...timeParams },
       format: "JSONEachRow",
     });
     const totalCountRows = await totalCountResult.json<{ count: string }>();
@@ -93,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     const filteredCountResult = await clickhouse.query({
       query: `SELECT COUNT(*) as count FROM bases_raid_events WHERE 1=1 ${timeFilter} AND ({server_id:String} = '' OR server_id = {server_id:String}) AND ({base_type:String} = '' OR base_type = {base_type:String})`,
-      query_params: { server_id, base_type },
+      query_params: { ...timeParams, server_id, base_type },
       format: "JSONEachRow",
     });
     const filteredCountRows = await filteredCountResult.json<{ count: string }>();
@@ -125,7 +130,7 @@ export async function GET(request: NextRequest) {
         ORDER BY timestamp DESC
         LIMIT {length:UInt32} OFFSET {start:UInt32}
       `,
-      query_params: { server_id, base_type, length, start },
+      query_params: { ...timeParams, server_id, base_type, length, start },
       format: "JSONEachRow",
     });
     const raids = await dataResult.json();
