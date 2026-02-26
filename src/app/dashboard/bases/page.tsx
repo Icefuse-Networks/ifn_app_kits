@@ -40,14 +40,14 @@ interface ContainerMappingData {
 interface BaseData {
   Buildings: string[];
   "Spawn Count": number;
+  "Initial Building Grade": number;
+  "Upgraded Building Grade": number;
+  "Auto Upgrade Delay": number;
 }
 
 interface BasesPluginConfig {
   "Bases Data": Record<string, BaseData>;
   "Container Mappings": Record<string, ContainerMappingData>;
-  "Initial Building Grade": number;
-  "Upgraded Building Grade": number;
-  "Auto Upgrade Delay": number;
   "Loot Multiplier": number;
   "Wipe Progression Enabled": boolean;
   "Wipe Progression Min Scale": number;
@@ -83,9 +83,9 @@ const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
 const DEFAULT_CONFIG: BasesConfigData = {
   pluginConfig: {
     "Bases Data": {
-      Small: { Buildings: [], "Spawn Count": 20 },
-      Medium: { Buildings: [], "Spawn Count": 15 },
-      Large: { Buildings: [], "Spawn Count": 10 },
+      Small:  { Buildings: [], "Spawn Count": 20, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
+      Medium: { Buildings: [], "Spawn Count": 15, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
+      Large:  { Buildings: [], "Spawn Count": 10, "Initial Building Grade": 2, "Upgraded Building Grade": 4, "Auto Upgrade Delay": 0 },
     },
     "Container Mappings": {
       "box.wooden.large": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 12, "Max Items": 24 },
@@ -98,9 +98,6 @@ const DEFAULT_CONFIG: BasesConfigData = {
       "bamboo_barrel": { "Loot Tables": ["armor", "locker"], "Min Items": 4, "Max Items": 8 },
       "cupboard.tool.deployed": { "Loot Tables": ["toolcupboard"], "Min Items": 3, "Max Items": 6 },
     },
-    "Initial Building Grade": 2,
-    "Upgraded Building Grade": 3,
-    "Auto Upgrade Delay": 300,
     "Loot Multiplier": 1.0,
     "Wipe Progression Enabled": true,
     "Wipe Progression Min Scale": 0.3,
@@ -243,7 +240,11 @@ export default function BasesPage() {
     const allBuildings = Object.values(data.pluginConfig["Bases Data"]).flatMap(bd => bd.Buildings);
     if (allBuildings.length > 0) return; // already has data
 
-    const basesData: Record<string, BaseData> = { Small: { Buildings: [], "Spawn Count": 20 }, Medium: { Buildings: [], "Spawn Count": 15 }, Large: { Buildings: [], "Spawn Count": 10 } };
+    const basesData: Record<string, BaseData> = {
+      Small:  { Buildings: [], "Spawn Count": 20, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
+      Medium: { Buildings: [], "Spawn Count": 15, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
+      Large:  { Buildings: [], "Spawn Count": 10, "Initial Building Grade": 2, "Upgraded Building Grade": 4, "Auto Upgrade Delay": 0 },
+    };
     for (const file of basesFiles) {
       const cat = categorizeBaseName(file.name);
       if (cat && basesData[cat]) {
@@ -660,6 +661,14 @@ export default function BasesPage() {
     });
   }, [setData]);
 
+  const handleUpdateBaseDataField = useCallback((baseType: string, field: "Initial Building Grade" | "Upgraded Building Grade" | "Auto Upgrade Delay", value: number) => {
+    setData(prev => {
+      const basesData = { ...prev.pluginConfig["Bases Data"] };
+      basesData[baseType] = { ...basesData[baseType], [field]: value };
+      return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
+    });
+  }, [setData]);
+
   const handleUpdateContainerMapping = useCallback((prefab: string, field: "Min Items" | "Max Items", value: number) => {
     setData(prev => {
       const mappings = { ...prev.pluginConfig["Container Mappings"] };
@@ -879,30 +888,6 @@ export default function BasesPage() {
                 <h3 className="text-sm font-semibold text-white mb-4">Global Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="text-sm text-[var(--text-muted)]">
-                    Initial Building Grade
-                    <select value={data.pluginConfig["Initial Building Grade"]} onChange={(e) => handleUpdatePluginSetting("Initial Building Grade", parseInt(e.target.value))} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-                      <option value={0} className="bg-[var(--bg-elevated)]">0 - Twig</option>
-                      <option value={1} className="bg-[var(--bg-elevated)]">1 - Wood</option>
-                      <option value={2} className="bg-[var(--bg-elevated)]">2 - Stone</option>
-                      <option value={3} className="bg-[var(--bg-elevated)]">3 - Metal</option>
-                      <option value={4} className="bg-[var(--bg-elevated)]">4 - Armored</option>
-                    </select>
-                  </label>
-                  <label className="text-sm text-[var(--text-muted)]">
-                    Upgraded Building Grade
-                    <select value={data.pluginConfig["Upgraded Building Grade"]} onChange={(e) => handleUpdatePluginSetting("Upgraded Building Grade", parseInt(e.target.value))} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none">
-                      <option value={0} className="bg-[var(--bg-elevated)]">0 - Twig</option>
-                      <option value={1} className="bg-[var(--bg-elevated)]">1 - Wood</option>
-                      <option value={2} className="bg-[var(--bg-elevated)]">2 - Stone</option>
-                      <option value={3} className="bg-[var(--bg-elevated)]">3 - Metal</option>
-                      <option value={4} className="bg-[var(--bg-elevated)]">4 - Armored</option>
-                    </select>
-                  </label>
-                  <label className="text-sm text-[var(--text-muted)]">
-                    Auto Upgrade Delay (seconds, 0 = disabled)
-                    <input type="number" value={data.pluginConfig["Auto Upgrade Delay"]} onChange={(e) => handleUpdatePluginSetting("Auto Upgrade Delay", parseFloat(e.target.value) || 0)} min={0} step={60} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
-                  </label>
-                  <label className="text-sm text-[var(--text-muted)]">
                     Loot Multiplier
                     <input type="number" value={data.pluginConfig["Loot Multiplier"]} onChange={(e) => handleUpdatePluginSetting("Loot Multiplier", parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                   </label>
@@ -1023,6 +1008,31 @@ export default function BasesPage() {
                           <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
                             Spawn
                             <input type="number" value={baseData["Spawn Count"] ?? 10} onChange={(e) => handleUpdateSpawnCount(baseType, parseInt(e.target.value) || 0)} min={0} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
+                          </label>
+                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
+                            Start
+                            <select value={baseData["Initial Building Grade"] ?? 2} onChange={(e) => handleUpdateBaseDataField(baseType, "Initial Building Grade", parseInt(e.target.value))} className="rounded bg-white/5 border border-white/5 px-1 py-0.5 text-xs text-white focus:outline-none">
+                              <option value={0} className="bg-[var(--bg-elevated)]">Twig</option>
+                              <option value={1} className="bg-[var(--bg-elevated)]">Wood</option>
+                              <option value={2} className="bg-[var(--bg-elevated)]">Stone</option>
+                              <option value={3} className="bg-[var(--bg-elevated)]">Metal</option>
+                              <option value={4} className="bg-[var(--bg-elevated)]">HQM</option>
+                            </select>
+                          </label>
+                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
+                            Upgrade to
+                            <select value={baseData["Upgraded Building Grade"] ?? 3} onChange={(e) => handleUpdateBaseDataField(baseType, "Upgraded Building Grade", parseInt(e.target.value))} className="rounded bg-white/5 border border-white/5 px-1 py-0.5 text-xs text-white focus:outline-none">
+                              <option value={0} className="bg-[var(--bg-elevated)]">Twig</option>
+                              <option value={1} className="bg-[var(--bg-elevated)]">Wood</option>
+                              <option value={2} className="bg-[var(--bg-elevated)]">Stone</option>
+                              <option value={3} className="bg-[var(--bg-elevated)]">Metal</option>
+                              <option value={4} className="bg-[var(--bg-elevated)]">HQM</option>
+                            </select>
+                          </label>
+                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
+                            after
+                            <input type="number" value={baseData["Auto Upgrade Delay"] ?? 0} onChange={(e) => handleUpdateBaseDataField(baseType, "Auto Upgrade Delay", parseFloat(e.target.value) || 0)} min={0} step={60} className="w-16 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
+                            s
                           </label>
                         </h4>
                         {unassignedFiles.length > 0 && (

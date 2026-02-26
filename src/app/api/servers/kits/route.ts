@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       // Resolve category/subcategory IDs to human-readable names
       const categories = parsed._categories || {}
       const perksMap = (parseStoreData(kitConfig.storeData).perks ?? {}) as Record<string, PerksData>
-      const kitList = Object.values(parsed._kits).map((kit) => {
+      const kitList = Object.entries(parsed._kits).map(([kitUuid, kit]) => {
         const resolved = { ...kit } as Record<string, unknown>
         if (resolved.Category && categories[resolved.Category as string]) {
           const catName = categories[resolved.Category as string].name
@@ -151,9 +151,8 @@ export async function GET(request: NextRequest) {
           resolved.Category = undefined
           resolved.Subcategory = undefined
         }
-        // Attach perks keyed by kit UUID
-        const kitUuid = resolved.uuid as string | undefined
-        resolved.Perks = kitUuid ? (perksMap[kitUuid] ?? null) : null
+        // Attach perks keyed by kit UUID (key of _kits map)
+        resolved.Perks = perksMap[kitUuid] ?? null
         return resolved
       })
 
