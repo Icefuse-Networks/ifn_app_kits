@@ -17,6 +17,12 @@ import { safeParseKitData } from '@/lib/utils/kit'
 import { logger } from '@/lib/logger'
 import { isValidPrefixedId } from '@/lib/id'
 import type { KitsData } from '@/types/kit'
+import type { PerksData } from '@/components/kit-manager/modals/PerksModal'
+
+function parseStoreData(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw) return {}
+  try { return JSON.parse(raw) as Record<string, unknown> } catch { return {} }
+}
 
 /**
  * GET /api/servers/kits
@@ -63,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Single config mode: plugin requests a specific kit configuration
     // Prefer ID-based lookup if provided
     if (idParam || configParam) {
-      let kitConfig: { id: string; name: string; kitData: string } | null = null
+      let kitConfig: { id: string; name: string; kitData: string; storeData?: string | null } | null = null
 
       if (idParam) {
         // Check if this is a category ID or a server identifier
@@ -71,7 +77,7 @@ export async function GET(request: NextRequest) {
           // Direct category ID lookup (legacy)
           kitConfig = await prisma.kitConfig.findUnique({
             where: { id: idParam },
-            select: { id: true, name: true, kitData: true },
+            select: { id: true, name: true, kitData: true, storeData: true },
           })
         } else {
           // Server identifier lookup - find via ServerIdentifier -> KitMapping -> KitConfig
@@ -93,7 +99,7 @@ export async function GET(request: NextRequest) {
             if (mapping?.configId) {
               kitConfig = await prisma.kitConfig.findUnique({
                 where: { id: mapping.configId },
-                select: { id: true, name: true, kitData: true },
+                select: { id: true, name: true, kitData: true, storeData: true },
               })
             }
           }
@@ -102,7 +108,7 @@ export async function GET(request: NextRequest) {
         // Legacy: lookup by name (first match)
         kitConfig = await prisma.kitConfig.findFirst({
           where: { name: configParam.trim() },
-          select: { id: true, name: true, kitData: true },
+          select: { id: true, name: true, kitData: true, storeData: true },
         })
       }
 
@@ -129,13 +135,14 @@ export async function GET(request: NextRequest) {
       // Return flat kit array for direct plugin consumption
       // Resolve category/subcategory IDs to human-readable names
       const categories = parsed._categories || {}
+      const perksMap = (parseStoreData(kitConfig.storeData).perks ?? {}) as Record<string, PerksData>
       const kitList = Object.values(parsed._kits).map((kit) => {
-        const resolved = { ...kit }
-        if (resolved.Category && categories[resolved.Category]) {
-          const catName = categories[resolved.Category].name
+        const resolved = { ...kit } as Record<string, unknown>
+        if (resolved.Category && categories[resolved.Category as string]) {
+          const catName = categories[resolved.Category as string].name
           // Resolve subcategory name if present
-          if (resolved.Subcategory && categories[resolved.Category].subcategories?.[resolved.Subcategory]) {
-            resolved.Subcategory = categories[resolved.Category].subcategories[resolved.Subcategory].name
+          if (resolved.Subcategory && categories[resolved.Category as string].subcategories?.[resolved.Subcategory as string]) {
+            resolved.Subcategory = categories[resolved.Category as string].subcategories[resolved.Subcategory as string].name
           } else {
             resolved.Subcategory = undefined
           }
@@ -144,6 +151,9 @@ export async function GET(request: NextRequest) {
           resolved.Category = undefined
           resolved.Subcategory = undefined
         }
+        // Attach perks keyed by kit UUID
+        const kitUuid = resolved.uuid as string | undefined
+        resolved.Perks = kitUuid ? (perksMap[kitUuid] ?? null) : null
         return resolved
       })
 
