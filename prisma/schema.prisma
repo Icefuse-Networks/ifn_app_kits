@@ -218,6 +218,7 @@ model ServerIdentifier {
   lootMappings  LootMapping[]
   basesMappings BasesMapping[]
   kitMappings   KitMapping[]
+  shopMappings  ShopMapping[]
 
   @@unique([ip, port])
   @@index([hashedId])
@@ -1036,5 +1037,57 @@ model FeedbackReward {
   @@index([steamId])
   @@index([status])
   @@map("feedback_reward")
+}
+
+// =============================================================================
+// SHOP PLUGIN
+// =============================================================================
+
+model ShopConfig {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(100)
+  description      String?
+  categoriesData   String             @map("categories_data")
+  itemsData        String             @map("items_data")
+  currentVersion   Int                @default(1) @map("current_version")
+  publishedVersion Int?               @map("published_version")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  versions         ShopConfigVersion[]
+  mappings         ShopMapping[]
+
+  @@index([name])
+  @@map("shop_configs")
+}
+
+model ShopMapping {
+  id                 Int              @id @default(autoincrement())
+  configId           Int              @map("config_id")
+  serverIdentifierId String           @map("server_identifier_id") @db.VarChar(60)
+  isLive             Boolean          @default(false) @map("is_live")
+  minutesAfterWipe   Int?             @map("minutes_after_wipe")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  config             ShopConfig       @relation(fields: [configId], references: [id], onDelete: Cascade)
+  serverIdentifier   ServerIdentifier @relation(fields: [serverIdentifierId], references: [id], onDelete: Cascade)
+
+  @@unique([serverIdentifierId, minutesAfterWipe])
+  @@index([configId])
+  @@index([serverIdentifierId])
+  @@map("shop_mappings")
+}
+
+model ShopConfigVersion {
+  id             Int        @id @default(autoincrement())
+  configId       Int        @map("config_id")
+  categoriesData String     @map("categories_data")
+  itemsData      String     @map("items_data")
+  version        Int
+  createdAt      DateTime   @default(now()) @map("created_at")
+  config         ShopConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, version])
+  @@index([configId])
+  @@map("shop_config_versions")
 }
 

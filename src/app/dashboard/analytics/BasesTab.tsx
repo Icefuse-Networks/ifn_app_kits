@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Castle, RefreshCw, Clock, TrendingUp, BarChart3, Calendar, Users, Target, Skull,
-  ChevronDown, ChevronUp, Shield, Hammer, Box, CheckCircle2
+  ChevronDown, ChevronUp, Shield, Hammer, Box, CheckCircle2, Crosshair, Layers, Timer
 } from "lucide-react";
 import {
   StatCard, ChartCard, BarChart, PieChart, TimeSeriesChart, ActivityHeatmap, DataTable, RankBadge, Column,
@@ -22,6 +22,13 @@ interface RaidEvent {
   total_entities_destroyed: number; total_containers_destroyed: number; total_npcs_killed: number;
   raider_steam_ids: string[]; raider_names: string[];
   raider_entities_destroyed: number[]; raider_containers_destroyed: number[]; raider_npcs_killed: number[];
+  entity_type_categories?: string[];
+  entity_type_counts?: number[];
+  time_to_first_container_seconds?: number;
+  time_to_tc_seconds?: number;
+  longest_idle_gap_seconds?: number;
+  raider_weapons_used?: string[];
+  raider_container_prefabs?: string[];
 }
 
 interface AnalyticsData {
@@ -29,6 +36,7 @@ interface AnalyticsData {
     totalRaids: number; completedRaids: number; completionRate: number; avgDuration: number;
     uniqueRaiders: number; totalEntitiesDestroyed: number; totalContainersDestroyed: number;
     totalNpcsKilled: number; avgRaidersPerRaid: number;
+    avgTimeToFirstContainer: number; avgTimeToTC: number; avgLongestIdleGap: number;
   };
   timeSeries: { date: string; raids: number; completed: number; abandoned: number }[];
   topRaiders: { steam_id: string; name: string; raids: number; entities: number; completed: number }[];
@@ -37,6 +45,9 @@ interface AnalyticsData {
   buildingNames: { name: string; value: number }[];
   serverDistribution: { name: string; value: number }[];
   hourlyHeatmap: { hour: number; dayOfWeek: number; count: number }[];
+  weaponUsage: { name: string; value: number }[];
+  entityTypeBreakdown: { name: string; value: number }[];
+  topContainerTypes: { name: string; value: number }[];
 }
 
 const COLORS = ['#f59e0b', '#ef4444', '#a855f7', '#3b82f6', '#22c55e', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316', '#14b8a6'];
@@ -103,7 +114,7 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
       raidList.forEach(r => r.raider_steam_ids?.forEach(id => uniqueRaiderSet.add(id)));
 
       const totalRaiderCount = raidList.reduce((sum, r) => sum + (r.raider_steam_ids?.length || 0), 0);
-      const overview = {
+      const overview: AnalyticsData['overview'] = {
         totalRaids: raidList.length, completedRaids,
         completionRate: raidList.length > 0 ? Math.round((completedRaids / raidList.length) * 100) : 0,
         avgDuration: raidList.length > 0 ? Math.round(raidList.reduce((sum, r) => sum + r.raid_duration_seconds, 0) / raidList.length) : 0,
@@ -112,6 +123,7 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
         totalContainersDestroyed: raidList.reduce((sum, r) => sum + r.total_containers_destroyed, 0),
         totalNpcsKilled: raidList.reduce((sum, r) => sum + r.total_npcs_killed, 0),
         avgRaidersPerRaid: raidList.length > 0 ? +(totalRaiderCount / raidList.length).toFixed(1) : 0,
+        avgTimeToFirstContainer: 0, avgTimeToTC: 0, avgLongestIdleGap: 0,
       };
 
       const dateMap = new Map<string, { raids: number; completed: number; abandoned: number }>();
@@ -168,7 +180,66 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
         return { dayOfWeek: dow, hour: hr, count };
       });
 
-      setAnalytics({ overview, timeSeries, topRaiders, baseTypes, gradeDistribution, buildingNames, serverDistribution, hourlyHeatmap });
+      // Aggregate weapon usage across all raids
+      const weaponMap = new Map<string, number>();
+      raidList.forEach(r => {
+        r.raider_weapons_used?.forEach(jsonStr => {
+          try {
+            const weapons: Record<string, number> = JSON.parse(jsonStr || '{}');
+            for (const [weapon, count] of Object.entries(weapons))
+              weaponMap.set(weapon, (weaponMap.get(weapon) || 0) + count);
+          } catch { /* skip malformed */ }
+        });
+      });
+      const weaponUsage = Array.from(weaponMap.entries())
+        .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+      // Aggregate entity type breakdown
+      const entityTypeMap = new Map<string, number>();
+      raidList.forEach(r => {
+        if (r.entity_type_categories && r.entity_type_counts) {
+          for (let i = 0; i < r.entity_type_categories.length; i++) {
+            const cat = r.entity_type_categories[i];
+            const cnt = r.entity_type_counts[i] || 0;
+            entityTypeMap.set(cat, (entityTypeMap.get(cat) || 0) + cnt);
+          }
+        }
+      });
+      const entityTypeBreakdown = Array.from(entityTypeMap.entries())
+        .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+      // Aggregate container prefab types
+      const containerTypeMap = new Map<string, number>();
+      raidList.forEach(r => {
+        r.raider_container_prefabs?.forEach(jsonStr => {
+          try {
+            const prefabs: Record<string, number> = JSON.parse(jsonStr || '{}');
+            for (const [prefab, count] of Object.entries(prefabs))
+              containerTypeMap.set(prefab, (containerTypeMap.get(prefab) || 0) + count);
+          } catch { /* skip malformed */ }
+        });
+      });
+      const topContainerTypes = Array.from(containerTypeMap.entries())
+        .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+      // Timeline averages (exclude -1 values which mean event never occurred)
+      const containerTimeRaids = raidList.filter(r => (r.time_to_first_container_seconds ?? -1) >= 0);
+      const avgTimeToFirstContainer = containerTimeRaids.length > 0
+        ? Math.round(containerTimeRaids.reduce((s, r) => s + r.time_to_first_container_seconds!, 0) / containerTimeRaids.length) : 0;
+
+      const tcTimeRaids = raidList.filter(r => (r.time_to_tc_seconds ?? -1) >= 0);
+      const avgTimeToTC = tcTimeRaids.length > 0
+        ? Math.round(tcTimeRaids.reduce((s, r) => s + r.time_to_tc_seconds!, 0) / tcTimeRaids.length) : 0;
+
+      const idleGapRaids = raidList.filter(r => (r.longest_idle_gap_seconds ?? 0) > 0);
+      const avgLongestIdleGap = idleGapRaids.length > 0
+        ? Math.round(idleGapRaids.reduce((s, r) => s + r.longest_idle_gap_seconds!, 0) / idleGapRaids.length) : 0;
+
+      overview.avgTimeToFirstContainer = avgTimeToFirstContainer;
+      overview.avgTimeToTC = avgTimeToTC;
+      overview.avgLongestIdleGap = avgLongestIdleGap;
+
+      setAnalytics({ overview, timeSeries, topRaiders, baseTypes, gradeDistribution, buildingNames, serverDistribution, hourlyHeatmap, weaponUsage, entityTypeBreakdown, topContainerTypes });
     } catch (err) { console.error("Analytics fetch error:", err); }
     finally { setAnalyticsLoading(false); }
   }, [timeFilter, serverFilter, baseTypeFilter, serverNameMap]);
@@ -275,6 +346,37 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                 </ChartCard>
               </div>
 
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard icon={Timer} label="Avg Time to First Loot" value={formatDuration(analytics.overview.avgTimeToFirstContainer)} delay={0.6} />
+                <StatCard icon={Shield} label="Avg Time to TC" value={formatDuration(analytics.overview.avgTimeToTC)} delay={0.62} />
+                <StatCard icon={Clock} label="Avg Longest Idle Gap" value={formatDuration(analytics.overview.avgLongestIdleGap)} delay={0.64} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {analytics.weaponUsage.length > 0 && (
+                  <ChartCard title="Weapons Used" icon={Crosshair} delay={0.56}>
+                    <div className="h-72">
+                      <BarChart data={analytics.weaponUsage.slice(0, 10).map(w => ({ label: w.name, value: w.value }))} height="100%" colors={COLORS} />
+                    </div>
+                  </ChartCard>
+                )}
+                {analytics.entityTypeBreakdown.length > 0 && (
+                  <ChartCard title="Entity Types Destroyed" icon={Layers} delay={0.58}>
+                    <div className="h-72">
+                      <PieChart data={analytics.entityTypeBreakdown} height="100%" colors={COLORS} />
+                    </div>
+                  </ChartCard>
+                )}
+              </div>
+
+              {analytics.topContainerTypes.length > 0 && (
+                <ChartCard title="Container Types Destroyed" icon={Box} delay={0.59}>
+                  <div className="h-72">
+                    <BarChart data={analytics.topContainerTypes.slice(0, 10).map(c => ({ label: c.name.replace('_deployed', '').replace('.deployed', ''), value: c.value }))} height="100%" colors={COLORS} />
+                  </div>
+                </ChartCard>
+              )}
+
               <ChartCard title="Raid Activity Heatmap (by Day & Hour)" icon={Calendar} delay={0.65}>
                 <ActivityHeatmap data={heatmapGrid} tooltipPrefix="raids" />
               </ChartCard>
@@ -315,9 +417,18 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                             <Badge variant="secondary" size="sm">{raid.building_grade}</Badge>
                             <span className="text-xs text-[var(--text-muted)]">{raid.building_name}</span>
                           </div>
-                          <div className="text-xs text-[var(--text-muted)] mt-1">
+                          <div className="text-xs text-[var(--text-muted)] mt-1 flex flex-wrap items-center gap-x-1">
                             <Clock className="inline h-3 w-3 mr-1" />{raid.timestamp_str} &bull; {formatDuration(raid.raid_duration_seconds)}
-                            {raid.server_id && <span className="ml-2 text-[var(--text-tertiary)]">&bull; {serverNameMap[raid.server_id] || raid.server_id}</span>}
+                            {raid.time_to_first_container_seconds != null && raid.time_to_first_container_seconds >= 0 && (
+                              <span className="text-[var(--text-tertiary)]">&bull; First loot: {formatDuration(raid.time_to_first_container_seconds)}</span>
+                            )}
+                            {raid.time_to_tc_seconds != null && raid.time_to_tc_seconds >= 0 && (
+                              <span className="text-[var(--text-tertiary)]">&bull; TC: {formatDuration(raid.time_to_tc_seconds)}</span>
+                            )}
+                            {(raid.longest_idle_gap_seconds ?? 0) > 30 && (
+                              <span className="text-[var(--status-warning)]">&bull; Idle: {formatDuration(raid.longest_idle_gap_seconds!)}</span>
+                            )}
+                            {raid.server_id && <span className="text-[var(--text-tertiary)]">&bull; {serverNameMap[raid.server_id] || raid.server_id}</span>}
                           </div>
                         </div>
                       </div>
@@ -336,20 +447,53 @@ export default function BasesTab({ timeFilter, serverFilter, servers, onServersF
                       {isExpanded && raid.raider_steam_ids?.length > 0 && (
                         <div className="border-t border-white/5 overflow-hidden">
                           <div className="p-4">
+                            {/* Entity type breakdown for this raid */}
+                            {raid.entity_type_categories && raid.entity_type_categories.length > 0 && (
+                              <div className="mb-4">
+                                <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">Entity Breakdown</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {raid.entity_type_categories.map((cat, i) => (
+                                    <span key={cat} className="inline-flex items-center gap-1 px-2 py-1 bg-white/5 rounded text-xs text-[var(--text-tertiary)]">
+                                      <span className="text-white font-medium">{raid.entity_type_counts?.[i] || 0}</span> {cat}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Raiders</h4>
                             <div className="overflow-x-auto">
                               <table className="w-full text-sm">
-                                <thead><tr className="text-[var(--text-muted)] text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Entities</th><th className="text-right pb-2">Containers</th><th className="text-right pb-2">NPCs Killed</th></tr></thead>
+                                <thead><tr className="text-[var(--text-muted)] text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Entities</th><th className="text-right pb-2">Containers</th><th className="text-right pb-2">NPCs Killed</th><th className="text-right pb-2">Weapons</th><th className="text-right pb-2">Container Types</th></tr></thead>
                                 <tbody>
-                                  {raid.raider_steam_ids.map((steamId, pIdx) => (
-                                    <tr key={steamId} className="border-t border-white/5">
-                                      <td className="py-2"><RankBadge rank={pIdx + 1} /></td>
-                                      <td className="py-2"><div className="text-white">{raid.raider_names[pIdx] || "Unknown"}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{steamId}</div></td>
-                                      <td className="py-2 text-right text-[var(--status-warning)] font-semibold">{raid.raider_entities_destroyed?.[pIdx] || 0}</td>
-                                      <td className="py-2 text-right text-[var(--status-warning)]">{raid.raider_containers_destroyed?.[pIdx] || 0}</td>
-                                      <td className="py-2 text-right text-[var(--status-error)]">{raid.raider_npcs_killed?.[pIdx] || 0}</td>
-                                    </tr>
-                                  ))}
+                                  {raid.raider_steam_ids.map((steamId, pIdx) => {
+                                    let weapons: Record<string, number> = {};
+                                    let containers: Record<string, number> = {};
+                                    try { weapons = JSON.parse(raid.raider_weapons_used?.[pIdx] || '{}'); } catch { /* skip */ }
+                                    try { containers = JSON.parse(raid.raider_container_prefabs?.[pIdx] || '{}'); } catch { /* skip */ }
+                                    return (
+                                      <tr key={steamId} className="border-t border-white/5 align-top">
+                                        <td className="py-2"><RankBadge rank={pIdx + 1} /></td>
+                                        <td className="py-2"><div className="text-white">{raid.raider_names[pIdx] || "Unknown"}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{steamId}</div></td>
+                                        <td className="py-2 text-right text-[var(--status-warning)] font-semibold">{raid.raider_entities_destroyed?.[pIdx] || 0}</td>
+                                        <td className="py-2 text-right text-[var(--status-warning)]">{raid.raider_containers_destroyed?.[pIdx] || 0}</td>
+                                        <td className="py-2 text-right text-[var(--status-error)]">{raid.raider_npcs_killed?.[pIdx] || 0}</td>
+                                        <td className="py-2 text-right">
+                                          <div className="flex flex-wrap justify-end gap-1">
+                                            {Object.entries(weapons).sort(([,a],[,b]) => b - a).map(([w, c]) => (
+                                              <span key={w} className="inline-block px-1.5 py-0.5 bg-white/5 rounded text-xs text-[var(--text-tertiary)]">{w}: {c}</span>
+                                            ))}
+                                          </div>
+                                        </td>
+                                        <td className="py-2 text-right">
+                                          <div className="flex flex-wrap justify-end gap-1">
+                                            {Object.entries(containers).sort(([,a],[,b]) => b - a).map(([p, c]) => (
+                                              <span key={p} className="inline-block px-1.5 py-0.5 bg-white/5 rounded text-xs text-[var(--text-tertiary)]">{p.replace('_deployed', '').replace('.deployed', '')}: {c}</span>
+                                            ))}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>

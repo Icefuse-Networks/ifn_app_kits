@@ -112,7 +112,7 @@ response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocatio
 ## CORS (Whitelist Origins)
 
 ```typescript
-const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production' ? ['https://yourdomain.com'] : ['http://localhost:3000']
+const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production' ? [process.env.NEXTAUTH_URL!] : ['http://localhost:3020']
 
 export function corsHeaders(origin: string | null) {
   const isAllowed = origin && ALLOWED_ORIGINS.includes(origin)
@@ -130,10 +130,10 @@ export function corsHeaders(origin: string | null) {
 
 ## React Server Components (CVE-2025-55182)
 
-**Critical RCE (CVSS 10.0) - Upgrade Required:**
-- Next.js: 14.2.35+, 15.0.7+, 15.1.11+
+**Critical RCE (CVSS 10.0) - Upgrade Required (minimum patch versions):**
+- Next.js: 14.2.35+ / 15.0.7+ / 15.1.11+
 - React: 19.0.0-rc-69d4b800-20241021+
-- Also: CVE-2025-55183, CVE-2025-55184, CVE-2026-23864
+- Related: CVE-2025-55183 (SSRF), CVE-2025-55184 (header injection), CVE-2026-23864 (path traversal)
 
 **Taint APIs:**
 
@@ -157,7 +157,7 @@ export async function updateUser(formData: FormData) {
     name: formData.get('name'), email: formData.get('email')
   })
 
-  await db.update(session.userId, data) // Session-derived ID
+  await db.update(session.context.actorId, data) // Session-derived ID
 }
 ```
 

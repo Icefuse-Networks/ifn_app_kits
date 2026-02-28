@@ -166,6 +166,7 @@ export const logger = {
   admin: createModuleLogger('admin'),
   analytics: createModuleLogger('analytics'),
   stats: createModuleLogger('stats'),
+  shop: createModuleLogger('shop'),
   log: createModuleLogger('app'),
 }
 

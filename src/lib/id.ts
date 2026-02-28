@@ -144,6 +144,10 @@ registerPrefix('statsWipe', 'statswipe', 'Stats Wipe', 'stats')
 registerPrefix('feedback', 'fb', 'Feedback', 'feedback')
 registerPrefix('feedbackReward', 'fbrw', 'Feedback Reward', 'feedback')
 
+// Shop plugin entities
+registerPrefix('shopConfig', 'shopcfg', 'Shop Config', 'shop')
+registerPrefix('shopMapping', 'shopmap', 'Shop Mapping', 'shop')
+
 // =============================================================================
 // Legacy Type Support
 // =============================================================================
@@ -202,6 +206,9 @@ export type IdType =
   // Feedback plugin
   | 'feedback'
   | 'feedbackReward'
+  // Shop plugin
+  | 'shopConfig'
+  | 'shopMapping'
 
 // =============================================================================
 // Core Functions
@@ -385,6 +392,10 @@ export const id = {
   // Feedback plugin
   feedback: () => generateId('feedback'),
   feedbackReward: () => generateId('feedbackReward'),
+
+  // Shop plugin
+  shopConfig: () => generateId('shopConfig'),
+  shopMapping: () => generateId('shopMapping'),
 } as const
 
 /**

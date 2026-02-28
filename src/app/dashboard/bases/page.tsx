@@ -40,14 +40,13 @@ interface ContainerMappingData {
 interface BaseData {
   Buildings: string[];
   "Spawn Count": number;
-  "Initial Building Grade": number;
-  "Upgraded Building Grade": number;
-  "Auto Upgrade Delay": number;
+  "Max Building Grade": number; // each base rolls a random target between global initial and this
 }
 
 interface BasesPluginConfig {
   "Bases Data": Record<string, BaseData>;
   "Container Mappings": Record<string, ContainerMappingData>;
+  "Initial Building Grade": number;
   "Loot Multiplier": number;
   "Wipe Progression Enabled": boolean;
   "Wipe Progression Min Scale": number;
@@ -83,9 +82,9 @@ const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
 const DEFAULT_CONFIG: BasesConfigData = {
   pluginConfig: {
     "Bases Data": {
-      Small:  { Buildings: [], "Spawn Count": 20, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
-      Medium: { Buildings: [], "Spawn Count": 15, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
-      Large:  { Buildings: [], "Spawn Count": 10, "Initial Building Grade": 2, "Upgraded Building Grade": 4, "Auto Upgrade Delay": 0 },
+      Small:  { Buildings: [], "Spawn Count": 20, "Max Building Grade": 3 },
+      Medium: { Buildings: [], "Spawn Count": 15, "Max Building Grade": 3 },
+      Large:  { Buildings: [], "Spawn Count": 10, "Max Building Grade": 4 },
     },
     "Container Mappings": {
       "box.wooden.large": { "Loot Tables": ["weapons", "armor", "components", "mixed"], "Min Items": 12, "Max Items": 24 },
@@ -98,6 +97,7 @@ const DEFAULT_CONFIG: BasesConfigData = {
       "bamboo_barrel": { "Loot Tables": ["armor", "locker"], "Min Items": 4, "Max Items": 8 },
       "cupboard.tool.deployed": { "Loot Tables": ["toolcupboard"], "Min Items": 3, "Max Items": 6 },
     },
+    "Initial Building Grade": 2,
     "Loot Multiplier": 1.0,
     "Wipe Progression Enabled": true,
     "Wipe Progression Min Scale": 0.3,
@@ -241,9 +241,9 @@ export default function BasesPage() {
     if (allBuildings.length > 0) return; // already has data
 
     const basesData: Record<string, BaseData> = {
-      Small:  { Buildings: [], "Spawn Count": 20, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
-      Medium: { Buildings: [], "Spawn Count": 15, "Initial Building Grade": 2, "Upgraded Building Grade": 3, "Auto Upgrade Delay": 0 },
-      Large:  { Buildings: [], "Spawn Count": 10, "Initial Building Grade": 2, "Upgraded Building Grade": 4, "Auto Upgrade Delay": 0 },
+      Small:  { Buildings: [], "Spawn Count": 20, "Max Building Grade": 3 },
+      Medium: { Buildings: [], "Spawn Count": 15, "Max Building Grade": 3 },
+      Large:  { Buildings: [], "Spawn Count": 10, "Max Building Grade": 4 },
     };
     for (const file of basesFiles) {
       const cat = categorizeBaseName(file.name);
@@ -661,10 +661,10 @@ export default function BasesPage() {
     });
   }, [setData]);
 
-  const handleUpdateBaseDataField = useCallback((baseType: string, field: "Initial Building Grade" | "Upgraded Building Grade" | "Auto Upgrade Delay", value: number) => {
+  const handleUpdateMaxGrade = useCallback((baseType: string, value: number) => {
     setData(prev => {
       const basesData = { ...prev.pluginConfig["Bases Data"] };
-      basesData[baseType] = { ...basesData[baseType], [field]: value };
+      basesData[baseType] = { ...basesData[baseType], "Max Building Grade": value };
       return { ...prev, pluginConfig: { ...prev.pluginConfig, "Bases Data": basesData } };
     });
   }, [setData]);
@@ -888,6 +888,16 @@ export default function BasesPage() {
                 <h3 className="text-sm font-semibold text-white mb-4">Global Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="text-sm text-[var(--text-muted)]">
+                    Initial Building Grade
+                    <select value={data.pluginConfig["Initial Building Grade"] ?? 2} onChange={(e) => handleUpdatePluginSetting("Initial Building Grade", parseInt(e.target.value))} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none">
+                      <option value={0} className="bg-[var(--bg-elevated)]">Twig</option>
+                      <option value={1} className="bg-[var(--bg-elevated)]">Wood</option>
+                      <option value={2} className="bg-[var(--bg-elevated)]">Stone</option>
+                      <option value={3} className="bg-[var(--bg-elevated)]">Metal</option>
+                      <option value={4} className="bg-[var(--bg-elevated)]">HQM</option>
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--text-muted)]">
                     Loot Multiplier
                     <input type="number" value={data.pluginConfig["Loot Multiplier"]} onChange={(e) => handleUpdatePluginSetting("Loot Multiplier", parseFloat(e.target.value) || 1)} min={0.1} step={0.1} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
                   </label>
@@ -1010,29 +1020,14 @@ export default function BasesPage() {
                             <input type="number" value={baseData["Spawn Count"] ?? 10} onChange={(e) => handleUpdateSpawnCount(baseType, parseInt(e.target.value) || 0)} min={0} className="w-14 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
                           </label>
                           <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
-                            Start
-                            <select value={baseData["Initial Building Grade"] ?? 2} onChange={(e) => handleUpdateBaseDataField(baseType, "Initial Building Grade", parseInt(e.target.value))} className="rounded bg-white/5 border border-white/5 px-1 py-0.5 text-xs text-white focus:outline-none">
+                            Max grade
+                            <select value={baseData["Max Building Grade"] ?? 3} onChange={(e) => handleUpdateMaxGrade(baseType, parseInt(e.target.value))} className="rounded bg-white/5 border border-white/5 px-1 py-0.5 text-xs text-white focus:outline-none">
                               <option value={0} className="bg-[var(--bg-elevated)]">Twig</option>
                               <option value={1} className="bg-[var(--bg-elevated)]">Wood</option>
                               <option value={2} className="bg-[var(--bg-elevated)]">Stone</option>
                               <option value={3} className="bg-[var(--bg-elevated)]">Metal</option>
                               <option value={4} className="bg-[var(--bg-elevated)]">HQM</option>
                             </select>
-                          </label>
-                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
-                            Upgrade to
-                            <select value={baseData["Upgraded Building Grade"] ?? 3} onChange={(e) => handleUpdateBaseDataField(baseType, "Upgraded Building Grade", parseInt(e.target.value))} className="rounded bg-white/5 border border-white/5 px-1 py-0.5 text-xs text-white focus:outline-none">
-                              <option value={0} className="bg-[var(--bg-elevated)]">Twig</option>
-                              <option value={1} className="bg-[var(--bg-elevated)]">Wood</option>
-                              <option value={2} className="bg-[var(--bg-elevated)]">Stone</option>
-                              <option value={3} className="bg-[var(--bg-elevated)]">Metal</option>
-                              <option value={4} className="bg-[var(--bg-elevated)]">HQM</option>
-                            </select>
-                          </label>
-                          <label className="text-xs text-[var(--text-muted)] flex items-center gap-1 ml-2">
-                            after
-                            <input type="number" value={baseData["Auto Upgrade Delay"] ?? 0} onChange={(e) => handleUpdateBaseDataField(baseType, "Auto Upgrade Delay", parseFloat(e.target.value) || 0)} min={0} step={60} className="w-16 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-xs text-white text-center focus:outline-none" />
-                            s
                           </label>
                         </h4>
                         {unassignedFiles.length > 0 && (

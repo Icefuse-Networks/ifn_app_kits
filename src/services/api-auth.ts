@@ -282,6 +282,20 @@ export async function requireAnnouncementsWrite(request: NextRequest): Promise<A
 }
 
 /**
+ * Require authentication for shop:read
+ */
+export async function requireShopRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'shop:read')
+}
+
+/**
+ * Require authentication for shop:write
+ */
+export async function requireShopWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'shop:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

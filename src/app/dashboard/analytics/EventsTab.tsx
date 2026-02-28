@@ -19,7 +19,7 @@ import { Loading } from "@/components/ui/Loading";
 interface Participant { steam_id: string; name: string; kills: number; deaths: number; position: number; }
 
 interface EventCompletion {
-  timestamp: string; server_id: string; event_type: "koth" | "maze";
+  timestamp_str: string; server_id: string; event_type: "koth" | "maze";
   winner_steam_id: string; winner_name: string; winner_clan_tag: string | null; winner_kills: number;
   is_clan_mode: number; event_modes: string[]; location: string | null; duration_seconds: number;
   participants: Participant[];
@@ -108,7 +108,7 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
 
       const dateMap = new Map<string, { events: number; participants: number; kills: number }>();
       eventsList.forEach(e => {
-        const date = e.timestamp.split(' ')[0];
+        const date = e.timestamp_str.split(' ')[0];
         const existing = dateMap.get(date) || { events: 0, participants: 0, kills: 0 };
         existing.events++; existing.participants += e.participants?.length || 0;
         existing.kills += e.participants?.reduce((s, p) => s + p.kills, 0) || 0;
@@ -133,7 +133,7 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
 
       const heatmapMap = new Map<string, number>();
       eventsList.forEach(e => {
-        const date = new Date(e.timestamp.replace(' ', 'T'));
+        const date = new Date(e.timestamp_str.replace(' ', 'T'));
         const dayOfWeek = date.getDay() || 7;
         const key = `${dayOfWeek}-${date.getHours()}`;
         heatmapMap.set(key, (heatmapMap.get(key) || 0) + 1);
@@ -258,13 +258,13 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
           {loading ? <Loading size="lg" text="Loading events..." /> : (
             <div className="anim-fade-slide-up space-y-4">
               {events.map((event, idx) => {
-                const isExpanded = expandedEvent === `${event.timestamp}-${event.winner_steam_id}`;
+                const isExpanded = expandedEvent === `${event.timestamp_str}-${event.winner_steam_id}`;
                 return (
-                  <div key={`${event.timestamp}-${event.winner_steam_id}-${idx}`}
+                  <div key={`${event.timestamp_str}-${event.winner_steam_id}-${idx}`}
                     className="anim-stagger-item rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:border-[var(--status-warning)]/30 transition-colors"
                     style={{ animationDelay: `${idx * 20}ms` }}>
                     <div className="p-4 cursor-pointer flex items-center justify-between"
-                      onClick={() => setExpandedEvent(isExpanded ? null : `${event.timestamp}-${event.winner_steam_id}`)}>
+                      onClick={() => setExpandedEvent(isExpanded ? null : `${event.timestamp_str}-${event.winner_steam_id}`)}>
                       <div className="flex items-center gap-4">
                         <div className={`p-2 rounded-lg ${event.event_type === 'koth' ? 'bg-[var(--status-warning)]/20' : 'bg-[var(--accent-primary)]/20'}`}>
                           {event.event_type === 'koth' ? <Target className="h-5 w-5 text-[var(--status-warning)]" /> : <MapPin className="h-5 w-5 text-[var(--accent-primary)]" />}
@@ -277,7 +277,7 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                               <div className="flex gap-1">{event.event_modes.map(mode => <Badge key={mode} variant="secondary" size="sm">{mode}</Badge>)}</div>
                             )}
                           </div>
-                          <div className="text-xs text-[var(--text-muted)] mt-1"><Clock className="inline h-3 w-3 mr-1" />{event.timestamp} • {formatDuration(event.duration_seconds)}</div>
+                          <div className="text-xs text-[var(--text-muted)] mt-1"><Clock className="inline h-3 w-3 mr-1" />{event.timestamp_str} • {formatDuration(event.duration_seconds)}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-6">
@@ -304,7 +304,7 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                                 <thead><tr className="text-[var(--text-muted)] text-xs uppercase"><th className="text-left pb-2">#</th><th className="text-left pb-2">Player</th><th className="text-right pb-2">Kills</th><th className="text-right pb-2">Deaths</th><th className="text-right pb-2">K/D</th></tr></thead>
                                 <tbody>
                                   {[...event.participants].sort((a, b) => a.position - b.position).map((p, pIdx) => (
-                                    <tr key={p.steam_id} className="border-t border-white/5">
+                                    <tr key={`${p.steam_id}-${pIdx}`} className="border-t border-white/5">
                                       <td className="py-2"><RankBadge rank={p.position || pIdx + 1} /></td>
                                       <td className="py-2"><div className="text-white">{p.name}</div><div className="text-xs text-[var(--text-tertiary)] font-mono">{p.steam_id}</div></td>
                                       <td className="py-2 text-right text-[var(--status-error)] font-semibold">{p.kills}</td>

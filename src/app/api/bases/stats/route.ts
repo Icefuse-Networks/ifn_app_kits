@@ -17,6 +17,8 @@ const raiderSchema = z.object({
   entities_destroyed: z.coerce.number().int().min(0).max(100000).default(0),
   containers_destroyed: z.coerce.number().int().min(0).max(10000).default(0),
   npcs_killed: z.coerce.number().int().min(0).max(1000).default(0),
+  weapons_used: z.record(z.string(), z.coerce.number().int().min(0).max(100000)).default({}),
+  container_prefabs_destroyed: z.record(z.string(), z.coerce.number().int().min(0).max(10000)).default({}),
 });
 
 const postSchema = z.object({
@@ -31,6 +33,10 @@ const postSchema = z.object({
   total_containers_destroyed: z.coerce.number().int().min(0).max(10000).default(0),
   total_npcs_killed: z.coerce.number().int().min(0).max(1000).default(0),
   raiders: z.array(raiderSchema).max(100).default([]),
+  entity_type_breakdown: z.record(z.string(), z.coerce.number().int().min(0).max(100000)).default({}),
+  time_to_first_container_seconds: z.coerce.number().int().min(-1).max(86400).default(-1),
+  time_to_tc_seconds: z.coerce.number().int().min(-1).max(86400).default(-1),
+  longest_idle_gap_seconds: z.coerce.number().int().min(0).max(86400).default(0),
 });
 
 const getQuerySchema = z.object({
@@ -122,7 +128,14 @@ export async function GET(request: NextRequest) {
           raider_names,
           raider_entities_destroyed,
           raider_containers_destroyed,
-          raider_npcs_killed
+          raider_npcs_killed,
+          entity_type_categories,
+          entity_type_counts,
+          time_to_first_container_seconds,
+          time_to_tc_seconds,
+          longest_idle_gap_seconds,
+          raider_weapons_used,
+          raider_container_prefabs
         FROM bases_raid_events
         WHERE 1=1 ${timeFilter}
           AND ({server_id:String} = '' OR server_id = {server_id:String})
@@ -168,6 +181,10 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // Flatten entity_type_breakdown into parallel arrays
+    const entityCategories = Object.keys(data.entity_type_breakdown);
+    const entityCounts = Object.values(data.entity_type_breakdown);
+
     const row = {
       server_id: data.server_id,
       base_id: data.base_id,
@@ -184,6 +201,13 @@ export async function POST(request: NextRequest) {
       raider_entities_destroyed: data.raiders.map(r => r.entities_destroyed),
       raider_containers_destroyed: data.raiders.map(r => r.containers_destroyed),
       raider_npcs_killed: data.raiders.map(r => r.npcs_killed),
+      entity_type_categories: entityCategories,
+      entity_type_counts: entityCounts,
+      time_to_first_container_seconds: data.time_to_first_container_seconds,
+      time_to_tc_seconds: data.time_to_tc_seconds,
+      longest_idle_gap_seconds: data.longest_idle_gap_seconds,
+      raider_weapons_used: data.raiders.map(r => JSON.stringify(r.weapons_used)),
+      raider_container_prefabs: data.raiders.map(r => JSON.stringify(r.container_prefabs_destroyed)),
     };
 
     await clickhouse.insert({

@@ -1,7 +1,7 @@
 import {
   Package, Settings, BarChart2, Shield, Key, HardDrive,
   MessageSquare, MessageCircle, Box, ArrowRightLeft,
-  Gift, Castle, LucideIcon
+  Gift, Castle, ShoppingCart, LucideIcon
 } from 'lucide-react'
 
 export interface NavItem {
@@ -29,6 +29,7 @@ export const dashboardSections: NavSection[] = [
       { href: '/dashboard/bases', icon: Castle, label: 'Bases', desc: 'IcefuseBases loot tables and config', gradient: 'from-emerald-500 to-teal-500' },
       { href: '/dashboard/redirection', icon: ArrowRightLeft, label: 'Redirection', desc: 'AFK redirect settings and logs', gradient: 'from-orange-500 to-red-500' },
       { href: '/dashboard/giveaways', icon: Gift, label: 'Giveaways', desc: 'Manage giveaway players and select winners', gradient: 'from-pink-500 to-purple-600' },
+      { href: '/dashboard/shop', icon: ShoppingCart, label: 'Shop', desc: 'Configure in-game shop items and pricing', gradient: 'from-green-500 to-emerald-600' },
       { href: '/dashboard/feedback', icon: MessageCircle, label: 'Feedback', desc: 'Review player feedback and bug reports', gradient: 'from-cyan-500 to-blue-500' },
     ]
   },

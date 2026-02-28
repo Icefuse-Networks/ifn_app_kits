@@ -39,6 +39,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/announcements',
   '/api/giveaway',
   '/api/feedback',
+  '/api/shop/download',
   '/kits',
   '/_next',
   '/logos',

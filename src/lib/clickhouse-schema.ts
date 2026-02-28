@@ -95,6 +95,13 @@ CREATE TABLE IF NOT EXISTS bases_raid_events (
     raider_entities_destroyed Array(UInt16),
     raider_containers_destroyed Array(UInt16),
     raider_npcs_killed Array(UInt16),
+    entity_type_categories Array(String),
+    entity_type_counts Array(UInt16),
+    time_to_first_container_seconds Int32 DEFAULT -1,
+    time_to_tc_seconds Int32 DEFAULT -1,
+    longest_idle_gap_seconds UInt32 DEFAULT 0,
+    raider_weapons_used Array(String),
+    raider_container_prefabs Array(String),
     timestamp DateTime DEFAULT now()
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
@@ -307,6 +314,13 @@ const COLUMN_DEFINITIONS: Record<string, Array<{ name: string; type: string }>> 
     { name: 'raider_entities_destroyed', type: 'Array(UInt16)' },
     { name: 'raider_containers_destroyed', type: 'Array(UInt16)' },
     { name: 'raider_npcs_killed', type: 'Array(UInt16)' },
+    { name: 'entity_type_categories', type: 'Array(String)' },
+    { name: 'entity_type_counts', type: 'Array(UInt16)' },
+    { name: 'time_to_first_container_seconds', type: 'Int32 DEFAULT -1' },
+    { name: 'time_to_tc_seconds', type: 'Int32 DEFAULT -1' },
+    { name: 'longest_idle_gap_seconds', type: 'UInt32 DEFAULT 0' },
+    { name: 'raider_weapons_used', type: 'Array(String)' },
+    { name: 'raider_container_prefabs', type: 'Array(String)' },
     { name: 'timestamp', type: 'DateTime' },
   ],
   rust_player_stats_wipe: RUST_PLAYER_STATS_COLUMNS,

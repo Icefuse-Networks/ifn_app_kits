@@ -117,6 +117,10 @@ registerScope('stats:write', 'Submit player statistics from game servers', 'stat
 registerScope('feedback:read', 'Read feedback submissions and reward queue', 'feedback')
 registerScope('feedback:write', 'Submit feedback and manage reward status', 'feedback')
 
+// Shop plugin scopes
+registerScope('shop:read', 'Read shop configurations from game servers', 'shop')
+registerScope('shop:write', 'Create and update shop configurations', 'shop')
+
 /**
  * All available scopes (for backwards compatibility)
  */
@@ -354,6 +358,10 @@ registerResourceType('stats_wipe', 'Stats Wipe Event', 'stats')
 // Feedback plugin resources
 registerResourceType('feedback', 'Feedback', 'feedback')
 registerResourceType('feedback_reward', 'Feedback Reward', 'feedback')
+
+// Shop plugin resources
+registerResourceType('shop_config', 'Shop Configuration', 'shop')
+registerResourceType('shop_mapping', 'Shop Mapping', 'shop')
 
 /**
  * Known resource types (for backwards compatibility and type hints)

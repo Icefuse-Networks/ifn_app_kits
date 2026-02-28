@@ -118,12 +118,12 @@ Button.displayName = 'Button'
 // =============================================================================
 
 export interface IconButtonProps extends Omit<ButtonProps, 'leftIcon' | 'rightIcon'> {
-  icon: ReactNode
+  icon?: ReactNode
   label?: string
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ icon, label, size = 'md', className = '', ...props }, ref) => {
+  ({ icon, label, size = 'md', className = '', children, ...props }, ref) => {
     const sizeClasses = {
       sm: 'p-1.5',
       md: 'p-2',
@@ -145,7 +145,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         {...props}
       >
-        {icon}
+        {icon || children}
       </button>
     )
   }
