@@ -3,11 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft, Server, Users, ChevronRight, Wifi, WifiOff, Plus,
-  Folder, ChevronDown, Activity
+  Folder, ChevronDown, Activity, Settings, Trash2, Edit3, X
 } from 'lucide-react'
 import Link from 'next/link'
 import {
-  Modal,
+  Modal, ConfirmModal,
   Input,
   Button,
   IconButton,
@@ -61,6 +61,13 @@ export default function ServersPage() {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCategoryId, setNewCategoryId] = useState<string | null>(null)
+  // Category management
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [creatingCategory, setCreatingCategory] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
+  const [editCategoryName, setEditCategoryName] = useState('')
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -153,6 +160,61 @@ export default function ServersPage() {
     })
   }
 
+  async function createCategory() {
+    if (!newCategoryName.trim()) return
+    setCreatingCategory(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/identifier-categories', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create category')
+      setNewCategoryName('')
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create category')
+    } finally {
+      setCreatingCategory(false)
+    }
+  }
+
+  async function renameCategory() {
+    if (!editingCategory || !editCategoryName.trim()) return
+    setError(null)
+    try {
+      const res = await fetch(`/api/identifier-categories/${editingCategory.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editCategoryName.trim() }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to rename category')
+      setEditingCategory(null)
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to rename category')
+    }
+  }
+
+  async function deleteCategory() {
+    if (!deletingCategoryId) return
+    setError(null)
+    try {
+      const res = await fetch(`/api/identifier-categories/${deletingCategoryId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete category')
+      setDeletingCategoryId(null)
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete category')
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="anim-fade-slide-up">
@@ -177,6 +239,13 @@ export default function ServersPage() {
               </span>
               <span className="text-xs font-medium text-[var(--status-success)]">Live</span>
             </div>
+            <Button
+              variant="secondary"
+              onClick={() => setShowCategoryManager(true)}
+              icon={<Settings className="w-4 h-4" />}
+            >
+              Categories
+            </Button>
             <Button
               variant="primary"
               onClick={() => setShowCreateForm(true)}
@@ -331,6 +400,83 @@ export default function ServersPage() {
             />
           </div>
         </Modal>
+
+        {/* Category Manager Modal */}
+        <Modal
+          isOpen={showCategoryManager}
+          onClose={() => { setShowCategoryManager(false); setEditingCategory(null); setNewCategoryName('') }}
+          title="Manage Categories"
+          icon={<Folder className="w-5 h-5" />}
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                placeholder="New category name..."
+                onKeyDown={e => e.key === 'Enter' && createCategory()}
+                className="flex-1"
+              />
+              <Button
+                variant="primary"
+                onClick={createCategory}
+                disabled={!newCategoryName.trim() || creatingCategory}
+                loading={creatingCategory}
+                icon={<Plus className="w-4 h-4" />}
+              >
+                Add
+              </Button>
+            </div>
+            {categories.length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] text-center py-4">No categories yet</p>
+            ) : (
+              <div className="space-y-2">
+                {categories.map(cat => (
+                  <div key={cat.id} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--glass-border)]">
+                    {editingCategory?.id === cat.id ? (
+                      <>
+                        <Input
+                          value={editCategoryName}
+                          onChange={e => setEditCategoryName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') renameCategory(); if (e.key === 'Escape') setEditingCategory(null); }}
+                          className="flex-1"
+                          autoFocus
+                        />
+                        <Button variant="primary" onClick={renameCategory} size="sm">Save</Button>
+                        <IconButton icon={<X className="w-4 h-4" />} onClick={() => setEditingCategory(null)} />
+                      </>
+                    ) : (
+                      <>
+                        <Folder className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
+                        <span className="flex-1 text-sm text-[var(--text-primary)]">{cat.name}</span>
+                        <IconButton
+                          icon={<Edit3 className="w-3.5 h-3.5" />}
+                          onClick={() => { setEditingCategory({ id: cat.id, name: cat.name }); setEditCategoryName(cat.name) }}
+                        />
+                        <IconButton
+                          icon={<Trash2 className="w-3.5 h-3.5 text-[var(--status-error)]" />}
+                          onClick={() => setDeletingCategoryId(cat.id)}
+                        />
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+
+        {/* Delete Category Confirm */}
+        <ConfirmModal
+          isOpen={!!deletingCategoryId}
+          onClose={() => setDeletingCategoryId(null)}
+          onConfirm={deleteCategory}
+          title="Delete Category"
+          description={`Are you sure? Servers in this category will become uncategorized.`}
+          confirmText="Delete"
+          variant="error"
+        />
       </div>
     </div>
   )

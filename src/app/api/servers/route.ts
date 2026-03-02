@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope } from '@/services/api-auth'
+import { hasScope } from '@/lib/api-token'
+import type { ApiScope } from '@/types/api'
 import { auditCreate } from '@/services/audit'
 import { createGameServerSchema } from '@/lib/validations/kit'
 import { logger } from '@/lib/logger'
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest) {
         port: true,
         imageUrl: true,
         iconUrl: true,
+        botToken: true,
         kitConfigId: true,
         createdAt: true,
         updatedAt: true,
@@ -50,7 +53,13 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' },
     })
 
-    return NextResponse.json({ success: true, data: servers })
+    const includeBotToken = hasScope(authResult.context.scopes as ApiScope[], 'servers:discordtoken' as ApiScope)
+
+    const result = includeBotToken
+      ? servers
+      : servers.map(({ botToken, ...rest }) => rest)
+
+    return NextResponse.json({ success: true, data: result })
   } catch (error) {
     logger.admin.error('Failed to list game servers', error as Error)
     return NextResponse.json(

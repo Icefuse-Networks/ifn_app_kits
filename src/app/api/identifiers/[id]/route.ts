@@ -38,6 +38,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         playerData: true,
         playerCount: true,
         lastPlayerUpdate: true,
+        botToken: true,
+        region: true,
+        teamLimit: true,
         categoryId: true,
         createdAt: true,
         updatedAt: true,
@@ -95,6 +98,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         name: true,
         description: true,
         categoryId: true,
+        region: true,
+        teamLimit: true,
       },
     })
 
@@ -144,6 +149,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         name: parsed.data.name,
         description: parsed.data.description,
         categoryId: parsed.data.categoryId,
+        botToken: parsed.data.botToken,
+        region: parsed.data.region,
+        teamLimit: parsed.data.teamLimit,
       },
       select: {
         id: true,
@@ -153,6 +161,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         ip: true,
         port: true,
         connectEndpoint: true,
+        botToken: true,
+        region: true,
+        teamLimit: true,
         categoryId: true,
         createdAt: true,
         updatedAt: true,
@@ -174,11 +185,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         name: existing.name,
         description: existing.description,
         categoryId: existing.categoryId,
+        region: existing.region,
+        teamLimit: existing.teamLimit,
       },
       {
         name: identifier.name,
         description: identifier.description,
         categoryId: identifier.categoryId,
+        region: identifier.region,
+        teamLimit: identifier.teamLimit,
       },
       request
     )

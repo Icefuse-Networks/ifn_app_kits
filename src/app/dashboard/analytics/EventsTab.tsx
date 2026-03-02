@@ -35,6 +35,10 @@ interface AnalyticsData {
   eventModes: { mode: string; count: number }[];
   hourlyHeatmap: { hour: number; dayOfWeek: number; count: number }[];
   locationStats: { location: string; count: number }[];
+  modeComboAttraction: { combo: string; avgParticipants: number; eventCount: number }[];
+  locationAttraction: { location: string; avgParticipants: number; eventCount: number }[];
+  modeLocationCross: { label: string; avgParticipants: number; eventCount: number }[];
+  durationVsParticipation: { bucket: string; avgParticipants: number; eventCount: number }[];
 }
 
 const COLORS = ['#f59e0b', '#ef4444', '#a855f7', '#3b82f6', '#22c55e', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316', '#14b8a6'];
@@ -147,7 +151,70 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
       eventsList.filter(e => e.event_type === 'koth' && e.location).forEach(e => locationMap.set(e.location!, (locationMap.get(e.location!) || 0) + 1));
       const locationStats = Array.from(locationMap.entries()).map(([location, count]) => ({ location, count })).sort((a, b) => b.count - a.count).slice(0, 10);
 
-      setAnalytics({ overview, timeSeries, topWinners, eventModes, hourlyHeatmap, locationStats });
+      // Mode Combo Attraction: avg participants per mode combination
+      const modeComboMap = new Map<string, { totalParticipants: number; count: number }>();
+      eventsList.forEach(e => {
+        const combo = e.event_modes?.length > 0 ? [...e.event_modes].sort().join(' + ') : 'Standard';
+        const existing = modeComboMap.get(combo) || { totalParticipants: 0, count: 0 };
+        existing.totalParticipants += e.participants?.length || 0;
+        existing.count++;
+        modeComboMap.set(combo, existing);
+      });
+      const modeComboAttraction = Array.from(modeComboMap.entries())
+        .map(([combo, stats]) => ({ combo, avgParticipants: Math.round((stats.totalParticipants / stats.count) * 10) / 10, eventCount: stats.count }))
+        .sort((a, b) => b.avgParticipants - a.avgParticipants).slice(0, 10);
+
+      // Location Attraction: avg participants per location
+      const locationAttrMap = new Map<string, { totalParticipants: number; count: number }>();
+      eventsList.filter(e => e.event_type === 'koth' && e.location).forEach(e => {
+        const existing = locationAttrMap.get(e.location!) || { totalParticipants: 0, count: 0 };
+        existing.totalParticipants += e.participants?.length || 0;
+        existing.count++;
+        locationAttrMap.set(e.location!, existing);
+      });
+      const locationAttraction = Array.from(locationAttrMap.entries())
+        .map(([location, stats]) => ({ location, avgParticipants: Math.round((stats.totalParticipants / stats.count) * 10) / 10, eventCount: stats.count }))
+        .sort((a, b) => b.avgParticipants - a.avgParticipants).slice(0, 10);
+
+      // Mode + Location Cross-Reference
+      const modLocMap = new Map<string, { totalParticipants: number; count: number }>();
+      eventsList.filter(e => e.event_type === 'koth' && e.location).forEach(e => {
+        const modeStr = e.event_modes?.length > 0 ? [...e.event_modes].sort().join('+') : 'Standard';
+        const label = `${modeStr} @ ${e.location}`;
+        const existing = modLocMap.get(label) || { totalParticipants: 0, count: 0 };
+        existing.totalParticipants += e.participants?.length || 0;
+        existing.count++;
+        modLocMap.set(label, existing);
+      });
+      const modeLocationCross = Array.from(modLocMap.entries())
+        .map(([label, stats]) => ({ label, avgParticipants: Math.round((stats.totalParticipants / stats.count) * 10) / 10, eventCount: stats.count }))
+        .filter(d => d.eventCount >= 2)
+        .sort((a, b) => b.avgParticipants - a.avgParticipants).slice(0, 12);
+
+      // Duration vs Participation
+      const getDurationBucket = (seconds: number): { label: string; sortKey: number } => {
+        if (seconds < 120) return { label: '< 2m', sortKey: 0 };
+        if (seconds < 300) return { label: '2-5m', sortKey: 1 };
+        if (seconds < 600) return { label: '5-10m', sortKey: 2 };
+        if (seconds < 900) return { label: '10-15m', sortKey: 3 };
+        if (seconds < 1200) return { label: '15-20m', sortKey: 4 };
+        if (seconds < 1800) return { label: '20-30m', sortKey: 5 };
+        return { label: '30m+', sortKey: 6 };
+      };
+      const durationBucketMap = new Map<string, { totalParticipants: number; count: number; sortKey: number }>();
+      eventsList.forEach(e => {
+        const { label, sortKey } = getDurationBucket(e.duration_seconds);
+        const existing = durationBucketMap.get(label) || { totalParticipants: 0, count: 0, sortKey };
+        existing.totalParticipants += e.participants?.length || 0;
+        existing.count++;
+        durationBucketMap.set(label, existing);
+      });
+      const durationVsParticipation = Array.from(durationBucketMap.entries())
+        .map(([bucket, stats]) => ({ bucket, avgParticipants: Math.round((stats.totalParticipants / stats.count) * 10) / 10, eventCount: stats.count, sortKey: stats.sortKey }))
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map(({ bucket, avgParticipants, eventCount }) => ({ bucket, avgParticipants, eventCount }));
+
+      setAnalytics({ overview, timeSeries, topWinners, eventModes, hourlyHeatmap, locationStats, modeComboAttraction, locationAttraction, modeLocationCross, durationVsParticipation });
     } catch (err) { console.error("Analytics fetch error:", err); }
     finally { setAnalyticsLoading(false); }
   }, [timeFilter, serverFilter, eventTypeFilter]);
@@ -228,19 +295,31 @@ export default function EventsTab({ timeFilter, serverFilter, servers, onServers
                     { name: 'Maze', value: analytics.overview.mazeCount },
                   ].filter(d => d.value > 0)} height="100%" colors={['#f59e0b', '#a855f7']} /></div>
                 </ChartCard>
-                <ChartCard title="Event Modes" icon={Target} delay={0.55}>
+                <ChartCard title="Mode Combo Attraction (Avg Players)" icon={Users} delay={0.55}>
+                  <div className="h-72"><BarChart data={analytics.modeComboAttraction.map(m => ({ label: m.combo, value: m.avgParticipants }))} height="100%" colors={COLORS} horizontal valueFormatter={(v) => `${v} avg`} /></div>
+                </ChartCard>
+                <ChartCard title="Location Attraction (Avg Players)" icon={MapPin} delay={0.6}>
+                  <div className="h-72"><BarChart data={analytics.locationAttraction.map(l => ({ label: l.location, value: l.avgParticipants }))} height="100%" colors={COLORS} horizontal valueFormatter={(v) => `${v} avg`} /></div>
+                </ChartCard>
+                <ChartCard title="Top Mode + Location Combos (Avg Players)" icon={Target} delay={0.65}>
+                  <div className="h-80"><BarChart data={analytics.modeLocationCross.map(d => ({ label: d.label, value: d.avgParticipants }))} height="100%" colors={COLORS} horizontal labelWidth={180} maxItems={12} valueFormatter={(v) => `${v} avg`} /></div>
+                </ChartCard>
+                <ChartCard title="Duration vs Avg Participation" icon={Clock} delay={0.7}>
+                  <div className="h-72"><BarChart data={analytics.durationVsParticipation.map(d => ({ label: d.bucket, value: d.avgParticipants }))} height="100%" horizontal={false} colors={COLORS} valueFormatter={(v) => `${v} avg`} /></div>
+                </ChartCard>
+                <ChartCard title="Event Modes (Frequency)" icon={Target} delay={0.75}>
                   <div className="h-64"><PieChart data={analytics.eventModes.map(m => ({ name: m.mode, value: m.count }))} height="100%" colors={COLORS} /></div>
                 </ChartCard>
-                <ChartCard title="KOTH Locations" icon={MapPin} delay={0.6}>
+                <ChartCard title="KOTH Locations (Frequency)" icon={MapPin} delay={0.8}>
                   <div className="h-64"><BarChart data={analytics.locationStats.map(l => ({ label: l.location, value: l.count }))} height="100%" horizontal={false} colors={COLORS} showLabels={false} /></div>
                 </ChartCard>
               </div>
 
-              <ChartCard title="Activity Heatmap (Events by Day & Hour)" icon={Calendar} delay={0.65}>
+              <ChartCard title="Activity Heatmap (Events by Day & Hour)" icon={Calendar} delay={0.85}>
                 <ActivityHeatmap data={heatmapGrid} tooltipPrefix="events" />
               </ChartCard>
 
-              <ChartCard title="Winner Leaderboard" icon={Award} delay={0.7}>
+              <ChartCard title="Winner Leaderboard" icon={Award} delay={0.9}>
                 <DataTable data={analytics.topWinners} columns={winnerColumns} keyExtractor={(row) => row.steam_id} />
               </ChartCard>
             </>

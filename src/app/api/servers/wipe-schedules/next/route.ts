@@ -1,7 +1,7 @@
 /**
  * Next Wipe Schedule API
  *
- * GET /api/redirect/wipe-schedules/next - Compute next upcoming wipe for a server
+ * GET /api/servers/wipe-schedules/next - Compute next upcoming wipe for a server
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,21 +14,17 @@ const querySchema = z.object({
   serverId: z.string().min(1).max(60),
 })
 
+const EST_OFFSET_MS = -5 * 60 * 60 * 1000
+
 /**
  * Compute next occurrence of a weekly schedule in EST/EDT.
  * Returns a UTC Date object.
  */
 function computeNextOccurrence(dayOfWeek: number, hour: number, minute: number): Date {
-  // EST offset: -5 hours (simplified, doesn't account for DST dynamically,
-  // but the plugin handles final scheduling so this is a best-effort estimate)
-  const EST_OFFSET_MS = -5 * 60 * 60 * 1000
-
   const now = new Date()
-  // Current time in EST
   const nowEstMs = now.getTime() + EST_OFFSET_MS
   const nowEst = new Date(nowEstMs)
 
-  // Build candidate date in EST
   const currentDayOfWeek = nowEst.getUTCDay()
   let daysUntil = (dayOfWeek - currentDayOfWeek + 7) % 7
 
@@ -36,12 +32,10 @@ function computeNextOccurrence(dayOfWeek: number, hour: number, minute: number):
   candidateEst.setUTCDate(candidateEst.getUTCDate() + daysUntil)
   candidateEst.setUTCHours(hour, minute, 0, 0)
 
-  // If same day but time has passed, go to next week
   if (daysUntil === 0 && candidateEst.getTime() <= nowEstMs) {
     candidateEst.setUTCDate(candidateEst.getUTCDate() + 7)
   }
 
-  // Convert back to UTC
   const utcMs = candidateEst.getTime() - EST_OFFSET_MS
   return new Date(utcMs)
 }
@@ -50,7 +44,7 @@ function computeNextOccurrence(dayOfWeek: number, hour: number, minute: number):
  * Check if a date falls on force wipe day (first Thursday of month)
  */
 function isForceWipeDay(date: Date): boolean {
-  const estDate = new Date(date.getTime() - 5 * 60 * 60 * 1000)
+  const estDate = new Date(date.getTime() + EST_OFFSET_MS)
   const year = estDate.getUTCFullYear()
   const month = estDate.getUTCMonth()
 
@@ -62,8 +56,36 @@ function isForceWipeDay(date: Date): boolean {
   return estDate.getUTCDate() === firstThursday
 }
 
+/**
+ * Compute the next global force wipe (first Thursday of month at given EST time).
+ * Returns a UTC Date object.
+ */
+function computeNextForceWipe(hour: number, minute: number): Date {
+  const now = new Date()
+  const nowEstMs = now.getTime() + EST_OFFSET_MS
+  const nowEst = new Date(nowEstMs)
+
+  for (let monthOffset = 0; monthOffset <= 2; monthOffset++) {
+    const year = nowEst.getUTCFullYear()
+    const month = nowEst.getUTCMonth() + monthOffset
+    const firstOfMonth = new Date(Date.UTC(year, month, 1))
+    const firstDow = firstOfMonth.getUTCDay()
+    const daysUntilThursday = ((4 - firstDow) + 7) % 7
+    const firstThursdayDay = 1 + daysUntilThursday
+
+    const candidateEst = new Date(Date.UTC(year, month, firstThursdayDay, hour, minute, 0, 0))
+    const utcMs = candidateEst.getTime() - EST_OFFSET_MS
+
+    if (utcMs > now.getTime()) {
+      return new Date(utcMs)
+    }
+  }
+
+  return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+}
+
 export async function GET(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'redirect:read')
+  const authResult = await authenticateWithScope(request, 'identifiers:read')
 
   if (!authResult.success) {
     return NextResponse.json(
@@ -87,7 +109,6 @@ export async function GET(request: NextRequest) {
 
     const { serverId } = parsed.data
 
-    // Look up server by hashedId
     const server = await prisma.serverIdentifier.findFirst({
       where: { hashedId: serverId },
       select: { id: true },
@@ -100,46 +121,45 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const config = await prisma.redirectConfig.findFirst({
+      where: { isActive: true },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        wipeRedirectMinutesBefore: true,
+        enableWipeRedirect: true,
+        forceWipeHour: true,
+        forceWipeMinute: true,
+      },
+    })
+
+    const forceWipeHour = config?.forceWipeHour ?? 13
+    const forceWipeMinute = config?.forceWipeMinute ?? 55
+
+    const nextForceWipe = computeNextForceWipe(forceWipeHour, forceWipeMinute)
+    let nextWipe: Date = nextForceWipe
+    let nextWipeType = 'force'
+    let nextDayOfWeek = 4
+    let nextHour = forceWipeHour
+    let nextMinute = forceWipeMinute
+
     const schedules = await prisma.wipeSchedule.findMany({
       where: { serverIdentifierId: server.id, isActive: true },
     })
 
-    if (schedules.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: null,
-      })
-    }
-
-    // Get redirect config for minutesBefore
-    const config = await prisma.redirectConfig.findFirst({
-      where: { isActive: true },
-      orderBy: { updatedAt: 'desc' },
-      select: { wipeRedirectMinutesBefore: true, enableWipeRedirect: true },
-    })
-
-    let nextWipe: Date | null = null
-    let nextSchedule: (typeof schedules)[number] | null = null
-
     for (const schedule of schedules) {
       const candidate = computeNextOccurrence(schedule.dayOfWeek, schedule.hour, schedule.minute)
 
-      // Skip non-force schedules on force wipe day
-      if (schedule.wipeType !== 'force' && isForceWipeDay(candidate)) {
+      if (isForceWipeDay(candidate)) {
         continue
       }
 
-      if (!nextWipe || candidate.getTime() < nextWipe.getTime()) {
+      if (candidate.getTime() < nextWipe.getTime()) {
         nextWipe = candidate
-        nextSchedule = schedule
+        nextWipeType = schedule.wipeType
+        nextDayOfWeek = schedule.dayOfWeek
+        nextHour = schedule.hour
+        nextMinute = schedule.minute
       }
-    }
-
-    if (!nextWipe || !nextSchedule) {
-      return NextResponse.json({
-        success: true,
-        data: null,
-      })
     }
 
     return NextResponse.json({
@@ -147,10 +167,10 @@ export async function GET(request: NextRequest) {
       data: {
         nextWipeTimestamp: nextWipe.getTime(),
         nextWipeIso: nextWipe.toISOString(),
-        wipeType: nextSchedule.wipeType,
-        dayOfWeek: nextSchedule.dayOfWeek,
-        hour: nextSchedule.hour,
-        minute: nextSchedule.minute,
+        wipeType: nextWipeType,
+        dayOfWeek: nextDayOfWeek,
+        hour: nextHour,
+        minute: nextMinute,
         minutesBefore: config?.wipeRedirectMinutesBefore ?? 2,
         enableWipeRedirect: config?.enableWipeRedirect ?? true,
       },

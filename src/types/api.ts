@@ -74,6 +74,7 @@ registerScope('kits:write', 'Create, update, and delete kit configurations', 'ki
 // Servers (shared across plugins)
 registerScope('servers:read', 'Read game server information', 'core')
 registerScope('servers:write', 'Create, update, and delete game servers', 'core')
+registerScope('servers:discordtoken', 'Read Discord bot tokens for servers', 'core')
 
 // Analytics (shared across plugins)
 registerScope('analytics:read', 'Read analytics and statistics', 'core')

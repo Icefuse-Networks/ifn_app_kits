@@ -11,7 +11,7 @@ const createScheduleSchema = z.object({
   dayOfWeek: z.number().min(0).max(6),
   hour: z.number().min(0).max(23),
   minute: z.number().min(0).max(59),
-  wipeType: z.enum(['regular', 'force', 'bp']).default('regular'),
+  wipeType: z.enum(['regular', 'bp']).default('regular'),
 })
 
 const deleteScheduleSchema = z.object({
@@ -19,7 +19,7 @@ const deleteScheduleSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'redirect:read')
+  const authResult = await authenticateWithScope(request, 'identifiers:read')
   if (!authResult.success) {
     return NextResponse.json(
       { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },

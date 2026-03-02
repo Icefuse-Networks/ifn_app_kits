@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope, requireSession } from '@/services/api-auth'
+import { hasScope } from '@/lib/api-token'
+import type { ApiScope } from '@/types/api'
 import { auditCreate } from '@/services/audit'
 import { createServerIdentifierSchema } from '@/lib/validations/kit'
 import { id } from '@/lib/id'
@@ -41,6 +43,9 @@ export async function GET(request: NextRequest) {
         playerData: true,
         playerCount: true,
         lastPlayerUpdate: true,
+        botToken: true,
+        region: true,
+        teamLimit: true,
         createdAt: true,
         updatedAt: true,
         category: {
@@ -56,7 +61,13 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(identifiers)
+    const includeBotToken = hasScope(authResult.context.scopes as ApiScope[], 'servers:discordtoken' as ApiScope)
+
+    const result = includeBotToken
+      ? identifiers
+      : identifiers.map(({ botToken, ...rest }) => rest)
+
+    return NextResponse.json(result)
   } catch (error) {
     logger.admin.error('Failed to list server identifiers', error as Error)
     return NextResponse.json(

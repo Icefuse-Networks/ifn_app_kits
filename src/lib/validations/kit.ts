@@ -309,6 +309,9 @@ export const updateServerIdentifierSchema = z.object({
     .optional(),
   description: z.string().max(255).nullable().optional(),
   categoryId: z.string().max(60).nullable().optional(),
+  botToken: z.string().max(255).nullable().optional(),
+  region: z.string().max(10).nullable().optional(),
+  teamLimit: z.string().max(20).nullable().optional(),
 })
 
 /**

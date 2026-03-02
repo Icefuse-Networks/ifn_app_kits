@@ -41,6 +41,8 @@ interface RedirectConfig {
   wipeTargetServer: string | null;
   wipeHoldingServer: string | null;
   wipeServerMapping: Record<string, string>;
+  forceWipeHour: number;
+  forceWipeMinute: number;
   overrideRedirectServer: string | null;
 }
 
@@ -108,6 +110,8 @@ const defaultConfig: RedirectConfig = {
   wipeTargetServer: null,
   wipeHoldingServer: null,
   wipeServerMapping: {},
+  forceWipeHour: 13,
+  forceWipeMinute: 55,
   overrideRedirectServer: null
 };
 
@@ -661,7 +665,7 @@ export default function RedirectionPage() {
                   <Calendar className="h-5 w-5 text-[var(--status-error)]" />
                   Wipe Redirect
                 </h2>
-                <p className="text-sm text-[var(--text-muted)] mb-4">Redirect players before server wipes. Configure schedules on each server.</p>
+                <p className="text-sm text-[var(--text-muted)] mb-4">Redirect players before server wipes. Force wipe is global; regular/bp schedules are per-server.</p>
 
                 <div className="space-y-6">
                   <div className="p-3 rounded-lg bg-white/5">
@@ -671,6 +675,42 @@ export default function RedirectionPage() {
                       label="Enable Wipe Redirect"
                       description="Redirects all players before scheduled wipes"
                     />
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white/5 border border-[var(--status-error)]/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="h-4 w-4 text-[var(--status-error)]" />
+                      <label className="text-sm font-medium text-[var(--text-primary)]">
+                        Global Force Wipe
+                      </label>
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)] mb-3">
+                      Rust force wipe occurs on the first Thursday of every month. This applies to ALL servers globally.
+                      Regular and BP wipe schedules that fall on force wipe day are automatically skipped.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-[var(--text-secondary)]">Time (EST):</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={23}
+                        value={config.forceWipeHour}
+                        onChange={(e) => setConfig({ ...config, forceWipeHour: parseInt(e.target.value) || 0 })}
+                        className="w-16 px-2 py-1.5 rounded-lg text-xs text-center text-[var(--text-primary)]"
+                        style={{ background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      />
+                      <span className="text-[var(--text-muted)] font-bold">:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={config.forceWipeMinute}
+                        onChange={(e) => setConfig({ ...config, forceWipeMinute: parseInt(e.target.value) || 0 })}
+                        className="w-16 px-2 py-1.5 rounded-lg text-xs text-center text-[var(--text-primary)]"
+                        style={{ background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      />
+                      <span className="text-xs text-[var(--text-muted)] ml-1">EST</span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -23,6 +23,8 @@ interface RedirectConfig {
   wipeTargetServer: string | null
   wipeHoldingServer: string | null
   wipeServerMapping: Record<string, string>
+  forceWipeHour: number
+  forceWipeMinute: number
   overrideRedirectServer: string | null
 }
 
@@ -43,6 +45,8 @@ const defaultConfig: RedirectConfig = {
   wipeTargetServer: null,
   wipeHoldingServer: null,
   wipeServerMapping: {},
+  forceWipeHour: 13,
+  forceWipeMinute: 55,
   overrideRedirectServer: null
 }
 
@@ -63,6 +67,8 @@ const updateConfigSchema = z.object({
   wipeTargetServer: z.string().nullable().default(null),
   wipeHoldingServer: z.string().nullable().default(null),
   wipeServerMapping: z.record(z.string(), z.string()).default({}),
+  forceWipeHour: z.number().min(0).max(23).default(13),
+  forceWipeMinute: z.number().min(0).max(59).default(55),
   overrideRedirectServer: z.string().nullable().default(null)
 }).refine(data => data.minPlayersForEmptyServer <= data.maxPlayersForEmptyServer, {
   message: 'minPlayersForEmptyServer must be <= maxPlayersForEmptyServer'
@@ -104,6 +110,8 @@ export async function GET(request: NextRequest) {
           wipeTargetServer: defaultConfig.wipeTargetServer,
           wipeHoldingServer: defaultConfig.wipeHoldingServer,
           wipeServerMapping: JSON.stringify(defaultConfig.wipeServerMapping),
+          forceWipeHour: defaultConfig.forceWipeHour,
+          forceWipeMinute: defaultConfig.forceWipeMinute,
           overrideRedirectServer: defaultConfig.overrideRedirectServer,
           isActive: true
         }
@@ -140,6 +148,8 @@ export async function GET(request: NextRequest) {
         wipeTargetServer: config.wipeTargetServer,
         wipeHoldingServer: config.wipeHoldingServer,
         wipeServerMapping: JSON.parse(config.wipeServerMapping) as Record<string, string>,
+        forceWipeHour: config.forceWipeHour,
+        forceWipeMinute: config.forceWipeMinute,
         overrideRedirectServer: config.overrideRedirectServer,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt
@@ -194,6 +204,8 @@ export async function PUT(request: NextRequest) {
       wipeTargetServer: data.wipeTargetServer?.trim() || null,
       wipeHoldingServer: data.wipeHoldingServer?.trim() || null,
       wipeServerMapping: data.wipeServerMapping,
+      forceWipeHour: data.forceWipeHour,
+      forceWipeMinute: data.forceWipeMinute,
       overrideRedirectServer: data.overrideRedirectServer?.trim() || null
     }
 
@@ -225,6 +237,8 @@ export async function PUT(request: NextRequest) {
         wipeTargetServer: cleanConfig.wipeTargetServer,
         wipeHoldingServer: cleanConfig.wipeHoldingServer,
         wipeServerMapping: JSON.stringify(cleanConfig.wipeServerMapping),
+        forceWipeHour: cleanConfig.forceWipeHour,
+        forceWipeMinute: cleanConfig.forceWipeMinute,
         overrideRedirectServer: cleanConfig.overrideRedirectServer,
         isActive: true
       }
