@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2, X } from "lucide-react";
+import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2, X, Users, ChevronRight, Pencil, Copy } from "lucide-react";
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import {
@@ -13,6 +13,11 @@ import {
 import type { GenericLootItem, ExtraFieldDef, SavedConfig, MappingRecord, ServerIdentifierRecord } from "@/components/loot-shared";
 import { Dropdown } from "@/components/global/Dropdown";
 import { CheckboxSwitch } from "@/components/ui/Switch";
+import { InventorySlot, type ItemSlot } from "@/components/kit-manager/InventorySlot";
+import { GlassContainer } from "@/components/global/GlassContainer";
+import { getItemImageUrl } from "@/lib/rust-items";
+import { WEAR_SLOT_NAMES, BELT_SLOTS, MAIN_INVENTORY_SLOTS, WEAR_SLOTS } from "@/types/kit";
+import type { KitItem } from "@/types/kit";
 
 // ─── IcefuseBases data types ──────────────────────────────────────────────────
 
@@ -53,9 +58,52 @@ interface BasesPluginConfig {
   "Wipe Progression Hours To Max": number;
 }
 
+// ─── NPC Loadout types ─────────────────────────────────────────────────────
+
+type NpcTier = "t1" | "t2" | "t3";
+
+interface NpcLoadout {
+  name: string;
+  WearItems: KitItem[];
+  BeltItems: KitItem[];
+  MainItems: KitItem[];
+}
+
+type NpcLoadoutsData = Record<NpcTier, NpcLoadout[]>;
+
+const TIER_LABELS: Record<NpcTier, string> = { t1: "T1 (Wood)", t2: "T2 (Stone)", t3: "T3 (Metal/HQM)" };
+const TIER_COLORS: Record<NpcTier, string> = { t1: "#a3865a", t2: "#8a8a8a", t3: "#4a90d9" };
+const ALL_TIERS: NpcTier[] = ["t1", "t2", "t3"];
+
+function npcItem(shortname: string, position: number, amount = 1, extra?: Partial<KitItem>): KitItem {
+  return { Shortname: shortname, Skin: 0, Amount: amount, Condition: 1, MaxCondition: 1, Ammo: 0, Ammotype: null, Position: position, Frequency: 0, BlueprintShortname: null, Contents: null, ...extra };
+}
+
+const DEFAULT_NPC_LOADOUTS: NpcLoadoutsData = {
+  t1: [{
+    name: "Primitive",
+    WearItems: [npcItem("burlap.shirt", 2), npcItem("burlap.trousers", 3), npcItem("shoes.boots", 5), npcItem("burlap.gloves", 6)],
+    BeltItems: [npcItem("pistol.revolver", 0), npcItem("shotgun.waterpipe", 1)],
+    MainItems: [npcItem("bandage", 0, 5), npcItem("ammo.pistol", 1, 40)],
+  }],
+  t2: [{
+    name: "Roadsign",
+    WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+    BeltItems: [npcItem("smg.thompson", 0), npcItem("rifle.semiauto", 1), npcItem("shotgun.pump", 2)],
+    MainItems: [npcItem("syringe.medical", 0, 3), npcItem("bandage", 1, 5), npcItem("ammo.rifle", 2, 60), npcItem("ammo.pistol", 3, 40)],
+  }],
+  t3: [{
+    name: "Metal",
+    WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+    BeltItems: [npcItem("rifle.ak", 0), npcItem("rifle.lr300", 1), npcItem("smg.mp5", 2)],
+    MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 2), npcItem("ammo.rifle", 2, 96), npcItem("ammo.rifle.incendiary", 3, 20)],
+  }],
+};
+
 interface BasesConfigData {
   pluginConfig: BasesPluginConfig;
   lootTables: Record<string, BasesLootTable>;
+  npcLoadouts: NpcLoadoutsData;
 }
 
 interface BasesFileRecord {
@@ -76,9 +124,6 @@ const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
   toolcupboard: { "Min items": 3, "Max Items": 6, Items: [] },
   smallbox: { "Min items": 3, "Max Items": 8, Items: [] },
   locker: { "Min items": 6, "Max Items": 12, Items: [] },
-  npcloadout_t1: { "Min items": 4, "Max Items": 8, Items: [] },
-  npcloadout_t2: { "Min items": 5, "Max Items": 9, Items: [] },
-  npcloadout_t3: { "Min items": 6, "Max Items": 10, Items: [] },
 };
 
 const DEFAULT_CONFIG: BasesConfigData = {
@@ -106,6 +151,7 @@ const DEFAULT_CONFIG: BasesConfigData = {
     "Wipe Progression Hours To Max": 72,
   },
   lootTables: { ...DEFAULT_LOOT_TABLES },
+  npcLoadouts: structuredClone(DEFAULT_NPC_LOADOUTS),
 };
 
 // ─── Normalization ────────────────────────────────────────────────────────────
@@ -137,6 +183,88 @@ function fromGenericItem(item: GenericLootItem): BasesLootItem {
   };
 }
 
+// ─── Migration: old npcloadout_t* loot tables → new npcLoadouts format ───────
+
+// Known wearable shortnames for auto-categorizing old flat loadout items
+const WEARABLE_SHORTNAMES = new Set([
+  "burlap.shirt", "burlap.trousers", "burlap.gloves", "burlap.headwrap", "burlap.shoes",
+  "hoodie", "pants", "shoes.boots", "tshirt", "tshirt.long",
+  "roadsign.jacket", "roadsign.kilt", "coffeecan.helmet",
+  "metal.facemask", "metal.plate.torso",
+  "deer.skull.mask", "bone.armor.suit", "attire.hide.poncho", "attire.hide.vest",
+  "hat.beenie", "hat.boonie", "hat.cap", "hat.miner", "hat.wolf",
+  "tactical.gloves", "burlap.gloves.new",
+  "wood.armor.jacket", "wood.armor.pants", "wood.armor.helmet",
+  "heavy.plate.helmet", "heavy.plate.jacket", "heavy.plate.pants",
+  "hazmatsuit", "hazmatsuit.nomadsuit",
+]);
+
+const WEAPON_SHORTNAMES = new Set([
+  "pistol.revolver", "pistol.m92", "pistol.semiauto", "pistol.python", "pistol.nailgun",
+  "shotgun.waterpipe", "shotgun.pump", "shotgun.double", "shotgun.spas12",
+  "smg.thompson", "smg.mp5", "smg.2",
+  "rifle.ak", "rifle.lr300", "rifle.bolt", "rifle.semiauto", "rifle.m39", "rifle.l96",
+  "lmg.m249", "crossbow", "bow.hunting", "bow.compound",
+  "knife.combat", "machete", "longsword", "salvaged.sword", "mace", "bone.club",
+  "spear.wooden", "spear.stone",
+]);
+
+function migrateOldNpcLoadouts(configData: BasesConfigData): BasesConfigData {
+  const lt = configData.lootTables || {};
+  const hasOld = lt["npcloadout_t1"] || lt["npcloadout_t2"] || lt["npcloadout_t3"] || lt["npcloadout"];
+  if (!hasOld) {
+    // Ensure npcLoadouts exists
+    if (!configData.npcLoadouts) {
+      return { ...configData, npcLoadouts: structuredClone(DEFAULT_NPC_LOADOUTS) };
+    }
+    return configData;
+  }
+
+  const result: NpcLoadoutsData = { t1: [], t2: [], t3: [] };
+  const newLootTables = { ...lt };
+
+  function convertTable(tableKey: string, tier: NpcTier, loadoutName: string) {
+    const table = lt[tableKey];
+    if (!table?.Items?.length) return;
+
+    const wear: KitItem[] = [];
+    const belt: KitItem[] = [];
+    const main: KitItem[] = [];
+    let wearPos = 0, beltPos = 0, mainPos = 0;
+
+    for (const item of table.Items) {
+      const sn = item.Shortname;
+      const kitItem = npcItem(sn, 0, item["Max amount"] || 1);
+      if (WEARABLE_SHORTNAMES.has(sn)) {
+        kitItem.Position = wearPos++;
+        wear.push(kitItem);
+      } else if (WEAPON_SHORTNAMES.has(sn)) {
+        kitItem.Position = beltPos++;
+        belt.push(kitItem);
+      } else {
+        kitItem.Position = mainPos++;
+        main.push(kitItem);
+      }
+    }
+
+    result[tier].push({ name: loadoutName, WearItems: wear, BeltItems: belt, MainItems: main });
+    delete newLootTables[tableKey];
+  }
+
+  // Convert each old table
+  if (lt["npcloadout"]) convertTable("npcloadout", "t3", "Legacy");
+  convertTable("npcloadout_t1", "t1", "Tier 1");
+  convertTable("npcloadout_t2", "t2", "Tier 2");
+  convertTable("npcloadout_t3", "t3", "Tier 3");
+
+  // Fill empty tiers with defaults
+  for (const tier of ALL_TIERS) {
+    if (result[tier].length === 0) result[tier] = structuredClone(DEFAULT_NPC_LOADOUTS[tier]);
+  }
+
+  return { ...configData, lootTables: newLootTables, npcLoadouts: result };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function BasesPage() {
@@ -144,8 +272,18 @@ export default function BasesPage() {
   const [activeTab, setActiveTab] = useState<"config" | "mapping" | "files">("config");
   const { current: data, setState: setData, undo, redo, canUndo, canRedo, reset: resetHistory } = useUndoRedo<BasesConfigData>(DEFAULT_CONFIG);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [selectedSection, setSelectedSection] = useState<"table" | "settings">("table");
+  const [selectedSection, setSelectedSection] = useState<"table" | "settings" | "npcloadouts">("table");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // NPC Loadout editor state
+  const [npcTier, setNpcTier] = useState<NpcTier>("t1");
+  const [npcLoadoutIdx, setNpcLoadoutIdx] = useState(0);
+  const [npcSelection, setNpcSelection] = useState<{ slot: ItemSlot; index: number } | null>(null);
+  const [npcDragOver, setNpcDragOver] = useState<{ slot: ItemSlot; position: number } | null>(null);
+  const [npcDragSource, setNpcDragSource] = useState<{ slot: ItemSlot; index: number } | null>(null);
+  const [editingLoadoutName, setEditingLoadoutName] = useState<number | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const [npcEditItem, setNpcEditItem] = useState<{ slot: ItemSlot; index: number; item: KitItem } | null>(null);
   const [showItemBrowser, setShowItemBrowser] = useState(true);
 
   // Config management state
@@ -470,7 +608,8 @@ export default function BasesPage() {
       const res = await fetch(`/api/bases/${config.id}`);
       if (res.ok) {
         const fullConfig = await res.json();
-        const configData = typeof fullConfig.configData === "string" ? JSON.parse(fullConfig.configData) : fullConfig.configData;
+        const raw = typeof fullConfig.configData === "string" ? JSON.parse(fullConfig.configData) : fullConfig.configData;
+        const configData = migrateOldNpcLoadouts(raw);
         resetHistory(configData);
         setCurrentConfigId(config.id);
         setCurrentConfigName(config.name);
@@ -515,8 +654,8 @@ export default function BasesPage() {
       const res = await fetch(`/api/bases/${currentConfigId}/versions/${version}`);
       if (res.ok) {
         const versionData = await res.json();
-        const configData = typeof versionData.configData === "string" ? JSON.parse(versionData.configData) : versionData.configData;
-        resetHistory(configData);
+        const raw = typeof versionData.configData === "string" ? JSON.parse(versionData.configData) : versionData.configData;
+        resetHistory(migrateOldNpcLoadouts(raw));
         setSelectedTable(null);
         toast.success(`Restored version ${version}`);
       } else toast.error("Failed to load version");
@@ -536,7 +675,7 @@ export default function BasesPage() {
         const json = JSON.parse(text);
         // Combined config format
         if (json.pluginConfig && json.lootTables) {
-          resetHistory(json);
+          resetHistory(migrateOldNpcLoadouts(json));
           setSelectedTable(null);
           setCurrentConfigId(null);
           setCurrentConfigName("");
@@ -735,6 +874,202 @@ export default function BasesPage() {
     setSelectedTable(prev => prev === name ? null : prev);
   }, [setData]);
 
+  // ─── NPC Loadout handlers ─────────────────────────────────────────────────
+
+  const currentLoadouts = data.npcLoadouts?.[npcTier] || [];
+  const currentLoadout: NpcLoadout | null = currentLoadouts[npcLoadoutIdx] || null;
+
+  const updateLoadout = useCallback((tier: NpcTier, idx: number, updates: Partial<NpcLoadout>) => {
+    setData(prev => {
+      const loadouts = [...(prev.npcLoadouts?.[tier] || [])];
+      if (!loadouts[idx]) return prev;
+      loadouts[idx] = { ...loadouts[idx], ...updates };
+      return { ...prev, npcLoadouts: { ...prev.npcLoadouts, [tier]: loadouts } };
+    });
+  }, [setData]);
+
+  const handleAddLoadout = useCallback((tier: NpcTier) => {
+    setData(prev => {
+      const loadouts = [...(prev.npcLoadouts?.[tier] || [])];
+      loadouts.push({ name: `Loadout ${loadouts.length + 1}`, WearItems: [], BeltItems: [], MainItems: [] });
+      return { ...prev, npcLoadouts: { ...prev.npcLoadouts, [tier]: loadouts } };
+    });
+    setNpcLoadoutIdx(currentLoadouts.length);
+    setNpcSelection(null);
+    setNpcEditItem(null);
+  }, [setData, currentLoadouts.length]);
+
+  const handleRemoveLoadout = useCallback((tier: NpcTier, idx: number) => {
+    setData(prev => {
+      const loadouts = [...(prev.npcLoadouts?.[tier] || [])];
+      loadouts.splice(idx, 1);
+      return { ...prev, npcLoadouts: { ...prev.npcLoadouts, [tier]: loadouts } };
+    });
+    setNpcLoadoutIdx(prev => prev >= idx ? Math.max(0, prev - 1) : prev);
+    setNpcSelection(null);
+    setNpcEditItem(null);
+  }, [setData]);
+
+  const handleDuplicateLoadout = useCallback((tier: NpcTier, idx: number) => {
+    setData(prev => {
+      const loadouts = [...(prev.npcLoadouts?.[tier] || [])];
+      if (!loadouts[idx]) return prev;
+      const clone = JSON.parse(JSON.stringify(loadouts[idx])) as NpcLoadout;
+      clone.name = `${clone.name} (copy)`;
+      loadouts.splice(idx + 1, 0, clone);
+      return { ...prev, npcLoadouts: { ...prev.npcLoadouts, [tier]: loadouts } };
+    });
+    setNpcLoadoutIdx(idx + 1);
+  }, [setData]);
+
+  const handleRenameLoadout = useCallback((tier: NpcTier, idx: number, name: string) => {
+    updateLoadout(tier, idx, { name: name.trim() || `Loadout ${idx + 1}` });
+    setEditingLoadoutName(null);
+  }, [updateLoadout]);
+
+  const handleNpcAddItem = useCallback((shortname: string) => {
+    if (!currentLoadout) return;
+    // If there's an active slot selection (clicked empty slot), put item there
+    if (npcSelection && !currentLoadout[npcSelection.slot].some(i => i.Position === npcSelection.index)) {
+      const slot = npcSelection.slot;
+      const pos = npcSelection.index;
+      const newItem = npcItem(shortname, pos);
+      updateLoadout(npcTier, npcLoadoutIdx, { [slot]: [...currentLoadout[slot], newItem] });
+      setNpcSelection(null);
+      setNpcEditItem({ slot, index: currentLoadout[slot].length, item: newItem });
+      return;
+    }
+    // Otherwise add to first available MainItems position
+    const usedPositions = new Set(currentLoadout.MainItems.map(i => i.Position));
+    let pos = 0;
+    for (let i = 0; i < MAIN_INVENTORY_SLOTS; i++) {
+      if (!usedPositions.has(i)) { pos = i; break; }
+    }
+    const newItem = npcItem(shortname, pos);
+    updateLoadout(npcTier, npcLoadoutIdx, { MainItems: [...currentLoadout.MainItems, newItem] });
+    setNpcEditItem({ slot: "MainItems", index: currentLoadout.MainItems.length, item: newItem });
+    toast.success(`Added ${shortname}`);
+  }, [currentLoadout, npcTier, npcLoadoutIdx, updateLoadout, npcSelection]);
+
+  const handleNpcSlotClick = useCallback((slot: ItemSlot, index: number) => {
+    if (!currentLoadout) return;
+    const items = currentLoadout[slot];
+    const found = items.find(i => i.Position === index);
+    if (found) {
+      const realIdx = items.indexOf(found);
+      setNpcEditItem({ slot, index: realIdx, item: found });
+      setNpcSelection(null);
+    } else {
+      // Empty slot — mark selection for next browser add
+      setNpcSelection({ slot, index });
+      setNpcEditItem(null);
+    }
+  }, [currentLoadout]);
+
+  const handleNpcDeleteItem = useCallback((slot: ItemSlot, idx: number) => {
+    if (!currentLoadout) return;
+    const items = [...currentLoadout[slot]];
+    items.splice(idx, 1);
+    updateLoadout(npcTier, npcLoadoutIdx, { [slot]: items });
+    setNpcEditItem(null);
+    setNpcSelection(null);
+  }, [currentLoadout, npcTier, npcLoadoutIdx, updateLoadout]);
+
+  const handleNpcUpdateItem = useCallback((slot: ItemSlot, idx: number, updates: Partial<KitItem>) => {
+    if (!currentLoadout) return;
+    const items = [...currentLoadout[slot]];
+    items[idx] = { ...items[idx], ...updates };
+    updateLoadout(npcTier, npcLoadoutIdx, { [slot]: items });
+    setNpcEditItem({ slot, index: idx, item: items[idx] });
+  }, [currentLoadout, npcTier, npcLoadoutIdx, updateLoadout]);
+
+  const handleNpcDragStart = useCallback((e: React.DragEvent, slot: ItemSlot, index: number) => {
+    setNpcDragSource({ slot, index });
+    e.dataTransfer.setData("text/plain", JSON.stringify({ slot, index }));
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const handleNpcDrop = useCallback((e: React.DragEvent, targetSlot: ItemSlot, targetPosition: number) => {
+    e.preventDefault();
+    setNpcDragOver(null);
+    if (!currentLoadout || !npcDragSource) return;
+
+    // External item drop from browser
+    const externalItem = e.dataTransfer.getData("application/x-rust-item");
+    if (externalItem) {
+      const newItem = npcItem(externalItem, targetPosition);
+      const items = [...currentLoadout[targetSlot]];
+      const existingIdx = items.findIndex(i => i.Position === targetPosition);
+      if (existingIdx !== -1) items[existingIdx] = newItem;
+      else items.push(newItem);
+      updateLoadout(npcTier, npcLoadoutIdx, { [targetSlot]: items });
+      setNpcDragSource(null);
+      return;
+    }
+
+    // Internal move
+    const srcSlot = npcDragSource.slot;
+    const srcIdx = npcDragSource.index;
+    if (srcSlot === targetSlot) {
+      const items = [...currentLoadout[srcSlot]];
+      const targetIdx = items.findIndex(i => i.Position === targetPosition);
+      if (targetIdx !== -1) {
+        // Swap positions
+        const tmpPos = items[srcIdx].Position;
+        items[srcIdx] = { ...items[srcIdx], Position: items[targetIdx].Position };
+        items[targetIdx] = { ...items[targetIdx], Position: tmpPos };
+      } else {
+        items[srcIdx] = { ...items[srcIdx], Position: targetPosition };
+      }
+      updateLoadout(npcTier, npcLoadoutIdx, { [srcSlot]: items });
+    } else {
+      // Move between containers
+      const srcItems = [...currentLoadout[srcSlot]];
+      const destItems = [...currentLoadout[targetSlot]];
+      const [moved] = srcItems.splice(srcIdx, 1);
+      const targetIdx = destItems.findIndex(i => i.Position === targetPosition);
+      if (targetIdx !== -1) {
+        // Swap: put target item into source
+        const targetItem = destItems.splice(targetIdx, 1)[0];
+        srcItems.push({ ...targetItem, Position: moved.Position });
+      }
+      destItems.push({ ...moved, Position: targetPosition });
+      updateLoadout(npcTier, npcLoadoutIdx, { [srcSlot]: srcItems, [targetSlot]: destItems });
+    }
+    setNpcDragSource(null);
+    setNpcSelection(null);
+    setNpcEditItem(null);
+  }, [currentLoadout, npcDragSource, npcTier, npcLoadoutIdx, updateLoadout]);
+
+  const handleNpcContextMenu = useCallback((slot: ItemSlot, index: number) => {
+    handleNpcDeleteItem(slot, index);
+  }, [handleNpcDeleteItem]);
+
+  // Helper to get NPC loadout item at position
+  const getNpcSlotProps = useCallback((slotType: ItemSlot, items: KitItem[], pos: number, size: number = 70) => {
+    const found = items.find(i => i.Position === pos);
+    const realIdx = found ? items.indexOf(found) : undefined;
+    return {
+      position: pos,
+      item: found,
+      slotType,
+      index: realIdx,
+      size,
+      selected: npcEditItem?.slot === slotType && npcEditItem?.index === realIdx && realIdx !== undefined,
+      dragOver: npcDragOver?.slot === slotType && npcDragOver?.position === pos,
+      onSelect: (_slot: ItemSlot, idx: number) => {
+        // idx is the array index, but we want to handle by position
+        handleNpcSlotClick(slotType, pos);
+      },
+      onEmptyClick: (_slot: ItemSlot, position: number) => handleNpcSlotClick(slotType, position),
+      onContextMenu: (_slot: ItemSlot, idx: number) => handleNpcDeleteItem(slotType, idx),
+      onDragStart: handleNpcDragStart,
+      onDrop: handleNpcDrop,
+      onDragOver: (slot: ItemSlot, position: number) => setNpcDragOver({ slot, position }),
+      onDragLeave: () => setNpcDragOver(null),
+    };
+  }, [npcEditItem, npcDragOver, handleNpcSlotClick, handleNpcDeleteItem, handleNpcDragStart, handleNpcDrop]);
+
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex h-[calc(100vh-5rem)] bg-[var(--glass-bg)]">
@@ -782,6 +1117,19 @@ export default function BasesPage() {
               <Settings className="h-3.5 w-3.5" /> Plugin Settings
             </button>
 
+            {/* NPC Loadouts item */}
+            <button
+              onClick={() => { setSelectedSection("npcloadouts"); setSelectedTable(null); setNpcSelection(null); setNpcEditItem(null); }}
+              className={`w-full text-left px-3 py-2 border-b border-white/5 text-sm transition-colors flex items-center gap-2 ${
+                selectedSection === "npcloadouts" && !selectedTable ? "bg-[var(--status-success)]/10 text-[var(--status-success)]" : "text-[var(--text-muted)] hover:text-white hover:bg-white/[0.03]"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" /> NPC Loadouts
+              <span className="ml-auto text-[10px] text-[var(--text-tertiary)]">
+                {ALL_TIERS.reduce((sum, t) => sum + (data.npcLoadouts?.[t]?.length || 0), 0)}
+              </span>
+            </button>
+
             {/* Loot table list */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-3 py-2 text-xs text-[var(--text-tertiary)] font-medium uppercase tracking-wider">Loot Tables</div>
@@ -799,8 +1147,8 @@ export default function BasesPage() {
                       onClick={() => { setSelectedTable(name); setSelectedSection("table"); }}
                       className="flex-1 text-left px-3 py-2 min-w-0"
                     >
-                      <div className="text-sm font-medium capitalize truncate">{name === "npcloadout_t1" ? "NPC Loadout T1 (Wood)" : name === "npcloadout_t2" ? "NPC Loadout T2 (Stone)" : name === "npcloadout_t3" ? "NPC Loadout T3 (Metal/HQM)" : name}</div>
-                      <div className="text-xs text-[var(--text-tertiary)]">{itemCount} items{name.startsWith("npcloadout_t") ? " · NPC gear" : ""}</div>
+                      <div className="text-sm font-medium capitalize truncate">{name}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{itemCount} items</div>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRemoveLootTable(name); }}
@@ -1069,6 +1417,245 @@ export default function BasesPage() {
                 })}
               </div>
             </div>
+          ) : selectedSection === "npcloadouts" && !selectedTable ? (
+            /* ─── NPC Loadouts Editor ─────────────────────────────────── */
+            <div className="flex-1 overflow-y-auto p-6">
+              <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5" /> NPC Loadouts
+              </h2>
+
+              {/* Tier tabs */}
+              <div className="flex gap-1 mb-4">
+                {ALL_TIERS.map(tier => (
+                  <button
+                    key={tier}
+                    onClick={() => { setNpcTier(tier); setNpcLoadoutIdx(0); setNpcSelection(null); setNpcEditItem(null); }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      npcTier === tier
+                        ? "text-white"
+                        : "text-[var(--text-muted)] hover:text-white hover:bg-white/[0.05]"
+                    }`}
+                    style={npcTier === tier ? { background: `${TIER_COLORS[tier]}33`, borderBottom: `2px solid ${TIER_COLORS[tier]}` } : {}}
+                  >
+                    {TIER_LABELS[tier]}
+                    <span className="ml-2 text-xs opacity-60">({(data.npcLoadouts?.[tier] || []).length})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Loadout selector */}
+              <div className="flex items-center gap-2 mb-5 flex-wrap">
+                {currentLoadouts.map((loadout, idx) => (
+                  <div
+                    key={idx}
+                    className={`group flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
+                      npcLoadoutIdx === idx
+                        ? "bg-white/10 text-white border border-white/10"
+                        : "text-[var(--text-muted)] hover:text-white hover:bg-white/[0.05] border border-transparent"
+                    }`}
+                    onClick={() => { setNpcLoadoutIdx(idx); setNpcSelection(null); setNpcEditItem(null); }}
+                  >
+                    {editingLoadoutName === idx ? (
+                      <input
+                        autoFocus
+                        value={editingNameValue}
+                        onChange={e => setEditingNameValue(e.target.value)}
+                        onBlur={() => handleRenameLoadout(npcTier, idx, editingNameValue)}
+                        onKeyDown={e => { if (e.key === "Enter") handleRenameLoadout(npcTier, idx, editingNameValue); if (e.key === "Escape") setEditingLoadoutName(null); }}
+                        onClick={e => e.stopPropagation()}
+                        className="bg-transparent border-b border-white/30 text-white text-sm outline-none w-24"
+                      />
+                    ) : (
+                      <>
+                        <span>{loadout.name}</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); setEditingLoadoutName(idx); setEditingNameValue(loadout.name); }}
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5 transition-opacity"
+                          title="Rename"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDuplicateLoadout(npcTier, idx); }}
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5 transition-opacity"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                        {currentLoadouts.length > 1 && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleRemoveLoadout(npcTier, idx); }}
+                            className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-[var(--status-error)] p-0.5 transition-opacity"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddLoadout(npcTier)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-[var(--status-success)] hover:bg-[var(--status-success)]/10 transition-colors border border-dashed border-[var(--status-success)]/30"
+                >
+                  <Plus className="h-3 w-3" /> Add Loadout
+                </button>
+              </div>
+
+              {/* Inventory grid */}
+              {currentLoadout ? (
+                <div className="inline-flex gap-4 items-start">
+                  {/* Left: Clothing / Armor (8 slots, 2x4 with labels) */}
+                  <GlassContainer
+                    as="section"
+                    variant="prominent"
+                    padding="md"
+                    radius="md"
+                    features={{ hoverGlow: false, shadow: false }}
+                    className="self-start"
+                  >
+                    <header className="flex items-center gap-2 mb-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Clothing</h4>
+                      <span className="text-[10px] text-[var(--text-muted)]">{currentLoadout.WearItems.length} / {WEAR_SLOTS}</span>
+                    </header>
+                    <div className="grid" style={{ gridTemplateColumns: "repeat(2, 70px)", gap: 3 }}>
+                      {Array.from({ length: WEAR_SLOTS }).map((_, pos) => (
+                        <div key={`wear-${pos}`} className="flex flex-col items-center gap-1">
+                          <span className="text-[9px] text-[var(--text-muted)] truncate text-center" style={{ width: 70 }} title={WEAR_SLOT_NAMES[pos]}>
+                            {WEAR_SLOT_NAMES[pos]}
+                          </span>
+                          <InventorySlot {...getNpcSlotProps("WearItems", currentLoadout.WearItems, pos, 70)} />
+                        </div>
+                      ))}
+                    </div>
+                  </GlassContainer>
+
+                  {/* Right: Main Inventory + Belt */}
+                  <div className="flex flex-col gap-4">
+                    {/* Main Inventory (24 slots, 6x4) */}
+                    <GlassContainer
+                      as="section"
+                      variant="prominent"
+                      padding="md"
+                      radius="md"
+                      features={{ hoverGlow: false, shadow: false }}
+                    >
+                      <header className="flex items-center gap-2 mb-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Inventory</h4>
+                        <span className="text-[10px] text-[var(--text-muted)]">{currentLoadout.MainItems.length} / {MAIN_INVENTORY_SLOTS}</span>
+                      </header>
+                      <div className="grid" style={{ gridTemplateColumns: "repeat(6, 70px)", gap: 3 }}>
+                        {Array.from({ length: MAIN_INVENTORY_SLOTS }).map((_, pos) => (
+                          <InventorySlot key={`main-${pos}`} {...getNpcSlotProps("MainItems", currentLoadout.MainItems, pos, 70)} />
+                        ))}
+                      </div>
+                    </GlassContainer>
+
+                    {/* Belt (6 slots) */}
+                    <GlassContainer
+                      as="section"
+                      variant="prominent"
+                      padding="md"
+                      radius="md"
+                      features={{ hoverGlow: false, shadow: false }}
+                    >
+                      <header className="flex items-center gap-2 mb-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Belt</h4>
+                        <span className="text-[10px] text-[var(--text-muted)]">{currentLoadout.BeltItems.length} / {BELT_SLOTS}</span>
+                      </header>
+                      <div className="grid" style={{ gridTemplateColumns: `repeat(${BELT_SLOTS}, 70px)`, gap: 3 }}>
+                        {Array.from({ length: BELT_SLOTS }).map((_, pos) => (
+                          <InventorySlot key={`belt-${pos}`} {...getNpcSlotProps("BeltItems", currentLoadout.BeltItems, pos, 70)} />
+                        ))}
+                      </div>
+                    </GlassContainer>
+                  </div>
+
+                  {/* Inline item editor (right side of grid) */}
+                  {npcEditItem && currentLoadout[npcEditItem.slot][npcEditItem.index] && (
+                    <GlassContainer
+                      as="section"
+                      variant="prominent"
+                      padding="md"
+                      radius="md"
+                      features={{ hoverGlow: false, shadow: false }}
+                      className="self-start w-56"
+                    >
+                      <header className="flex items-center gap-2 mb-3">
+                        <img src={getItemImageUrl(npcEditItem.item.Shortname)} alt="" className="w-8 h-8 object-contain" />
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-semibold text-white truncate">{npcEditItem.item.Shortname}</h4>
+                          <span className="text-[10px] text-[var(--text-muted)]">{npcEditItem.slot} #{npcEditItem.item.Position}</span>
+                        </div>
+                      </header>
+                      <div className="space-y-3">
+                        <label className="block text-xs text-[var(--text-muted)]">
+                          Amount
+                          <input
+                            type="number"
+                            value={npcEditItem.item.Amount}
+                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Amount: Math.max(1, parseInt(e.target.value) || 1) })}
+                            min={1}
+                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                          />
+                        </label>
+                        <label className="block text-xs text-[var(--text-muted)]">
+                          Condition
+                          <input
+                            type="number"
+                            value={npcEditItem.item.Condition}
+                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Condition: Math.min(1, Math.max(0, parseFloat(e.target.value) || 1)) })}
+                            min={0} max={1} step={0.05}
+                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                          />
+                        </label>
+                        <label className="block text-xs text-[var(--text-muted)]">
+                          Ammo
+                          <input
+                            type="number"
+                            value={npcEditItem.item.Ammo}
+                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Ammo: Math.max(0, parseInt(e.target.value) || 0) })}
+                            min={0}
+                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                          />
+                        </label>
+                        <label className="block text-xs text-[var(--text-muted)]">
+                          Ammo Type
+                          <input
+                            type="text"
+                            value={npcEditItem.item.Ammotype || ""}
+                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Ammotype: e.target.value || null })}
+                            placeholder="e.g. ammo.rifle"
+                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white placeholder:text-[var(--text-tertiary)] focus:outline-none"
+                          />
+                        </label>
+                        <label className="block text-xs text-[var(--text-muted)]">
+                          Skin ID
+                          <input
+                            type="number"
+                            value={Number(npcEditItem.item.Skin) || 0}
+                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Skin: parseInt(e.target.value) || 0 })}
+                            min={0}
+                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                          />
+                        </label>
+                        <button
+                          onClick={() => handleNpcDeleteItem(npcEditItem.slot, npcEditItem.index)}
+                          className="w-full flex items-center justify-center gap-1 px-3 py-1.5 rounded bg-[var(--status-error)]/10 text-[var(--status-error)] text-xs hover:bg-[var(--status-error)]/20 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" /> Remove Item
+                        </button>
+                      </div>
+                    </GlassContainer>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-20 text-[var(--text-tertiary)]">
+                  <p className="text-sm">No loadouts for this tier. Click &quot;Add Loadout&quot; to create one.</p>
+                </div>
+              )}
+            </div>
           ) : selectedTable && currentLootTable ? (
             <LootTableEditor
               tableName={selectedTable}
@@ -1096,6 +1683,14 @@ export default function BasesPage() {
               isOpen={showItemBrowser}
               onToggle={() => setShowItemBrowser(!showItemBrowser)}
               onAddItem={handleAddItem}
+              accentColor="emerald"
+            />
+          )}
+          {activeTab === "config" && selectedSection === "npcloadouts" && !selectedTable && currentLoadout && (
+            <LootItemBrowser
+              isOpen={showItemBrowser}
+              onToggle={() => setShowItemBrowser(!showItemBrowser)}
+              onAddItem={handleNpcAddItem}
               accentColor="emerald"
             />
           )}
