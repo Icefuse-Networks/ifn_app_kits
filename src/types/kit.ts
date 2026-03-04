@@ -18,8 +18,12 @@ export interface KitItem {
   Shortname: string
   /** Skin ID (workshop skin) */
   Skin: number | string
-  /** Stack amount */
+  /** Stack amount (used as fixed amount when MinAmount/MaxAmount are not set) */
   Amount: number
+  /** Minimum random amount (for NPC loadouts) */
+  MinAmount?: number
+  /** Maximum random amount (for NPC loadouts) */
+  MaxAmount?: number
   /** Item condition (0-1, where 1 = 100%) */
   Condition: number
   /** Maximum condition (usually 1) */

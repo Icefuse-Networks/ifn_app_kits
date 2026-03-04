@@ -193,12 +193,14 @@ export function InventorySlot({
             </span>
           )}
 
-          {/* Always show amount */}
+          {/* Always show amount (min-max range if different) */}
           <span
             className="absolute bottom-0.5 right-1 text-[10px] font-bold text-white"
             style={{ textShadow: '0 0 2px #000, 0 0 4px #000' }}
           >
-            x{item.Amount}
+            {item.MinAmount != null && item.MaxAmount != null && item.MinAmount !== item.MaxAmount
+              ? `${item.MinAmount}-${item.MaxAmount}`
+              : `x${item.Amount}`}
           </span>
 
           {item.Condition < 1 && (

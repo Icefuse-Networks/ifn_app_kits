@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2, X, Users, ChevronRight, Pencil, Copy } from "lucide-react";
+import { Upload, Download, Plus, Trash2, Settings, Undo2, Redo2, File, Loader2, X, Users, ChevronRight, Pencil, Copy, ClipboardPaste } from "lucide-react";
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import {
@@ -76,7 +76,7 @@ const TIER_COLORS: Record<NpcTier, string> = { t1: "#a3865a", t2: "#8a8a8a", t3:
 const ALL_TIERS: NpcTier[] = ["t1", "t2", "t3"];
 
 function npcItem(shortname: string, position: number, amount = 1, extra?: Partial<KitItem>): KitItem {
-  return { Shortname: shortname, Skin: 0, Amount: amount, Condition: 1, MaxCondition: 1, Ammo: 0, Ammotype: null, Position: position, Frequency: 0, BlueprintShortname: null, Contents: null, ...extra };
+  return { Shortname: shortname, Skin: 0, Amount: amount, MinAmount: amount, MaxAmount: amount, Condition: 1, MaxCondition: 1, Ammo: 0, Ammotype: null, Position: position, Frequency: 0, BlueprintShortname: null, Contents: null, ...extra };
 }
 
 const DEFAULT_NPC_LOADOUTS: NpcLoadoutsData = {
@@ -234,7 +234,9 @@ function migrateOldNpcLoadouts(configData: BasesConfigData): BasesConfigData {
 
     for (const item of table.Items) {
       const sn = item.Shortname;
-      const kitItem = npcItem(sn, 0, item["Max amount"] || 1);
+      const minAmt = item["Min amount"] || 1;
+      const maxAmt = item["Max amount"] || 1;
+      const kitItem = npcItem(sn, 0, maxAmt, { MinAmount: minAmt, MaxAmount: maxAmt });
       if (WEARABLE_SHORTNAMES.has(sn)) {
         kitItem.Position = wearPos++;
         wear.push(kitItem);
@@ -927,6 +929,37 @@ export default function BasesPage() {
     setEditingLoadoutName(null);
   }, [updateLoadout]);
 
+  const handleCopyLoadout = useCallback((tier: NpcTier, idx: number) => {
+    const loadouts = data.npcLoadouts?.[tier] || [];
+    const loadout = loadouts[idx];
+    if (!loadout) return;
+    navigator.clipboard.writeText(JSON.stringify(loadout, null, 2));
+    toast.success(`Copied "${loadout.name}" to clipboard`);
+  }, [data.npcLoadouts]);
+
+  const handlePasteLoadout = useCallback(async (tier: NpcTier) => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const parsed = JSON.parse(text) as NpcLoadout;
+      if (!parsed.name || !Array.isArray(parsed.WearItems) || !Array.isArray(parsed.BeltItems) || !Array.isArray(parsed.MainItems)) {
+        toast.error("Invalid loadout data in clipboard");
+        return;
+      }
+      setData(prev => {
+        const loadouts = [...(prev.npcLoadouts?.[tier] || [])];
+        parsed.name = `${parsed.name} (pasted)`;
+        loadouts.push(parsed);
+        return { ...prev, npcLoadouts: { ...prev.npcLoadouts, [tier]: loadouts } };
+      });
+      setNpcLoadoutIdx(currentLoadouts.length);
+      setNpcSelection(null);
+      setNpcEditItem(null);
+      toast.success(`Pasted "${parsed.name}"`);
+    } catch {
+      toast.error("Failed to paste — check clipboard contents");
+    }
+  }, [setData, currentLoadouts.length]);
+
   const handleNpcAddItem = useCallback((shortname: string) => {
     if (!currentLoadout) return;
     // If there's an active slot selection (clicked empty slot), put item there
@@ -1482,6 +1515,13 @@ export default function BasesPage() {
                         >
                           <Copy className="h-3 w-3" />
                         </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleCopyLoadout(npcTier, idx); }}
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-0.5 transition-opacity"
+                          title="Copy to clipboard"
+                        >
+                          <Download className="h-3 w-3" />
+                        </button>
                         {currentLoadouts.length > 1 && (
                           <button
                             onClick={e => { e.stopPropagation(); handleRemoveLoadout(npcTier, idx); }}
@@ -1500,6 +1540,13 @@ export default function BasesPage() {
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-[var(--status-success)] hover:bg-[var(--status-success)]/10 transition-colors border border-dashed border-[var(--status-success)]/30"
                 >
                   <Plus className="h-3 w-3" /> Add Loadout
+                </button>
+                <button
+                  onClick={() => handlePasteLoadout(npcTier)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-white hover:bg-white/[0.05] transition-colors border border-dashed border-white/10"
+                  title="Paste loadout from clipboard"
+                >
+                  <ClipboardPaste className="h-3 w-3" /> Paste
                 </button>
               </div>
 
@@ -1590,16 +1637,36 @@ export default function BasesPage() {
                         </div>
                       </header>
                       <div className="space-y-3">
-                        <label className="block text-xs text-[var(--text-muted)]">
-                          Amount
-                          <input
-                            type="number"
-                            value={npcEditItem.item.Amount}
-                            onChange={e => handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { Amount: Math.max(1, parseInt(e.target.value) || 1) })}
-                            min={1}
-                            className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
-                          />
-                        </label>
+                        <div className="flex gap-2">
+                          <label className="block text-xs text-[var(--text-muted)] flex-1">
+                            Min
+                            <input
+                              type="number"
+                              value={npcEditItem.item.MinAmount ?? npcEditItem.item.Amount}
+                              onChange={e => {
+                                const min = Math.max(1, parseInt(e.target.value) || 1);
+                                const max = Math.max(min, npcEditItem.item.MaxAmount ?? npcEditItem.item.Amount);
+                                handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { MinAmount: min, MaxAmount: max, Amount: max });
+                              }}
+                              min={1}
+                              className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                            />
+                          </label>
+                          <label className="block text-xs text-[var(--text-muted)] flex-1">
+                            Max
+                            <input
+                              type="number"
+                              value={npcEditItem.item.MaxAmount ?? npcEditItem.item.Amount}
+                              onChange={e => {
+                                const max = Math.max(1, parseInt(e.target.value) || 1);
+                                const min = Math.min(max, npcEditItem.item.MinAmount ?? npcEditItem.item.Amount);
+                                handleNpcUpdateItem(npcEditItem.slot, npcEditItem.index, { MinAmount: min, MaxAmount: max, Amount: max });
+                              }}
+                              min={1}
+                              className="w-full mt-1 rounded bg-white/5 border border-white/5 px-2 py-1.5 text-sm text-white focus:outline-none"
+                            />
+                          </label>
+                        </div>
                         <label className="block text-xs text-[var(--text-muted)]">
                           Condition
                           <input
