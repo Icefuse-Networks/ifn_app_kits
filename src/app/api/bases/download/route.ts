@@ -12,6 +12,7 @@ interface KitItemWeb {
   Amount: number;
   MinAmount?: number;
   MaxAmount?: number;
+  Position?: number;
 }
 
 interface NpcLoadoutWeb {
@@ -30,6 +31,8 @@ interface LootTableItem {
   "Spawn chance": number;
   "Max spawns per container": number;
   "Min wipe hours to unlock": number;
+  Container?: string;
+  Position?: number;
 }
 
 interface LootTableData {
@@ -55,16 +58,24 @@ function convertNpcLoadoutsToLootTables(
     const chance = loadouts.length === 1 ? 100 : 100 / loadouts.length;
 
     for (const loadout of loadouts) {
-      const items = [...loadout.WearItems, ...loadout.BeltItems, ...loadout.MainItems];
-      for (const item of items) {
-        allItems.push({
-          Shortname: item.Shortname,
-          "Min amount": item.MinAmount ?? item.Amount,
-          "Max amount": item.MaxAmount ?? item.Amount,
-          "Spawn chance": chance,
-          "Max spawns per container": 1,
-          "Min wipe hours to unlock": 0,
-        });
+      const containerMap: [KitItemWeb[], string][] = [
+        [loadout.WearItems, "wear"],
+        [loadout.BeltItems, "belt"],
+        [loadout.MainItems, "main"],
+      ];
+      for (const [items, container] of containerMap) {
+        for (const item of items) {
+          allItems.push({
+            Shortname: item.Shortname,
+            "Min amount": item.MinAmount ?? item.Amount,
+            "Max amount": item.MaxAmount ?? item.Amount,
+            "Spawn chance": chance,
+            "Max spawns per container": 1,
+            "Min wipe hours to unlock": 0,
+            Container: container,
+            Position: item.Position ?? -1,
+          });
+        }
       }
     }
 
