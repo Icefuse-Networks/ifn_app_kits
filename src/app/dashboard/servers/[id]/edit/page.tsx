@@ -24,7 +24,10 @@ interface ServerIdentifier {
   categoryId: string | null
   botToken: string | null
   region: string | null
+  timezone: string | null
   teamLimit: string | null
+  imageUrl: string | null
+  iconUrl: string | null
   category: { id: string; name: string } | null
   createdAt: string
   updatedAt: string
@@ -41,6 +44,41 @@ interface WipeSchedule {
 }
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+function getTzAbbrev(tz: string): string {
+  try {
+    return new Date().toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop() || tz
+  } catch { return tz }
+}
+
+function convertToEst(hour: number, minute: number, dow: number, fromTz: string): { hour: number; minute: number; dow: number } {
+  // Create a date in the source timezone, then read it in EST
+  const base = new Date()
+  // Set to next occurrence of this dow
+  const diff = (dow - base.getDay() + 7) % 7
+  base.setDate(base.getDate() + diff)
+  // Create a date string in the source TZ
+  const dateStr = base.toISOString().split('T')[0]
+  const srcDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`)
+  // Get offset difference
+  const srcOffset = getTimezoneOffset(fromTz, srcDate)
+  const estOffset = getTimezoneOffset('America/New_York', srcDate)
+  const diffMs = estOffset - srcOffset
+  const result = new Date(srcDate.getTime() + diffMs)
+  return { hour: result.getHours(), minute: result.getMinutes(), dow: result.getDay() }
+}
+
+function getTimezoneOffset(tz: string, date: Date): number {
+  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' })
+  const tzStr = date.toLocaleString('en-US', { timeZone: tz })
+  return new Date(utcStr).getTime() - new Date(tzStr).getTime()
+}
+
+function formatTime12(h: number, m: number): string {
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+}
 const WIPE_TYPES = [
   { value: "regular", label: "Regular" },
   { value: "bp", label: "BP Wipe" }
@@ -49,6 +87,16 @@ const WIPE_TYPES = [
 const REGIONS = [
   { value: "US", label: "US" },
   { value: "EU", label: "EU" },
+]
+
+const TIMEZONES = [
+  { value: "America/New_York", label: "EST/EDT (New York)" },
+  { value: "America/Chicago", label: "CST/CDT (Chicago)" },
+  { value: "America/Denver", label: "MST/MDT (Denver)" },
+  { value: "America/Los_Angeles", label: "PST/PDT (Los Angeles)" },
+  { value: "Europe/London", label: "GMT/BST (London)" },
+  { value: "Europe/Paris", label: "CET/CEST (Paris)" },
+  { value: "Europe/Berlin", label: "CET/CEST (Berlin)" },
 ]
 
 const TEAM_LIMITS = [
@@ -77,7 +125,10 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [botToken, setBotToken] = useState('')
   const [region, setRegion] = useState<string | null>(null)
+  const [timezone, setTimezone] = useState<string | null>(null)
   const [teamLimit, setTeamLimit] = useState<string | null>(null)
+  const [imageUrl, setImageUrl] = useState('')
+  const [iconUrl, setIconUrl] = useState('')
 
   // Wipe schedule state
   const [wipeSchedules, setWipeSchedules] = useState<WipeSchedule[]>([])
@@ -124,7 +175,10 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
       setCategoryId(server.categoryId)
       setBotToken(server.botToken || '')
       setRegion(server.region)
+      setTimezone(server.timezone)
       setTeamLimit(server.teamLimit)
+      setImageUrl(server.imageUrl || '')
+      setIconUrl(server.iconUrl || '')
     }
   }, [server])
 
@@ -148,7 +202,10 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
           categoryId,
           botToken: botToken.trim() || null,
           region,
+          timezone,
           teamLimit,
+          imageUrl: imageUrl.trim() || null,
+          iconUrl: iconUrl.trim() || null,
         }),
       })
       if (res.ok) {
@@ -339,13 +396,23 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
             Bot Configuration
           </h2>
           <p className="text-sm text-[var(--text-muted)] mb-4">Discord bot and game server settings</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Region</label>
               <Dropdown
                 value={region}
                 onChange={value => setRegion(value)}
                 options={REGIONS}
+                emptyOption="Not set"
+                clearable
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Timezone</label>
+              <Dropdown
+                value={timezone}
+                onChange={value => setTimezone(value)}
+                options={TIMEZONES}
                 emptyOption="Not set"
                 clearable
               />
@@ -371,6 +438,28 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
                 style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
               />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Image URL</label>
+              <input
+                type="text"
+                value={imageUrl}
+                onChange={e => setImageUrl(e.target.value)}
+                placeholder="Server banner image URL"
+                className="w-full px-4 py-3 rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Icon URL</label>
+              <input
+                type="text"
+                value={iconUrl}
+                onChange={e => setIconUrl(e.target.value)}
+                placeholder="Server icon / bot avatar URL"
+                className="w-full px-4 py-3 rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]"
+                style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+              />
+            </div>
           </div>
         </GlassContainer>
 
@@ -378,9 +467,9 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
         <GlassContainer variant="static" padding="lg" radius="md">
           <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
             <Calendar className="h-5 w-5 text-[var(--status-info)]" />
-            Wipe Schedule (EST/EDT)
+            Wipe Schedule {timezone ? `(${getTzAbbrev(timezone)})` : ''}
           </h2>
-          <p className="text-sm text-[var(--text-muted)] mb-4">Configure weekly wipe times for this server</p>
+          <p className="text-sm text-[var(--text-muted)] mb-4">Times are in the server&apos;s timezone{timezone && timezone !== 'America/New_York' ? ' — EST shown in parentheses' : ''}</p>
 
           {wipeSchedules.length === 0 ? (
             <p className="text-xs text-[var(--text-muted)] mb-4">No wipe schedules configured</p>
@@ -399,7 +488,11 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
                       {WIPE_TYPES.find(t => t.value === schedule.wipeType)?.label || schedule.wipeType}
                     </span>
                     <span className="text-sm text-[var(--text-primary)]">
-                      {DAYS_OF_WEEK[schedule.dayOfWeek]} at {String(schedule.hour).padStart(2, "0")}:{String(schedule.minute).padStart(2, "0")} EST
+                      {DAYS_OF_WEEK[schedule.dayOfWeek]} at {formatTime12(schedule.hour, schedule.minute)} {timezone ? getTzAbbrev(timezone) : ''}
+                      {timezone && timezone !== 'America/New_York' && (() => {
+                        const est = convertToEst(schedule.hour, schedule.minute, schedule.dayOfWeek, timezone)
+                        return <span className="text-[var(--text-muted)]"> ({formatTime12(est.hour, est.minute)} EST)</span>
+                      })()}
                     </span>
                   </div>
                   <button

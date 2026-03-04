@@ -211,7 +211,10 @@ model ServerIdentifier {
   lastPlayerUpdate DateTime? @map("last_player_update")
   botToken        String?   @map("bot_token") @db.VarChar(255)
   region          String?   @db.VarChar(10)
+  timezone        String?   @db.VarChar(40)
   teamLimit       String?   @map("team_limit") @db.VarChar(20)
+  imageUrl        String?   @map("image_url") @db.VarChar(500)
+  iconUrl         String?   @map("icon_url") @db.VarChar(500)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 

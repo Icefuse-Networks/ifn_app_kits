@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft, Server, Users, ChevronRight, Wifi, WifiOff, Plus,
-  Folder, ChevronDown, Activity, Settings, Trash2, Edit3, X
+  Folder, ChevronDown, Activity, Settings, Trash2, Edit3, X, Calendar, Clock
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -36,6 +36,17 @@ interface ServerIdentifier {
   category: IdentifierCategory | null
 }
 
+interface WipeScheduleEntry {
+  id: string
+  serverIdentifierId: string
+  serverName: string | null
+  serverTimezone: string | null
+  dayOfWeek: number
+  hour: number
+  minute: number
+  wipeType: string
+}
+
 function formatLastUpdate(dateStr: string | null): string {
   if (!dateStr) return 'Never'
   const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
@@ -48,6 +59,46 @@ function formatLastUpdate(dateStr: string | null): string {
 function isOnline(dateStr: string | null): boolean {
   if (!dateStr) return false
   return Date.now() - new Date(dateStr).getTime() < 300000
+}
+
+function getTzAbbrev(tz: string): string {
+  try {
+    return new Date().toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').pop() || tz
+  } catch { return tz }
+}
+
+function getTodayInTz(tz: string): number {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: tz })).getDay()
+}
+
+function getCurrentHourMinInTz(tz: string): { h: number; m: number } {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: tz }))
+  return { h: d.getHours(), m: d.getMinutes() }
+}
+
+function convertToTz(hour: number, minute: number, dow: number, fromTz: string, toTz: string): { hour: number; minute: number; dow: number } {
+  const base = new Date()
+  const diff = (dow - base.getDay() + 7) % 7
+  base.setDate(base.getDate() + diff)
+  const dateStr = base.toISOString().split('T')[0]
+  const srcDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`)
+  const srcOffset = getTimezoneOffsetMs(fromTz, srcDate)
+  const dstOffset = getTimezoneOffsetMs(toTz, srcDate)
+  const diffMs = dstOffset - srcOffset
+  const result = new Date(srcDate.getTime() + diffMs)
+  return { hour: result.getHours(), minute: result.getMinutes(), dow: result.getDay() }
+}
+
+function getTimezoneOffsetMs(tz: string, date: Date): number {
+  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' })
+  const tzStr = date.toLocaleString('en-US', { timeZone: tz })
+  return new Date(utcStr).getTime() - new Date(tzStr).getTime()
+}
+
+function formatTime12(h: number, m: number): string {
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
 export default function ServersPage() {
@@ -68,6 +119,7 @@ export default function ServersPage() {
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const [wipeSchedules, setWipeSchedules] = useState<WipeScheduleEntry[]>([])
 
   useEffect(() => {
     fetchData()
@@ -77,13 +129,18 @@ export default function ServersPage() {
 
   async function fetchData() {
     try {
-      const [serversRes, categoriesRes] = await Promise.all([
+      const [serversRes, categoriesRes, wipesRes] = await Promise.all([
         fetch('/api/identifiers', { credentials: 'include' }),
         fetch('/api/identifier-categories', { credentials: 'include' }),
+        fetch('/api/servers/wipe-schedules', { credentials: 'include' }),
       ])
       if (!serversRes.ok) throw new Error('Failed to fetch servers')
       setServers(await serversRes.json())
       setCategories(categoriesRes.ok ? await categoriesRes.json() : [])
+      if (wipesRes.ok) {
+        const wipesData = await wipesRes.json()
+        if (wipesData.success) setWipeSchedules(wipesData.data)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
@@ -119,6 +176,23 @@ export default function ServersPage() {
     online: liveServers.filter(s => isOnline(s.lastPlayerUpdate)).length,
     players: liveServers.reduce((sum, s) => sum + s.playerCount, 0),
   }), [liveServers])
+
+  const wipingToday = useMemo(() => {
+    // Filter schedules where today matches in the server's own timezone
+    return wipeSchedules
+      .filter(s => {
+        const tz = s.serverTimezone || 'America/New_York'
+        return s.dayOfWeek === getTodayInTz(tz)
+      })
+      .sort((a, b) => {
+        // Sort by EST equivalent time for consistent ordering
+        const aTz = a.serverTimezone || 'America/New_York'
+        const bTz = b.serverTimezone || 'America/New_York'
+        const aEst = convertToTz(a.hour, a.minute, a.dayOfWeek, aTz, 'America/New_York')
+        const bEst = convertToTz(b.hour, b.minute, b.dayOfWeek, bTz, 'America/New_York')
+        return aEst.hour - bEst.hour || aEst.minute - bEst.minute
+      })
+  }, [wipeSchedules])
 
   async function createServer() {
     if (!newName.trim()) return
@@ -272,6 +346,50 @@ export default function ServersPage() {
             </div>
           </GlassContainer>
         </div>
+
+        {wipingToday.length > 0 && (
+          <GlassContainer variant="static" padding="lg" radius="md" className="anim-stagger-item mb-6" style={{ animationDelay: '175ms' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-[var(--status-warning)]" />
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider">Wiping Today</h2>
+              <span className="text-xs text-[var(--text-muted)] bg-[var(--glass-bg)] px-2 py-0.5 rounded-full border border-[var(--glass-border)]">
+                {wipingToday.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {wipingToday.map(schedule => {
+                const tz = schedule.serverTimezone || 'America/New_York'
+                const tzAbbrev = getTzAbbrev(tz)
+                const isEst = tz === 'America/New_York'
+                const est = isEst ? { hour: schedule.hour, minute: schedule.minute } : convertToTz(schedule.hour, schedule.minute, schedule.dayOfWeek, tz, 'America/New_York')
+                const isPast = (() => {
+                  const cur = getCurrentHourMinInTz(tz)
+                  return cur.h > schedule.hour || (cur.h === schedule.hour && cur.m >= schedule.minute)
+                })()
+                return (
+                  <div
+                    key={schedule.id}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isPast ? 'opacity-50' : ''}`}
+                    style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
+                  >
+                    <Clock className={`w-3.5 h-3.5 shrink-0 ${isPast ? 'text-[var(--text-muted)]' : 'text-[var(--status-warning)]'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-[var(--text-primary)] truncate">{schedule.serverName || 'Unknown'}</p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {formatTime12(schedule.hour, schedule.minute)} {tzAbbrev}
+                        {!isEst && <span> ({formatTime12(est.hour, est.minute)} EST)</span>}
+                        {schedule.wipeType === 'bp' && (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(168,85,247,0.2)', color: 'rgb(192,132,252)' }}>BP</span>
+                        )}
+                        {isPast && ' (done)'}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </GlassContainer>
+        )}
 
         <div className="anim-fade-slide-up mb-6" style={{ animationDelay: '200ms' }}>
           <SearchInput

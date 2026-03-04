@@ -311,7 +311,10 @@ export const updateServerIdentifierSchema = z.object({
   categoryId: z.string().max(60).nullable().optional(),
   botToken: z.string().max(255).nullable().optional(),
   region: z.string().max(10).nullable().optional(),
+  timezone: z.string().max(40).nullable().optional(),
   teamLimit: z.string().max(20).nullable().optional(),
+  imageUrl: z.string().url().max(500).nullable().optional(),
+  iconUrl: z.string().url().max(500).nullable().optional(),
 })
 
 /**

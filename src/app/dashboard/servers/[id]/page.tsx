@@ -33,7 +33,10 @@ interface ServerIdentifier {
   categoryId: string | null
   botToken: string | null
   region: string | null
+  timezone: string | null
   teamLimit: string | null
+  imageUrl: string | null
+  iconUrl: string | null
   category: { id: string; name: string } | null
   createdAt: string
   updatedAt: string

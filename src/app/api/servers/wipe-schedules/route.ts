@@ -19,7 +19,7 @@ const deleteScheduleSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'identifiers:read')
+  const authResult = await authenticateWithScope(request, 'servers:read')
   if (!authResult.success) {
     return NextResponse.json(
       { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const serverIds = [...new Set(schedules.map(s => s.serverIdentifierId))]
     const servers = await prisma.serverIdentifier.findMany({
       where: { id: { in: serverIds } },
-      select: { id: true, name: true, hashedId: true },
+      select: { id: true, name: true, hashedId: true, timezone: true },
     })
     const serverMap = new Map(servers.map(s => [s.id, s]))
 
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       serverIdentifierId: s.serverIdentifierId,
       serverName: serverMap.get(s.serverIdentifierId)?.name || null,
       serverHashedId: serverMap.get(s.serverIdentifierId)?.hashedId || null,
+      serverTimezone: serverMap.get(s.serverIdentifierId)?.timezone || null,
       dayOfWeek: s.dayOfWeek,
       hour: s.hour,
       minute: s.minute,

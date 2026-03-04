@@ -45,7 +45,10 @@ export async function GET(request: NextRequest) {
         lastPlayerUpdate: true,
         botToken: true,
         region: true,
+        timezone: true,
         teamLimit: true,
+        imageUrl: true,
+        iconUrl: true,
         createdAt: true,
         updatedAt: true,
         category: {

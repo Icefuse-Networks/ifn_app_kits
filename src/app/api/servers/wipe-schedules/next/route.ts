@@ -85,7 +85,7 @@ function computeNextForceWipe(hour: number, minute: number): Date {
 }
 
 export async function GET(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'identifiers:read')
+  const authResult = await authenticateWithScope(request, 'servers:read')
 
   if (!authResult.success) {
     return NextResponse.json(

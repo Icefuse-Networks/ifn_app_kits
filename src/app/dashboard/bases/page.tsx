@@ -76,7 +76,9 @@ const DEFAULT_LOOT_TABLES: Record<string, BasesLootTable> = {
   toolcupboard: { "Min items": 3, "Max Items": 6, Items: [] },
   smallbox: { "Min items": 3, "Max Items": 8, Items: [] },
   locker: { "Min items": 6, "Max Items": 12, Items: [] },
-  npcloadout: { "Min items": 6, "Max Items": 10, Items: [] },
+  npcloadout_t1: { "Min items": 4, "Max Items": 8, Items: [] },
+  npcloadout_t2: { "Min items": 5, "Max Items": 9, Items: [] },
+  npcloadout_t3: { "Min items": 6, "Max Items": 10, Items: [] },
 };
 
 const DEFAULT_CONFIG: BasesConfigData = {
@@ -797,8 +799,8 @@ export default function BasesPage() {
                       onClick={() => { setSelectedTable(name); setSelectedSection("table"); }}
                       className="flex-1 text-left px-3 py-2 min-w-0"
                     >
-                      <div className="text-sm font-medium capitalize truncate">{name === "npcloadout" ? "NPC Loadout" : name}</div>
-                      <div className="text-xs text-[var(--text-tertiary)]">{itemCount} items{name === "npcloadout" ? " · sleeping NPC gear" : ""}</div>
+                      <div className="text-sm font-medium capitalize truncate">{name === "npcloadout_t1" ? "NPC Loadout T1 (Wood)" : name === "npcloadout_t2" ? "NPC Loadout T2 (Stone)" : name === "npcloadout_t3" ? "NPC Loadout T3 (Metal/HQM)" : name}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{itemCount} items{name.startsWith("npcloadout_t") ? " · NPC gear" : ""}</div>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRemoveLootTable(name); }}
