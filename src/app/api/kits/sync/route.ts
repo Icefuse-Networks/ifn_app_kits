@@ -9,7 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope } from '@/services/api-auth'
-import { pluginConfigQuerySchema, updateKitConfigSchema } from '@/lib/validations/kit'
+import { updateKitConfigSchema } from '@/lib/validations/kit'
+import { pluginConfigQuerySchema } from '@/lib/validations/query'
 import { logger } from '@/lib/logger'
 
 /**

@@ -1,28 +1,21 @@
 /**
  * Kit Validation Schemas
  *
- * Zod schemas for validating kit-related API inputs.
+ * Zod schemas for kit configs, kit items, categories, groups, and perks.
  * SECURITY: All inputs are validated before processing.
  */
 
 import { z } from 'zod'
-import type { ApiScope } from '@/types/api'
-import { API_SCOPES } from '@/types/api'
 import { validatePrefixedId } from '@/lib/id'
 
 // =============================================================================
 // Kit Item Schemas
 // =============================================================================
 
-/**
- * Kit item validation (recursive for nested contents)
- */
 const kitItemSchemaBase = z.object({
   Shortname: z.string().min(1).max(100),
   Skin: z.union([z.number(), z.string()]),
-  // Amount: no upper cap — some configs use very high stack counts (30M+)
   Amount: z.number().int().min(1),
-  // Condition/MaxCondition: Rust plugin stores as 0–100 (not 0–1)
   Condition: z.number().min(0).max(100),
   MaxCondition: z.number().min(0).max(100),
   Ammo: z.number().int().min(0),
@@ -32,7 +25,6 @@ const kitItemSchemaBase = z.object({
   BlueprintShortname: z.string().nullable(),
 })
 
-// Recursive type for Contents
 type KitItemInput = z.infer<typeof kitItemSchemaBase> & {
   Contents: KitItemInput[] | null
 }
@@ -42,20 +34,14 @@ export const kitItemSchema: z.ZodType<KitItemInput> = kitItemSchemaBase.extend({
 })
 
 // =============================================================================
-// Category Schemas
+// Category Schemas (kitData._categories)
 // =============================================================================
 
-/**
- * Subcategory validation
- */
 export const kitSubcategorySchema = z.object({
   name: z.string().min(1).max(50),
   order: z.number().int().min(0).default(0),
 })
 
-/**
- * Category validation
- */
 export const kitCategorySchema = z.object({
   name: z.string().min(1).max(50),
   order: z.number().int().min(0).default(0),
@@ -66,9 +52,6 @@ export const kitCategorySchema = z.object({
 // Kit Schemas
 // =============================================================================
 
-/**
- * Individual kit validation
- */
 export const kitSchema = z.object({
   Name: z.string().min(1).max(100),
   Description: z.string().max(500).default(''),
@@ -93,9 +76,6 @@ export const kitSchema = z.object({
   uuid: z.string().uuid().optional(),
 })
 
-/**
- * Full kit data validation (stored in kitData field)
- */
 export const kitsDataSchema = z.object({
   _comment: z.string().optional(),
   _kits: z.record(z.string(), kitSchema),
@@ -108,9 +88,6 @@ export const kitsDataSchema = z.object({
 // Kit Config Schemas
 // =============================================================================
 
-/**
- * Create kit config validation
- */
 export const createKitConfigSchema = z.object({
   name: z
     .string()
@@ -119,15 +96,12 @@ export const createKitConfigSchema = z.object({
     .trim(),
   description: z.string().max(500).nullable().optional(),
   kitData: z.union([
-    z.string().min(2).max(10_000_000), // JSON string
-    kitsDataSchema,                     // Already parsed object
+    z.string().min(2).max(10_000_000),
+    kitsDataSchema,
   ]),
   storeData: z.string().max(10_000_000).nullable().optional(),
 })
 
-/**
- * Update kit config validation
- */
 export const updateKitConfigSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
   description: z.string().max(500).nullable().optional(),
@@ -135,267 +109,18 @@ export const updateKitConfigSchema = z.object({
   storeData: z.string().max(10_000_000).nullable().optional(),
 })
 
-/**
- * Kit config ID parameter validation (category ID)
- * Validates prefixed UUID format: category_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
- */
 export const kitConfigIdSchema = z.object({
   id: z.string().refine(validatePrefixedId('category'), {
     message: 'Invalid category ID format',
   }),
 })
 
-/**
- * Kit ID parameter validation
- * Validates prefixed UUID format: kit_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
- */
 export const kitIdSchema = z.object({
   id: z.string().refine(validatePrefixedId('kit'), {
     message: 'Invalid kit ID format',
   }),
 })
 
-// =============================================================================
-// Game Server Schemas
-// =============================================================================
-
-/**
- * Create game server validation
- */
-export const createGameServerSchema = z.object({
-  categoryID: z.number().int().min(0),
-  name: z.string().min(1, 'Name is required').max(255).trim(),
-  ip: z.string().min(1, 'IP is required').max(45),
-  port: z.number().int().min(1).max(65535),
-  imageUrl: z.string().url('Invalid image URL').max(191),
-  iconUrl: z.string().url('Invalid icon URL').max(191),
-  wipeConfig: z.string().max(10_000).nullable().optional(),
-  botToken: z.string().max(255).nullable().optional(),
-  kitConfigId: z
-    .string()
-    .refine(validatePrefixedId('category'), {
-      message: 'Invalid category ID format',
-    })
-    .nullable()
-    .optional(),
-})
-
-/**
- * Update game server validation (all fields optional)
- */
-export const updateGameServerSchema = createGameServerSchema.partial()
-
-/**
- * Game server ID parameter validation
- */
-export const gameServerIdSchema = z.object({
-  id: z.coerce.number().int().min(1, 'Invalid server ID'),
-})
-
-// =============================================================================
-// API Token Schemas
-// =============================================================================
-
-/**
- * API scope validation
- */
-export const apiScopeSchema = z.enum(API_SCOPES as [ApiScope, ...ApiScope[]])
-
-/**
- * Create API token validation
- */
-export const createApiTokenSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Token name is required')
-    .max(100, 'Token name must be 100 characters or less')
-    .trim(),
-  scopes: z
-    .array(apiScopeSchema)
-    .min(1, 'At least one scope is required')
-    .max(10),
-  categoryId: z.string().max(60).nullable().optional(),
-  expiresAt: z
-    .string()
-    .datetime()
-    .optional()
-    .transform((val) => (val ? new Date(val) : null)),
-})
-
-/**
- * Update API token validation
- */
-export const updateApiTokenSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Token name is required')
-    .max(100, 'Token name must be 100 characters or less')
-    .trim()
-    .optional(),
-  scopes: z
-    .array(apiScopeSchema)
-    .min(1, 'At least one scope is required')
-    .max(10)
-    .optional(),
-  categoryId: z.string().max(60).nullable().optional(),
-})
-
-/**
- * Token ID parameter validation
- * Validates cuid format (25+ alphanumeric chars starting with 'c')
- */
-export const tokenIdSchema = z.object({
-  id: z.string()
-    .min(25, 'Invalid token ID')
-    .max(30, 'Invalid token ID')
-    .regex(/^c[a-z0-9]{20,}$/i, 'Invalid token ID format'),
-})
-
-/**
- * Token category validation
- */
-export const createTokenCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Category name is required')
-    .max(100, 'Category name must be 100 characters or less')
-    .trim(),
-  description: z.string().max(255).nullable().optional(),
-  color: z.string().max(20).nullable().optional(),
-})
-
-export const updateTokenCategorySchema = createTokenCategorySchema.partial()
-
-export const tokenCategoryIdSchema = z.object({
-  id: z.string().refine(validatePrefixedId('tokenCategory'), {
-    message: 'Invalid token category ID format',
-  }),
-})
-
-// =============================================================================
-// Server Identifier Schemas
-// =============================================================================
-
-/**
- * Create server identifier validation
- */
-export const createServerIdentifierSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name must be 100 characters or less')
-    .trim(),
-  description: z.string().max(255).nullable().optional(),
-})
-
-/**
- * Server identifier ID parameter validation
- */
-export const serverIdentifierIdSchema = z.object({
-  id: z.string().refine(validatePrefixedId('serverIdentifier'), {
-    message: 'Invalid server identifier ID format',
-  }),
-})
-
-/**
- * Update server identifier validation
- */
-export const updateServerIdentifierSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Name is required')
-    .max(100, 'Name must be 100 characters or less')
-    .trim()
-    .optional(),
-  description: z.string().max(255).nullable().optional(),
-  categoryId: z.string().max(60).nullable().optional(),
-  botToken: z.string().max(255).nullable().optional(),
-  region: z.string().max(10).nullable().optional(),
-  timezone: z.string().max(40).nullable().optional(),
-  teamLimit: z.string().max(20).nullable().optional(),
-  imageUrl: z.string().url().max(500).nullable().optional(),
-  iconUrl: z.string().url().max(500).nullable().optional(),
-})
-
-/**
- * Create server identifier category validation
- */
-export const createServerIdentifierCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Category name is required')
-    .max(100, 'Category name must be 100 characters or less')
-    .trim(),
-  description: z.string().max(255).nullable().optional(),
-})
-
-/**
- * Update server identifier category validation
- */
-export const updateServerIdentifierCategorySchema = createServerIdentifierCategorySchema.partial()
-
-/**
- * Server identifier category ID parameter validation
- */
-export const serverIdentifierCategoryIdSchema = z.object({
-  id: z.string().refine(validatePrefixedId('serverIdentifierCategory'), {
-    message: 'Invalid server identifier category ID format',
-  }),
-})
-
-// =============================================================================
-// Query Parameter Schemas
-// =============================================================================
-
-/**
- * Pagination query parameters
- */
-export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
-})
-
-/**
- * List kits query parameters
- */
-export const listKitsQuerySchema = z.object({
-  full: z
-    .string()
-    .nullish()
-    .transform((val) => val === 'true'),
-  store: z
-    .string()
-    .nullish()
-    .transform((val) => val === 'true'),
-})
-
-/**
- * Plugin kit config query parameter
- * Used by Rust plugin to request a specific kit configuration
- * Supports both name-based (legacy) and ID-based (new) lookups
- *
- * @example
- * GET /api/servers/kits?config=5x%20Server%20Kits  // Legacy: by name
- * GET /api/servers/kits?id=category_550e8400-...   // New: by ID
- */
-export const pluginConfigQuerySchema = z
-  .object({
-    config: z.string().min(1).max(100).trim().optional(), // Name-based (legacy)
-    id: z.string().optional(), // ID-based (new)
-  })
-  .refine(
-    (data) => data.config || data.id,
-    { message: 'Either config (name) or id must be provided' }
-  )
-  .optional() // Entire object optional for "list all" mode
-
-// =============================================================================
-// Type Exports
-// =============================================================================
-
-/**
- * Clone kit config validation
- */
 export const cloneKitConfigSchema = z.object({
   name: z
     .string()
@@ -405,69 +130,49 @@ export const cloneKitConfigSchema = z.object({
   description: z.string().max(500).nullable().optional(),
 })
 
-/**
- * Patch an individual kit within a config (partial update by kit name)
- */
+// =============================================================================
+// Individual Kit Operations
+// =============================================================================
+
 export const patchKitSchema = z.object({
   kitName: z.string().min(1).max(100),
   updates: kitSchema.partial(),
 })
 
-/**
- * Add a new kit to a config
- */
 export const addKitSchema = z.object({
   kitName: z.string().min(1).max(100),
   kit: kitSchema,
 })
 
-/**
- * Delete a kit from a config by name
- */
 export const deleteKitSchema = z.object({
   kitName: z.string().min(1).max(100),
 })
 
 // =============================================================================
-// Category & Group Schemas (kitData._categories)
+// Kit Category & Group Operations
 // =============================================================================
 
-/**
- * Create a kit category (top-level group in the kit list UI)
- */
 export const createKitCategorySchema = z.object({
   name: z.string().min(1).max(100).trim(),
   order: z.number().int().min(0).optional(),
 })
 
-/**
- * Update a kit category — rename and/or reorder
- */
 export const updateKitCategorySchema = z.object({
   catId: z.string().min(1).max(100),
   name: z.string().min(1).max(100).trim().optional(),
   order: z.number().int().min(0).optional(),
 })
 
-/**
- * Delete a kit category — also clears Category/Subcategory from all affected kits
- */
 export const deleteKitCategorySchema = z.object({
   catId: z.string().min(1).max(100),
 })
 
-/**
- * Create a kit group (subcategory within a category)
- */
 export const createKitGroupSchema = z.object({
   catId: z.string().min(1).max(100),
   name: z.string().min(1).max(100).trim(),
   order: z.number().int().min(0).optional(),
 })
 
-/**
- * Update a kit group — rename and/or reorder
- */
 export const updateKitGroupSchema = z.object({
   catId: z.string().min(1).max(100),
   groupId: z.string().min(1).max(100),
@@ -475,9 +180,6 @@ export const updateKitGroupSchema = z.object({
   order: z.number().int().min(0).optional(),
 })
 
-/**
- * Delete a kit group — also clears Subcategory from all affected kits
- */
 export const deleteKitGroupSchema = z.object({
   catId: z.string().min(1).max(100),
   groupId: z.string().min(1).max(100),
@@ -487,17 +189,11 @@ export const deleteKitGroupSchema = z.object({
 // Perk Schemas
 // =============================================================================
 
-/**
- * Individual perk entry (displayed as a bullet point in the kit UI)
- */
 export const perkSchema = z.object({
   id: z.string().min(1).max(100),
   text: z.string().min(1).max(1000),
 })
 
-/**
- * A named group of perks
- */
 export const perkCategorySchema = z.object({
   id: z.string().min(1).max(100),
   name: z.string().min(1).max(100),
@@ -505,28 +201,23 @@ export const perkCategorySchema = z.object({
   collapsed: z.boolean().optional(),
 })
 
-/**
- * Full perks structure stored in storeData.perks[kitId]
- */
 export const perksDataSchema = z.object({
   categories: z.array(perkCategorySchema),
   uncategorized: z.array(perkSchema),
 })
 
-/**
- * PUT body — replace all perks for a kit
- */
 export const putKitPerksSchema = z.object({
   kitId: z.string().min(1).max(100),
   perks: perksDataSchema,
 })
 
-/**
- * DELETE body — remove all perks for a kit
- */
 export const deleteKitPerksSchema = z.object({
   kitId: z.string().min(1).max(100),
 })
+
+// =============================================================================
+// Type Exports
+// =============================================================================
 
 export type CreateKitConfigInput = z.infer<typeof createKitConfigSchema>
 export type UpdateKitConfigInput = z.infer<typeof updateKitConfigSchema>
@@ -545,13 +236,3 @@ export type PerkCategoryInput = z.infer<typeof perkCategorySchema>
 export type PerksDataInput = z.infer<typeof perksDataSchema>
 export type PutKitPerksInput = z.infer<typeof putKitPerksSchema>
 export type DeleteKitPerksInput = z.infer<typeof deleteKitPerksSchema>
-export type CreateGameServerInput = z.infer<typeof createGameServerSchema>
-export type UpdateGameServerInput = z.infer<typeof updateGameServerSchema>
-export type CreateApiTokenInput = z.infer<typeof createApiTokenSchema>
-export type UpdateApiTokenInput = z.infer<typeof updateApiTokenSchema>
-export type CreateTokenCategoryInput = z.infer<typeof createTokenCategorySchema>
-export type UpdateTokenCategoryInput = z.infer<typeof updateTokenCategorySchema>
-export type CreateServerIdentifierInput = z.infer<typeof createServerIdentifierSchema>
-export type UpdateServerIdentifierInput = z.infer<typeof updateServerIdentifierSchema>
-export type CreateServerIdentifierCategoryInput = z.infer<typeof createServerIdentifierCategorySchema>
-export type UpdateServerIdentifierCategoryInput = z.infer<typeof updateServerIdentifierCategorySchema>

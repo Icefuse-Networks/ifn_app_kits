@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireSession } from '@/services/api-auth'
 import { auditCreate } from '@/services/audit'
-import { createServerIdentifierCategorySchema } from '@/lib/validations/kit'
+import { createServerIdentifierCategorySchema } from '@/lib/validations/server'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
 

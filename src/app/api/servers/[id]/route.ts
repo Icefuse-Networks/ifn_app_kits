@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { authenticateWithScope } from '@/services/api-auth'
 import { auditUpdate, auditDelete } from '@/services/audit'
-import { gameServerIdSchema, updateGameServerSchema } from '@/lib/validations/kit'
+import { gameServerIdSchema, updateGameServerSchema } from '@/lib/validations/server'
 import { logger } from '@/lib/logger'
 
 type RouteContext = { params: Promise<{ id: string }> }

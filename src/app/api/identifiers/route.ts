@@ -11,7 +11,7 @@ import { authenticateWithScope, requireSession } from '@/services/api-auth'
 import { hasScope } from '@/lib/api-token'
 import type { ApiScope } from '@/types/api'
 import { auditCreate } from '@/services/audit'
-import { createServerIdentifierSchema } from '@/lib/validations/kit'
+import { createServerIdentifierSchema } from '@/lib/validations/server'
 import { id } from '@/lib/id'
 import { logger } from '@/lib/logger'
 

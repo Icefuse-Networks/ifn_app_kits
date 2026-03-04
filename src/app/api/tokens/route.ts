@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireSession } from '@/services/api-auth'
 import { auditCreate } from '@/services/audit'
 import { createApiToken, listApiTokens } from '@/lib/api-token'
-import { createApiTokenSchema } from '@/lib/validations/kit'
+import { createApiTokenSchema } from '@/lib/validations/token'
 import { logger } from '@/lib/logger'
 import type { ApiScope, ApiTokenCreateResponse } from '@/types/api'
 

@@ -11,7 +11,7 @@ import { authenticateWithScope } from '@/services/api-auth'
 import { hasScope } from '@/lib/api-token'
 import type { ApiScope } from '@/types/api'
 import { auditCreate } from '@/services/audit'
-import { createGameServerSchema } from '@/lib/validations/kit'
+import { createGameServerSchema } from '@/lib/validations/server'
 import { logger } from '@/lib/logger'
 
 /**

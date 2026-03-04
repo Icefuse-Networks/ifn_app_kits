@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireSession } from '@/services/api-auth'
 import { auditUpdate, auditDelete } from '@/services/audit'
 import { getApiTokenById, updateApiToken, deleteApiToken } from '@/lib/api-token'
-import { tokenIdSchema, updateApiTokenSchema } from '@/lib/validations/kit'
+import { tokenIdSchema, updateApiTokenSchema } from '@/lib/validations/token'
 import { logger } from '@/lib/logger'
 
 type RouteContext = { params: Promise<{ id: string }> }

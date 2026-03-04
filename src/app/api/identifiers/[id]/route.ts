@@ -5,7 +5,7 @@ import { auditUpdate, auditDelete } from '@/services/audit'
 import {
   serverIdentifierIdSchema,
   updateServerIdentifierSchema,
-} from '@/lib/validations/kit'
+} from '@/lib/validations/server'
 import { logger } from '@/lib/logger'
 
 interface RouteContext {

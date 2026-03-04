@@ -12,7 +12,7 @@ import { auditUpdate, auditDelete } from '@/services/audit'
 import {
   serverIdentifierCategoryIdSchema,
   updateServerIdentifierCategorySchema,
-} from '@/lib/validations/kit'
+} from '@/lib/validations/server'
 import { logger } from '@/lib/logger'
 
 interface RouteContext {
