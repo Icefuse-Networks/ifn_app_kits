@@ -58,27 +58,25 @@ function convertNpcLoadoutsToLootTables(
     const loadouts = npcLoadouts[tier];
     if (!loadouts || loadouts.length === 0) continue;
 
-    // Merge all loadout profiles for this tier into one loot table
-    // Each profile's items get 100/N spawn chance so one profile is picked randomly
-    const allItems: LootTableItem[] = [];
-    const chance = loadouts.length === 1 ? 100 : 100 / loadouts.length;
-    let maxProfileItemCount = 0;
+    // Each loadout profile becomes its own loot table (npcloadout_t1_0, npcloadout_t1_1, etc.)
+    // The C# side picks one at random per NPC
+    const scramble = loadouts.some(l => l.scrambleMain);
 
-    for (const loadout of loadouts) {
-      let profileItemCount = 0;
+    for (let p = 0; p < loadouts.length; p++) {
+      const loadout = loadouts[p];
+      const items: LootTableItem[] = [];
       const containerMap: [KitItemWeb[], string][] = [
         [loadout.WearItems, "wear"],
         [loadout.BeltItems, "belt"],
         [loadout.MainItems, "main"],
       ];
-      for (const [items, container] of containerMap) {
-        for (const item of items) {
-          profileItemCount++;
-          allItems.push({
+      for (const [kitItems, container] of containerMap) {
+        for (const item of kitItems) {
+          items.push({
             Shortname: item.Shortname,
             "Min amount": item.MinAmount ?? item.Amount,
             "Max amount": item.MaxAmount ?? item.Amount,
-            "Spawn chance": chance,
+            "Spawn chance": 100,
             "Max spawns per container": 1,
             "Min wipe hours to unlock": 0,
             Container: container,
@@ -87,21 +85,24 @@ function convertNpcLoadoutsToLootTables(
           });
         }
       }
-      if (profileItemCount > maxProfileItemCount)
-        maxProfileItemCount = profileItemCount;
+
+      if (items.length > 0) {
+        const table: LootTableData = {
+          "Min items": items.length,
+          "Max Items": items.length,
+          Items: items,
+        };
+        if (scramble) table["Scramble Main Slots"] = true;
+        result[`npcloadout_${tier}_${p}`] = table;
+      }
     }
 
-    if (allItems.length > 0) {
-      const scramble = loadouts.some(l => l.scrambleMain);
-      // Use single profile's item count so only one profile's worth of items gets picked
-      const table: LootTableData = {
-        "Min items": maxProfileItemCount,
-        "Max Items": maxProfileItemCount,
-        Items: allItems,
-      };
-      if (scramble) table["Scramble Main Slots"] = true;
-      result[`npcloadout_${tier}`] = table;
-    }
+    // Also store the profile count so C# knows how many exist
+    result[`npcloadout_${tier}_count`] = {
+      "Min items": loadouts.length,
+      "Max Items": loadouts.length,
+      Items: [],
+    };
   }
 
   return result;
