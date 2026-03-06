@@ -130,6 +130,7 @@ registerPrefix('redirectConfig', 'redircfg', 'Redirect Config', 'redirect')
 registerPrefix('redirectLog', 'redirlog', 'Redirect Log', 'redirect')
 registerPrefix('redirectQueue', 'redirq', 'Redirect Queue', 'redirect')
 registerPrefix('wipeSchedule', 'wipesched', 'Wipe Schedule', 'redirect')
+registerPrefix('holdingSession', 'holdsess', 'Holding Session', 'redirect')
 
 // Giveaway plugin entities
 registerPrefix('giveawayPlayer', 'giveawayp', 'Giveaway Player', 'giveaways')
@@ -196,6 +197,7 @@ export type IdType =
   | 'redirectLog'
   | 'redirectQueue'
   | 'wipeSchedule'
+  | 'holdingSession'
   // Giveaway plugin
   | 'giveawayPlayer'
   | 'giveaway'
@@ -379,6 +381,7 @@ export const id = {
   redirectLog: () => generateId('redirectLog'),
   redirectQueue: () => generateId('redirectQueue'),
   wipeSchedule: () => generateId('wipeSchedule'),
+  holdingSession: () => generateId('holdingSession'),
 
   // Giveaway plugin
   giveawayPlayer: () => generateId('giveawayPlayer'),

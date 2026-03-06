@@ -21,6 +21,7 @@ interface NpcLoadoutWeb {
   WearItems: KitItemWeb[];
   BeltItems: KitItemWeb[];
   MainItems: KitItemWeb[];
+  scrambleMain?: boolean;
 }
 
 type NpcLoadoutsWeb = Record<string, NpcLoadoutWeb[]>;
@@ -32,6 +33,8 @@ interface LootTableItem {
   "Spawn chance": number;
   "Max spawns per container": number;
   "Min wipe hours to unlock": number;
+  "Ignore Loot Multiplier"?: boolean;
+  "Ignore Wipe Progression"?: boolean;
   Container?: string;
   Position?: number;
   Skin?: number;
@@ -41,6 +44,7 @@ interface LootTableData {
   "Min items": number;
   "Max Items": number;
   Items: LootTableItem[];
+  "Scramble Main Slots"?: boolean;
 }
 
 const TIER_KEYS = ["t1", "t2", "t3"] as const;
@@ -83,11 +87,14 @@ function convertNpcLoadoutsToLootTables(
     }
 
     if (allItems.length > 0) {
-      result[`npcloadout_${tier}`] = {
+      const scramble = loadouts.some(l => l.scrambleMain);
+      const table: LootTableData = {
         "Min items": allItems.length,
         "Max Items": allItems.length,
         Items: allItems,
       };
+      if (scramble) table["Scramble Main Slots"] = true;
+      result[`npcloadout_${tier}`] = table;
     }
   }
 

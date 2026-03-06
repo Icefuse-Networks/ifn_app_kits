@@ -28,6 +28,8 @@ interface BasesLootItem {
   "Spawn chance": number;
   "Max spawns per container": number;
   "Min wipe hours to unlock": number;
+  "Ignore Loot Multiplier"?: boolean;
+  "Ignore Wipe Progression"?: boolean;
 }
 
 interface BasesLootTable {
@@ -40,6 +42,7 @@ interface ContainerMappingData {
   "Loot Tables": string[];
   "Min Items": number;
   "Max Items": number;
+  "Max Fill Count"?: number;
 }
 
 interface BaseData {
@@ -56,6 +59,10 @@ interface BasesPluginConfig {
   "Wipe Progression Enabled": boolean;
   "Wipe Progression Min Scale": number;
   "Wipe Progression Hours To Max": number;
+  "Containers Enabled": boolean;
+  "NPCs Enabled": boolean;
+  "Replace Windmills With SAM": boolean;
+  "Building Skin Chance"?: number;
 }
 
 // ─── NPC Loadout types ─────────────────────────────────────────────────────
@@ -67,6 +74,7 @@ interface NpcLoadout {
   WearItems: KitItem[];
   BeltItems: KitItem[];
   MainItems: KitItem[];
+  scrambleMain?: boolean;
 }
 
 type NpcLoadoutsData = Record<NpcTier, NpcLoadout[]>;
@@ -149,6 +157,10 @@ const DEFAULT_CONFIG: BasesConfigData = {
     "Wipe Progression Enabled": true,
     "Wipe Progression Min Scale": 0.3,
     "Wipe Progression Hours To Max": 72,
+    "Containers Enabled": true,
+    "NPCs Enabled": true,
+    "Replace Windmills With SAM": false,
+    "Building Skin Chance": 0.35,
   },
   lootTables: { ...DEFAULT_LOOT_TABLES },
   npcLoadouts: structuredClone(DEFAULT_NPC_LOADOUTS),
@@ -159,6 +171,8 @@ const DEFAULT_CONFIG: BasesConfigData = {
 const BASES_EXTRA_FIELDS: ExtraFieldDef[] = [
   { key: "maxSpawns", label: "Max Spawns", type: "number", default: 1, min: 1 },
   { key: "minWipeHours", label: "Min Wipe Hrs", type: "number", default: 0, min: 0 },
+  { key: "ignoreLootMultiplier", label: "Ignore Multiplier", type: "checkbox", default: false },
+  { key: "ignoreWipeProgression", label: "Ignore Wipe Prog", type: "checkbox", default: false },
 ];
 
 function toGenericItem(item: BasesLootItem): GenericLootItem {
@@ -169,6 +183,8 @@ function toGenericItem(item: BasesLootItem): GenericLootItem {
     spawnChance: item["Spawn chance"],
     maxSpawns: item["Max spawns per container"],
     minWipeHours: item["Min wipe hours to unlock"],
+    ignoreLootMultiplier: item["Ignore Loot Multiplier"] ?? false,
+    ignoreWipeProgression: item["Ignore Wipe Progression"] ?? false,
   };
 }
 
@@ -180,6 +196,8 @@ function fromGenericItem(item: GenericLootItem): BasesLootItem {
     "Spawn chance": item.spawnChance,
     "Max spawns per container": (item.maxSpawns as number) ?? 1,
     "Min wipe hours to unlock": (item.minWipeHours as number) ?? 0,
+    ...(item.ignoreLootMultiplier ? { "Ignore Loot Multiplier": true } : {}),
+    ...(item.ignoreWipeProgression ? { "Ignore Wipe Progression": true } : {}),
   };
 }
 
@@ -812,7 +830,7 @@ export default function BasesPage() {
     });
   }, [setData]);
 
-  const handleUpdateContainerMapping = useCallback((prefab: string, field: "Min Items" | "Max Items", value: number) => {
+  const handleUpdateContainerMapping = useCallback((prefab: string, field: "Min Items" | "Max Items" | "Max Fill Count", value: number) => {
     setData(prev => {
       const mappings = { ...prev.pluginConfig["Container Mappings"] };
       mappings[prefab] = { ...mappings[prefab], [field]: value };
@@ -1301,6 +1319,32 @@ export default function BasesPage() {
                       </label>
                     </>
                   )}
+                  <label className="text-sm text-[var(--text-muted)]">
+                    Building Skin Chance (0-1)
+                    <input type="number" value={data.pluginConfig["Building Skin Chance"] ?? 0.35} onChange={(e) => handleUpdatePluginSetting("Building Skin Chance", parseFloat(e.target.value) || 0)} min={0} max={1} step={0.05} className="w-full mt-1 rounded-lg bg-white/5 border border-white/5 px-3 py-2 text-sm text-white focus:outline-none" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Feature Toggles */}
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-6">
+                <h3 className="text-sm font-semibold text-white mb-4">Feature Toggles</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <CheckboxSwitch
+                    checked={data.pluginConfig["Containers Enabled"] ?? true}
+                    onChange={(checked) => handleUpdatePluginSetting("Containers Enabled", checked)}
+                    label="Containers (Loot)"
+                  />
+                  <CheckboxSwitch
+                    checked={data.pluginConfig["NPCs Enabled"] ?? true}
+                    onChange={(checked) => handleUpdatePluginSetting("NPCs Enabled", checked)}
+                    label="NPCs (Sleeping Bots)"
+                  />
+                  <CheckboxSwitch
+                    checked={data.pluginConfig["Replace Windmills With SAM"] ?? false}
+                    onChange={(checked) => handleUpdatePluginSetting("Replace Windmills With SAM", checked)}
+                    label="Replace Windmills → SAM Sites"
+                  />
                 </div>
               </div>
 
@@ -1328,6 +1372,16 @@ export default function BasesPage() {
                           onChange={(e) => handleUpdateContainerMapping(prefab, "Max Items", parseInt(e.target.value) || 0)}
                           min={0}
                           title="Max Items"
+                          className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
+                        />
+                        <span className="text-[var(--text-tertiary)] text-xs ml-1">fill:</span>
+                        <input
+                          type="number"
+                          value={mapping["Max Fill Count"] ?? 0}
+                          onChange={(e) => handleUpdateContainerMapping(prefab, "Max Fill Count", parseInt(e.target.value) || 0)}
+                          min={0}
+                          title="Max Fill Count (0 = unlimited)"
+                          placeholder="∞"
                           className="w-14 rounded bg-white/5 border border-white/5 px-2 py-1 text-xs text-white text-center focus:outline-none"
                         />
                         <button onClick={() => handleRemoveContainerMapping(prefab)} className="p-1 text-[var(--text-tertiary)] hover:text-[var(--status-error)] transition-colors">
@@ -1549,6 +1603,18 @@ export default function BasesPage() {
                   <ClipboardPaste className="h-3 w-3" /> Paste
                 </button>
               </div>
+
+              {/* Loadout options */}
+              {currentLoadout && (
+                <div className="flex items-center gap-4 mb-4">
+                  <CheckboxSwitch
+                    label="Scramble Main Slots"
+                    checked={!!currentLoadout.scrambleMain}
+                    onChange={(checked) => updateLoadout(npcTier, npcLoadoutIdx, { scrambleMain: checked })}
+                  />
+                  <span className="text-[10px] text-[var(--text-muted)]">Randomize main inventory slot positions</span>
+                </div>
+              )}
 
               {/* Inventory grid */}
               {currentLoadout ? (
