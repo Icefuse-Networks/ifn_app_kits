@@ -62,8 +62,10 @@ function convertNpcLoadoutsToLootTables(
     // Each profile's items get 100/N spawn chance so one profile is picked randomly
     const allItems: LootTableItem[] = [];
     const chance = loadouts.length === 1 ? 100 : 100 / loadouts.length;
+    let maxProfileItemCount = 0;
 
     for (const loadout of loadouts) {
+      let profileItemCount = 0;
       const containerMap: [KitItemWeb[], string][] = [
         [loadout.WearItems, "wear"],
         [loadout.BeltItems, "belt"],
@@ -71,6 +73,7 @@ function convertNpcLoadoutsToLootTables(
       ];
       for (const [items, container] of containerMap) {
         for (const item of items) {
+          profileItemCount++;
           allItems.push({
             Shortname: item.Shortname,
             "Min amount": item.MinAmount ?? item.Amount,
@@ -84,13 +87,16 @@ function convertNpcLoadoutsToLootTables(
           });
         }
       }
+      if (profileItemCount > maxProfileItemCount)
+        maxProfileItemCount = profileItemCount;
     }
 
     if (allItems.length > 0) {
       const scramble = loadouts.some(l => l.scrambleMain);
+      // Use single profile's item count so only one profile's worth of items gets picked
       const table: LootTableData = {
-        "Min items": allItems.length,
-        "Max Items": allItems.length,
+        "Min items": maxProfileItemCount,
+        "Max Items": maxProfileItemCount,
         Items: allItems,
       };
       if (scramble) table["Scramble Main Slots"] = true;

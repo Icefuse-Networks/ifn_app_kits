@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check, X, Search, CheckSquare, Square } from "lucide-react";
 
 export interface DropdownOption {
@@ -62,8 +63,16 @@ export function Dropdown(props: DropdownProps) {
   const [panelClosing, setPanelClosing] = useState(false);   // true = animating out (open → closed)
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const closeAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const updatePanelPos = useCallback(() => {
+    if (!dropdownRef.current) return;
+    const rect = dropdownRef.current.getBoundingClientRect();
+    setPanelPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, []);
 
   const isMulti = props.multiSelect === true;
 
@@ -95,11 +104,11 @@ export function Dropdown(props: DropdownProps) {
 
   const openPanel = () => {
     if (closeAnimTimerRef.current) clearTimeout(closeAnimTimerRef.current);
+    updatePanelPos();
     setPanelEntering(true);
     setPanelClosing(false);
     setPanelVisible(true);
     setIsOpen(true);
-    // One frame later: remove entering state so transition fires
     requestAnimationFrame(() => setPanelEntering(false));
   };
 
@@ -122,9 +131,10 @@ export function Dropdown(props: DropdownProps) {
   useEffect(() => {
     if (!panelVisible) return;
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        closePanel();
-      }
+      const target = e.target as Node;
+      if (dropdownRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      closePanel();
     }
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") closePanel();
@@ -136,6 +146,18 @@ export function Dropdown(props: DropdownProps) {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [panelVisible]);
+
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!panelVisible) return;
+    const reposition = () => updatePanelPos();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [panelVisible, updatePanelPos]);
 
   // Auto-focus search
   useEffect(() => {
@@ -224,15 +246,18 @@ export function Dropdown(props: DropdownProps) {
 
       {error && <p className="mt-1 text-xs text-[var(--status-error)]">{error}</p>}
 
-      {/* Dropdown Panel */}
-      {panelVisible && (
+      {/* Dropdown Panel — portaled to body to escape overflow-hidden parents */}
+      {panelVisible && panelPos && createPortal(
         <div
-          className="absolute z-50 w-full mt-1 rounded-[var(--radius-md)] overflow-hidden shadow-lg"
+          ref={panelRef}
+          className="fixed z-[9999] rounded-[var(--radius-md)] overflow-hidden shadow-lg"
           style={{
+            top: panelPos.top,
+            left: panelPos.left,
+            width: panelPos.width,
             background: 'linear-gradient(to bottom right, #0a0a0f 0%, #1a1a2e 50%, #0f1419 100%)',
             border: "1px solid var(--glass-border)",
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-            // Animation: slide down on open, slide up on close
             transition: 'opacity 160ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1)',
             opacity: panelEntering || panelClosing ? 0 : 1,
             transform: panelEntering || panelClosing ? 'translateY(-6px) scaleY(0.97)' : 'translateY(0) scaleY(1)',
@@ -339,7 +364,8 @@ export function Dropdown(props: DropdownProps) {
               </p>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
