@@ -101,6 +101,18 @@ function formatTime12(h: number, m: number): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
+function isTodayForceWipe(): boolean {
+  // Force wipe = first Thursday of the month (in EST)
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  if (now.getDay() !== 4) return false // Not Thursday
+  // First Thursday = day 1-7
+  return now.getDate() <= 7
+}
+
+function getForceWipeTime(): { hour: number; minute: number } {
+  return { hour: 13, minute: 55 } // 1:55 PM EST
+}
+
 export default function ServersPage() {
   const [servers, setServers] = useState<ServerIdentifier[]>([])
   const [categories, setCategories] = useState<IdentifierCategory[]>([])
@@ -177,22 +189,67 @@ export default function ServersPage() {
     players: liveServers.reduce((sum, s) => sum + s.playerCount, 0),
   }), [liveServers])
 
+  const isForceWipe = useMemo(() => isTodayForceWipe(), [])
+
   const wipingToday = useMemo(() => {
-    // Filter schedules where today matches in the server's own timezone
-    return wipeSchedules
-      .filter(s => {
+    if (isForceWipe) {
+      // On force wipe day, every server wipes — build one entry per unique server
+      const seen = new Set<string>()
+      const forceTime = getForceWipeTime()
+      const entries: (WipeScheduleEntry & { isForce?: boolean })[] = []
+
+      // First add servers that have a Thursday schedule (use their scheduled time)
+      for (const s of wipeSchedules) {
         const tz = s.serverTimezone || 'America/New_York'
-        return s.dayOfWeek === getTodayInTz(tz)
-      })
-      .sort((a, b) => {
-        // Sort by EST equivalent time for consistent ordering
+        if (s.dayOfWeek === getTodayInTz(tz) && s.serverName && !seen.has(s.serverName)) {
+          seen.add(s.serverName)
+          entries.push(s)
+        }
+      }
+
+      // Then add all remaining servers at force wipe time (1:55 PM EST)
+      const allServerNames = new Set(wipeSchedules.map(s => s.serverName).filter(Boolean))
+      // Also include live servers that may not have any wipe schedules
+      for (const srv of liveServers) {
+        if (!seen.has(srv.name)) {
+          seen.add(srv.name)
+          entries.push({
+            id: `force-${srv.id}`,
+            serverIdentifierId: srv.id,
+            serverName: srv.name,
+            serverTimezone: 'America/New_York',
+            dayOfWeek: getTodayInTz('America/New_York'),
+            hour: forceTime.hour,
+            minute: forceTime.minute,
+            wipeType: 'map',
+            isForce: true,
+          })
+        }
+      }
+
+      return entries.sort((a, b) => {
         const aTz = a.serverTimezone || 'America/New_York'
         const bTz = b.serverTimezone || 'America/New_York'
         const aEst = convertToTz(a.hour, a.minute, a.dayOfWeek, aTz, 'America/New_York')
         const bEst = convertToTz(b.hour, b.minute, b.dayOfWeek, bTz, 'America/New_York')
         return aEst.hour - bEst.hour || aEst.minute - bEst.minute
       })
-  }, [wipeSchedules])
+    }
+
+    // Normal day — only show servers with a matching schedule
+    return wipeSchedules
+      .filter(s => {
+        const tz = s.serverTimezone || 'America/New_York'
+        return s.dayOfWeek === getTodayInTz(tz)
+      })
+      .sort((a, b) => {
+        const aTz = a.serverTimezone || 'America/New_York'
+        const bTz = b.serverTimezone || 'America/New_York'
+        const aEst = convertToTz(a.hour, a.minute, a.dayOfWeek, aTz, 'America/New_York')
+        const bEst = convertToTz(b.hour, b.minute, b.dayOfWeek, bTz, 'America/New_York')
+        return aEst.hour - bEst.hour || aEst.minute - bEst.minute
+      })
+  }, [wipeSchedules, isForceWipe, liveServers])
 
   async function createServer() {
     if (!newName.trim()) return
@@ -351,35 +408,46 @@ export default function ServersPage() {
           <GlassContainer variant="static" padding="lg" radius="md" className="anim-stagger-item mb-6" style={{ animationDelay: '175ms' }}>
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-4 h-4 text-[var(--status-warning)]" />
-              <h2 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider">Wiping Today</h2>
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+                {isForceWipe ? 'Force Wipe Today' : 'Wiping Today'}
+              </h2>
               <span className="text-xs text-[var(--text-muted)] bg-[var(--glass-bg)] px-2 py-0.5 rounded-full border border-[var(--glass-border)]">
                 {wipingToday.length}
               </span>
+              {isForceWipe && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.2)', color: 'rgb(248,113,113)' }}>
+                  ALL SERVERS
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {wipingToday.map(schedule => {
-                const tz = schedule.serverTimezone || 'America/New_York'
+                const entry = schedule as WipeScheduleEntry & { isForce?: boolean }
+                const tz = entry.serverTimezone || 'America/New_York'
                 const tzAbbrev = getTzAbbrev(tz)
                 const isEst = tz === 'America/New_York'
-                const est = isEst ? { hour: schedule.hour, minute: schedule.minute } : convertToTz(schedule.hour, schedule.minute, schedule.dayOfWeek, tz, 'America/New_York')
+                const est = isEst ? { hour: entry.hour, minute: entry.minute } : convertToTz(entry.hour, entry.minute, entry.dayOfWeek, tz, 'America/New_York')
                 const isPast = (() => {
                   const cur = getCurrentHourMinInTz(tz)
-                  return cur.h > schedule.hour || (cur.h === schedule.hour && cur.m >= schedule.minute)
+                  return cur.h > entry.hour || (cur.h === entry.hour && cur.m >= entry.minute)
                 })()
                 return (
                   <div
-                    key={schedule.id}
+                    key={entry.id}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isPast ? 'opacity-50' : ''}`}
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--glass-border)' }}
                   >
                     <Clock className={`w-3.5 h-3.5 shrink-0 ${isPast ? 'text-[var(--text-muted)]' : 'text-[var(--status-warning)]'}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-[var(--text-primary)] truncate">{schedule.serverName || 'Unknown'}</p>
+                      <p className="text-sm text-[var(--text-primary)] truncate">{entry.serverName || 'Unknown'}</p>
                       <p className="text-xs text-[var(--text-muted)]">
-                        {formatTime12(schedule.hour, schedule.minute)} {tzAbbrev}
+                        {formatTime12(entry.hour, entry.minute)} {tzAbbrev}
                         {!isEst && <span> ({formatTime12(est.hour, est.minute)} EST)</span>}
-                        {schedule.wipeType === 'bp' && (
+                        {entry.wipeType === 'bp' && (
                           <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(168,85,247,0.2)', color: 'rgb(192,132,252)' }}>BP</span>
+                        )}
+                        {entry.isForce && (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(239,68,68,0.2)', color: 'rgb(248,113,113)' }}>FW</span>
                         )}
                         {isPast && ' (done)'}
                       </p>

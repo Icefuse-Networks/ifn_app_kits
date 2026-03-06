@@ -13,6 +13,7 @@ interface KitItemWeb {
   MinAmount?: number;
   MaxAmount?: number;
   Position?: number;
+  Skin?: number;
 }
 
 interface NpcLoadoutWeb {
@@ -33,6 +34,7 @@ interface LootTableItem {
   "Min wipe hours to unlock": number;
   Container?: string;
   Position?: number;
+  Skin?: number;
 }
 
 interface LootTableData {
@@ -74,6 +76,7 @@ function convertNpcLoadoutsToLootTables(
             "Min wipe hours to unlock": 0,
             Container: container,
             Position: item.Position ?? -1,
+            ...(item.Skin ? { Skin: item.Skin } : {}),
           });
         }
       }

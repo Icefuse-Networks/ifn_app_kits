@@ -8,13 +8,18 @@
  *   tsx scripts/sync-clickhouse-schema.ts
  */
 
-import { syncClickHouseSchema } from '../src/lib/clickhouse-schema'
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+config({ path: '.env' })
 
-syncClickHouseSchema()
-  .then(() => {
-    console.log('✅ Schema sync complete!')
-    process.exit(0)
-  })
+async function main() {
+  const { syncClickHouseSchema } = await import('../src/lib/clickhouse-schema')
+  await syncClickHouseSchema()
+  console.log('✅ Schema sync complete!')
+}
+
+main()
+  .then(() => process.exit(0))
   .catch((error) => {
     console.error('❌ Schema sync failed:', error)
     process.exit(1)

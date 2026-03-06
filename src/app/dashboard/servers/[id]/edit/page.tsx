@@ -68,6 +68,19 @@ function convertToEst(hour: number, minute: number, dow: number, fromTz: string)
   return { hour: result.getHours(), minute: result.getMinutes(), dow: result.getDay() }
 }
 
+function convertEstToTz(hour: number, minute: number, dow: number, toTz: string): { hour: number; minute: number; dow: number } {
+  const base = new Date()
+  const diff = (dow - base.getDay() + 7) % 7
+  base.setDate(base.getDate() + diff)
+  const dateStr = base.toISOString().split('T')[0]
+  const srcDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`)
+  const estOffset = getTimezoneOffset('America/New_York', srcDate)
+  const dstOffset = getTimezoneOffset(toTz, srcDate)
+  const diffMs = dstOffset - estOffset
+  const result = new Date(srcDate.getTime() + diffMs)
+  return { hour: result.getHours(), minute: result.getMinutes(), dow: result.getDay() }
+}
+
 function getTimezoneOffset(tz: string, date: Date): number {
   const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' })
   const tzStr = date.toLocaleString('en-US', { timeZone: tz })
@@ -222,13 +235,22 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
     if (!server) return
     setAddingSchedule(true)
     try {
+      // Convert to EST before saving — the API assumes all stored times are EST
+      const tz = timezone || 'America/New_York'
+      const est = tz === 'America/New_York'
+        ? { hour: newSchedule.hour, minute: newSchedule.minute, dow: newSchedule.dayOfWeek }
+        : convertToEst(newSchedule.hour, newSchedule.minute, newSchedule.dayOfWeek, tz)
+
       const res = await fetch('/api/servers/wipe-schedules', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serverIdentifierId: server.id,
-          ...newSchedule
+          dayOfWeek: est.dow,
+          hour: est.hour,
+          minute: est.minute,
+          wipeType: newSchedule.wipeType,
         })
       })
       const data = await res.json()
@@ -488,10 +510,17 @@ export default function ServerEditPage({ params }: { params: Promise<{ id: strin
                       {WIPE_TYPES.find(t => t.value === schedule.wipeType)?.label || schedule.wipeType}
                     </span>
                     <span className="text-sm text-[var(--text-primary)]">
-                      {DAYS_OF_WEEK[schedule.dayOfWeek]} at {formatTime12(schedule.hour, schedule.minute)} {timezone ? getTzAbbrev(timezone) : ''}
-                      {timezone && timezone !== 'America/New_York' && (() => {
-                        const est = convertToEst(schedule.hour, schedule.minute, schedule.dayOfWeek, timezone)
-                        return <span className="text-[var(--text-muted)]"> ({formatTime12(est.hour, est.minute)} EST)</span>
+                      {(() => {
+                        // DB stores EST — convert to server's local TZ for display
+                        const tz = timezone || 'America/New_York'
+                        if (tz === 'America/New_York') {
+                          return <>{DAYS_OF_WEEK[schedule.dayOfWeek]} at {formatTime12(schedule.hour, schedule.minute)} EST</>
+                        }
+                        const local = convertEstToTz(schedule.hour, schedule.minute, schedule.dayOfWeek, tz)
+                        return <>
+                          {DAYS_OF_WEEK[local.dow]} at {formatTime12(local.hour, local.minute)} {getTzAbbrev(tz)}
+                          <span className="text-[var(--text-muted)]"> ({formatTime12(schedule.hour, schedule.minute)} EST)</span>
+                        </>
                       })()}
                     </span>
                   </div>
