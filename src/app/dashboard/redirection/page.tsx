@@ -41,6 +41,8 @@ interface RedirectConfig {
   wipeTargetServer: string | null;
   wipeHoldingServer: string | null;
   wipeServerMapping: Record<string, string>;
+  afkRedirectMode: string;
+  afkTargetServer: string | null;
   forceWipeHour: number;
   forceWipeMinute: number;
   overrideRedirectServer: string | null;
@@ -110,6 +112,8 @@ const defaultConfig: RedirectConfig = {
   wipeTargetServer: null,
   wipeHoldingServer: null,
   wipeServerMapping: {},
+  afkRedirectMode: "spread",
+  afkTargetServer: null,
   forceWipeHour: 13,
   forceWipeMinute: 55,
   overrideRedirectServer: null
@@ -634,6 +638,59 @@ export default function RedirectionPage() {
                       onChange={(v) => setConfig({ ...config, maxRedirectAttempts: v })}
                     />
                   </div>
+
+                  {/* AFK Redirect Mode */}
+                  <div>
+                    <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">AFK Redirect Mode</label>
+                    <p className="text-xs text-[var(--text-muted)] mb-3">How AFK players are redirected when detected</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {([
+                        { value: "spread", label: "Spread", icon: Users, desc: "Spread AFK players across servers evenly using min/max population thresholds", color: "purple" },
+                        { value: "targeted", label: "Targeted", icon: Crosshair, desc: "All AFK players redirect to a single specific server", color: "blue" },
+                      ] as const).map((mode) => (
+                        <button
+                          key={mode.value}
+                          onClick={() => setConfig({ ...config, afkRedirectMode: mode.value })}
+                          className={`p-4 rounded-xl border text-left transition-all ${
+                            config.afkRedirectMode === mode.value
+                              ? `border-${mode.color}-500/50 bg-${mode.color}-500/10 ring-1 ring-${mode.color}-500/30`
+                              : "border-white/10 bg-white/5 hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <mode.icon className={`h-4 w-4 ${config.afkRedirectMode === mode.value ? `text-${mode.color}-400` : "text-[var(--text-muted)]"}`} />
+                            <span className={`text-sm font-medium ${config.afkRedirectMode === mode.value ? "text-white" : "text-[var(--text-secondary)]"}`}>
+                              {mode.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)]">{mode.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AFK Targeted mode: select target server */}
+                  {config.afkRedirectMode === "targeted" && (
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <label className="text-sm font-medium text-[var(--text-primary)] block mb-2">
+                        <Crosshair className="h-4 w-4 inline mr-1 text-[var(--accent-primary)]" />
+                        AFK Target Server
+                      </label>
+                      <p className="text-xs text-[var(--text-muted)] mb-2">All AFK players will be sent to this server</p>
+                      <Dropdown
+                        value={config.afkTargetServer}
+                        options={servers.map((s): DropdownOption => ({
+                          value: s.hashedId,
+                          label: s.name,
+                          icon: <Server className="h-4 w-4" />,
+                        }))}
+                        onChange={(val) => setConfig({ ...config, afkTargetServer: val })}
+                        placeholder="Select target server..."
+                        clearable
+                        searchable
+                      />
+                    </div>
+                  )}
                 </div>
               </GlassContainer>
 

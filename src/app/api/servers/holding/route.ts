@@ -157,6 +157,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Auto-expire sessions older than 20 minutes
+    const expiryThreshold = new Date(Date.now() - 20 * 60 * 1000)
+    await prisma.holdingSession.updateMany({
+      where: {
+        holdingServerId: parsed.data.holdingServerId,
+        status: 'active',
+        startedAt: { lt: expiryThreshold },
+      },
+      data: {
+        status: 'expired',
+        completedAt: new Date(),
+      },
+    })
+
     const sessions = await prisma.holdingSession.findMany({
       where: {
         holdingServerId: parsed.data.holdingServerId,

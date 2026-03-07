@@ -25,6 +25,8 @@ interface RedirectConfig {
   wipeServerMapping: Record<string, string>
   forceWipeHour: number
   forceWipeMinute: number
+  afkRedirectMode: string
+  afkTargetServer: string | null
   overrideRedirectServer: string | null
 }
 
@@ -45,6 +47,8 @@ const defaultConfig: RedirectConfig = {
   wipeTargetServer: null,
   wipeHoldingServer: null,
   wipeServerMapping: {},
+  afkRedirectMode: 'spread',
+  afkTargetServer: null,
   forceWipeHour: 13,
   forceWipeMinute: 55,
   overrideRedirectServer: null
@@ -69,6 +73,8 @@ const updateConfigSchema = z.object({
   wipeServerMapping: z.record(z.string(), z.string()).default({}),
   forceWipeHour: z.number().min(0).max(23).default(13),
   forceWipeMinute: z.number().min(0).max(59).default(55),
+  afkRedirectMode: z.enum(['spread', 'targeted']).default('spread'),
+  afkTargetServer: z.string().nullable().default(null),
   overrideRedirectServer: z.string().nullable().default(null)
 }).refine(data => data.minPlayersForEmptyServer <= data.maxPlayersForEmptyServer, {
   message: 'minPlayersForEmptyServer must be <= maxPlayersForEmptyServer'
@@ -112,6 +118,8 @@ export async function GET(request: NextRequest) {
           wipeServerMapping: JSON.stringify(defaultConfig.wipeServerMapping),
           forceWipeHour: defaultConfig.forceWipeHour,
           forceWipeMinute: defaultConfig.forceWipeMinute,
+          afkRedirectMode: defaultConfig.afkRedirectMode,
+          afkTargetServer: defaultConfig.afkTargetServer,
           overrideRedirectServer: defaultConfig.overrideRedirectServer,
           isActive: true
         }
@@ -150,6 +158,8 @@ export async function GET(request: NextRequest) {
         wipeServerMapping: JSON.parse(config.wipeServerMapping) as Record<string, string>,
         forceWipeHour: config.forceWipeHour,
         forceWipeMinute: config.forceWipeMinute,
+        afkRedirectMode: config.afkRedirectMode,
+        afkTargetServer: config.afkTargetServer,
         overrideRedirectServer: config.overrideRedirectServer,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt
@@ -206,6 +216,8 @@ export async function PUT(request: NextRequest) {
       wipeServerMapping: data.wipeServerMapping,
       forceWipeHour: data.forceWipeHour,
       forceWipeMinute: data.forceWipeMinute,
+      afkRedirectMode: data.afkRedirectMode,
+      afkTargetServer: data.afkTargetServer?.trim() || null,
       overrideRedirectServer: data.overrideRedirectServer?.trim() || null
     }
 
@@ -239,6 +251,8 @@ export async function PUT(request: NextRequest) {
         wipeServerMapping: JSON.stringify(cleanConfig.wipeServerMapping),
         forceWipeHour: cleanConfig.forceWipeHour,
         forceWipeMinute: cleanConfig.forceWipeMinute,
+        afkRedirectMode: cleanConfig.afkRedirectMode,
+        afkTargetServer: cleanConfig.afkTargetServer,
         overrideRedirectServer: cleanConfig.overrideRedirectServer,
         isActive: true
       }

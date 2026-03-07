@@ -88,24 +88,102 @@ function npcItem(shortname: string, position: number, amount = 1, extra?: Partia
 }
 
 const DEFAULT_NPC_LOADOUTS: NpcLoadoutsData = {
-  t1: [{
-    name: "Primitive",
-    WearItems: [npcItem("burlap.shirt", 2), npcItem("burlap.trousers", 3), npcItem("shoes.boots", 5), npcItem("burlap.gloves", 6)],
-    BeltItems: [npcItem("pistol.revolver", 0), npcItem("shotgun.waterpipe", 1)],
-    MainItems: [npcItem("bandage", 0, 5), npcItem("ammo.pistol", 1, 40)],
-  }],
-  t2: [{
-    name: "Roadsign",
-    WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
-    BeltItems: [npcItem("smg.thompson", 0), npcItem("rifle.semiauto", 1), npcItem("shotgun.pump", 2)],
-    MainItems: [npcItem("syringe.medical", 0, 3), npcItem("bandage", 1, 5), npcItem("ammo.rifle", 2, 60), npcItem("ammo.pistol", 3, 40)],
-  }],
-  t3: [{
-    name: "Metal",
-    WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
-    BeltItems: [npcItem("rifle.ak", 0), npcItem("rifle.lr300", 1), npcItem("smg.mp5", 2)],
-    MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 2), npcItem("ammo.rifle", 2, 96), npcItem("ammo.rifle.incendiary", 3, 20)],
-  }],
+  t1: [
+    {
+      name: "Primitive Revolver",
+      WearItems: [npcItem("burlap.shirt", 2), npcItem("burlap.trousers", 3), npcItem("shoes.boots", 5), npcItem("burlap.gloves", 6)],
+      BeltItems: [npcItem("pistol.revolver", 0), npcItem("shotgun.waterpipe", 1)],
+      MainItems: [npcItem("bandage", 0, 5), npcItem("ammo.pistol", 1, 40)],
+    },
+    {
+      name: "Crossbow Hunter",
+      WearItems: [npcItem("burlap.shirt", 2), npcItem("burlap.trousers", 3), npcItem("deer.skull.mask", 0), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("crossbow", 0), npcItem("bone.club", 1)],
+      MainItems: [npcItem("bandage", 0, 5), npcItem("arrow.wooden", 1, 30)],
+    },
+    {
+      name: "Double Barrel Rusher",
+      WearItems: [npcItem("wood.armor.jacket", 1), npcItem("wood.armor.pants", 3), npcItem("burlap.headwrap", 0), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("shotgun.double", 0), npcItem("pistol.nailgun", 1)],
+      MainItems: [npcItem("bandage", 0, 5), npcItem("ammo.shotgun", 1, 16), npcItem("ammo.nailgun.nails", 2, 40)],
+    },
+    {
+      name: "Eoka Brawler",
+      WearItems: [npcItem("burlap.shirt", 2), npcItem("burlap.trousers", 3), npcItem("riot.helmet", 0), npcItem("burlap.gloves", 6)],
+      BeltItems: [npcItem("pistol.eoka", 0), npcItem("salvaged.sword", 1)],
+      MainItems: [npcItem("bandage", 0, 5), npcItem("ammo.handmade.shell", 1, 16)],
+    },
+    {
+      name: "Compound Archer",
+      WearItems: [npcItem("hoodie", 2), npcItem("pants", 3), npcItem("shoes.boots", 5), npcItem("burlap.gloves", 6)],
+      BeltItems: [npcItem("bow.compound", 0), npcItem("spear.wooden", 1)],
+      MainItems: [npcItem("bandage", 0, 5), npcItem("arrow.wooden", 1, 30), npcItem("arrow.bone", 2, 15)],
+    },
+  ],
+  t2: [
+    {
+      name: "Roadsign Thompson",
+      WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("smg.thompson", 0), npcItem("rifle.semiauto", 1), npcItem("shotgun.pump", 2)],
+      MainItems: [npcItem("syringe.medical", 0, 3), npcItem("bandage", 1, 5), npcItem("ammo.rifle", 2, 60), npcItem("ammo.pistol", 3, 40)],
+    },
+    {
+      name: "SAR Roadsign",
+      WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("tshirt", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("rifle.semiauto", 0), npcItem("pistol.python", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 3), npcItem("bandage", 1, 3), npcItem("ammo.rifle", 2, 60), npcItem("ammo.pistol", 3, 24)],
+    },
+    {
+      name: "Custom SMG Flanker",
+      WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5), npcItem("tactical.gloves", 6)],
+      BeltItems: [npcItem("smg.2", 0), npcItem("shotgun.pump", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 4), npcItem("ammo.pistol", 1, 60), npcItem("ammo.shotgun.slug", 2, 16)],
+    },
+    {
+      name: "Python Gunslinger",
+      WearItems: [npcItem("bucket.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("pistol.python", 0), npcItem("rifle.semiauto", 1), npcItem("machete", 2)],
+      MainItems: [npcItem("syringe.medical", 0, 3), npcItem("bandage", 1, 3), npcItem("ammo.pistol", 2, 40), npcItem("ammo.rifle", 3, 40)],
+    },
+    {
+      name: "Pump Shotgun Breacher",
+      WearItems: [npcItem("coffeecan.helmet", 0), npcItem("roadsign.jacket", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("shotgun.pump", 0), npcItem("smg.thompson", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 3), npcItem("ammo.shotgun", 1, 24), npcItem("ammo.shotgun.slug", 2, 12), npcItem("ammo.pistol", 3, 40)],
+    },
+  ],
+  t3: [
+    {
+      name: "AK Metal",
+      WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5), npcItem("tactical.gloves", 6)],
+      BeltItems: [npcItem("rifle.ak", 0), npcItem("rifle.lr300", 1), npcItem("smg.mp5", 2)],
+      MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 2), npcItem("ammo.rifle", 2, 96), npcItem("ammo.rifle.incendiary", 3, 20)],
+    },
+    {
+      name: "LR-300 Assault",
+      WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5), npcItem("tactical.gloves", 6)],
+      BeltItems: [npcItem("rifle.lr300", 0), npcItem("pistol.m92", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 1), npcItem("ammo.rifle", 2, 96), npcItem("ammo.pistol", 3, 30)],
+    },
+    {
+      name: "MP5 CQB",
+      WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5)],
+      BeltItems: [npcItem("smg.mp5", 0), npcItem("shotgun.spas12", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 5), npcItem("ammo.pistol", 1, 80), npcItem("ammo.shotgun.slug", 2, 16)],
+    },
+    {
+      name: "Bolt Sniper",
+      WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5), npcItem("tactical.gloves", 6)],
+      BeltItems: [npcItem("rifle.bolt", 0), npcItem("rifle.ak", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 2), npcItem("ammo.rifle", 2, 96), npcItem("ammo.rifle.hv", 3, 32)],
+    },
+    {
+      name: "M249 Heavy",
+      WearItems: [npcItem("metal.facemask", 0), npcItem("metal.plate.torso", 1), npcItem("hoodie", 2), npcItem("pants", 3), npcItem("roadsign.kilt", 4), npcItem("shoes.boots", 5), npcItem("tactical.gloves", 6)],
+      BeltItems: [npcItem("lmg.m249", 0), npcItem("pistol.m92", 1)],
+      MainItems: [npcItem("syringe.medical", 0, 5), npcItem("largemedkit", 1, 2), npcItem("ammo.rifle", 2, 128), npcItem("ammo.pistol", 3, 30)],
+    },
+  ],
 };
 
 interface BasesConfigData {

@@ -14,6 +14,7 @@ interface KitItemWeb {
   MaxAmount?: number;
   Position?: number;
   Skin?: number;
+  Contents?: KitItemWeb[] | null;
 }
 
 interface NpcLoadoutWeb {
@@ -38,6 +39,7 @@ interface LootTableItem {
   Container?: string;
   Position?: number;
   Skin?: number;
+  Contents?: LootTableItem[];
 }
 
 interface LootTableData {
@@ -72,7 +74,7 @@ function convertNpcLoadoutsToLootTables(
       ];
       for (const [kitItems, container] of containerMap) {
         for (const item of kitItems) {
-          items.push({
+          const lootItem: LootTableItem = {
             Shortname: item.Shortname,
             "Min amount": item.MinAmount ?? item.Amount,
             "Max amount": item.MaxAmount ?? item.Amount,
@@ -82,7 +84,20 @@ function convertNpcLoadoutsToLootTables(
             Container: container,
             Position: item.Position ?? -1,
             ...(item.Skin ? { Skin: item.Skin } : {}),
-          });
+          };
+          if (item.Contents && item.Contents.length > 0) {
+            lootItem.Contents = item.Contents.map(c => ({
+              Shortname: c.Shortname,
+              "Min amount": c.MinAmount ?? c.Amount,
+              "Max amount": c.MaxAmount ?? c.Amount,
+              "Spawn chance": 100,
+              "Max spawns per container": 1,
+              "Min wipe hours to unlock": 0,
+              Position: c.Position ?? -1,
+              ...(c.Skin ? { Skin: c.Skin } : {}),
+            }));
+          }
+          items.push(lootItem);
         }
       }
 
