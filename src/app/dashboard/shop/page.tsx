@@ -5,12 +5,12 @@ import {
   Plus, Trash2, Upload, Download, Search, X, Save, Undo2, Redo2,
   FolderOpen, FileText, Check, CloudUpload, Server, Link2, Clock, Pencil,
   History, RotateCcw, ChevronRight, ShoppingCart, DollarSign, Tag, Image,
-  Package, Percent, GripVertical, Copy, ChevronDown,
+  Package, Percent, GripVertical, Copy, ChevronDown, Gem, Terminal,
 } from "lucide-react";
 import { useSidebarCompact } from "@/contexts/SidebarContext";
 import { GlassContainer } from "@/components/global/GlassContainer";
-import { Dropdown, DropdownOption } from "@/components/global/Dropdown";
 import { Switch } from "@/components/ui/Switch";
+import LootItemBrowser from "@/components/loot-shared/LootItemBrowser";
 import { Modal, ConfirmModal } from "@/components/ui/Modal";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Input, NumberInput } from "@/components/ui/Input";
@@ -27,9 +27,13 @@ interface ShopItem {
   Image: string;
   DefaultAmount: number;
   BlockAmountChange: boolean;
-  BuyPrice: number;
+  CashPrice: number;
+  GemPrice: number;
   SellPrice: number;
-  Currency: string;
+  Commands: string[];
+  ImageUrl: string;
+  OncePerWipe: boolean;
+  CooldownSeconds: number;
 }
 
 interface ShopCategory {
@@ -63,9 +67,13 @@ const defaultItem: ShopItem = {
   Image: "",
   DefaultAmount: 1,
   BlockAmountChange: false,
-  BuyPrice: 100,
+  CashPrice: 100,
+  GemPrice: 0,
   SellPrice: 0,
-  Currency: "eco",
+  Commands: [],
+  ImageUrl: "",
+  OncePerWipe: false,
+  CooldownSeconds: 0,
 };
 
 const defaultCategory: ShopCategory = {
@@ -75,10 +83,20 @@ const defaultCategory: ShopCategory = {
   Items: [],
 };
 
-const CURRENCY_OPTIONS: DropdownOption[] = [
-  { value: "eco", label: "Economy ($)" },
-  { value: "gem", label: "Gems" },
-];
+const defaultCustomItem: ShopItem = {
+  DisplayName: "Custom Item",
+  Skin: 0,
+  Image: "",
+  DefaultAmount: 1,
+  BlockAmountChange: true,
+  CashPrice: 0,
+  GemPrice: 0,
+  SellPrice: 0,
+  Commands: [""],
+  ImageUrl: "",
+  OncePerWipe: false,
+  CooldownSeconds: 0,
+};
 
 // =============================================================================
 // Undo/Redo Hook
@@ -144,7 +162,7 @@ export default function ShopPage() {
 
   // Add modals
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newItemShortname, setNewItemShortname] = useState("");
+  const [newCustomItemName, setNewCustomItemName] = useState("");
 
   // Config management
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
@@ -165,9 +183,11 @@ export default function ShopPage() {
   const [mappings, setMappings] = useState<MappingRecord[]>([]);
   const [servers, setServers] = useState<ServerIdentifierRecord[]>([]);
 
+  // Item browser
+  const [showItemBrowser, setShowItemBrowser] = useState(true);
+
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const itemsFileInputRef = useRef<HTMLInputElement>(null);
 
   // ==========================================================================
   // Keyboard shortcuts
@@ -259,52 +279,32 @@ export default function ShopPage() {
   // File operations
   // ==========================================================================
 
-  const handleImportCategories = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const parsed = JSON.parse(ev.target?.result as string) as CategoriesData;
-        setData(prev => ({ ...prev, categories: parsed }));
-        setSelectedCategory(null);
-        setSelectedItemShortname(null);
-        toast.success(`Imported ${Object.keys(parsed).length} categories`);
+        const parsed = JSON.parse(ev.target?.result as string);
+        if (parsed.categories && parsed.items) {
+          resetHistory({ categories: parsed.categories, items: parsed.items });
+          setSelectedCategory(null);
+          setSelectedItemShortname(null);
+          toast.success(`Imported ${Object.keys(parsed.categories).length} categories, ${Object.keys(parsed.items).length} items`);
+        } else {
+          toast.error("Invalid format — expected { categories, items }");
+        }
       } catch { toast.error("Invalid JSON file"); }
     };
     reader.readAsText(file);
     e.target.value = "";
   };
 
-  const handleImportItems = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string) as ItemsData;
-        setData(prev => ({ ...prev, items: parsed }));
-        setSelectedItemShortname(null);
-        toast.success(`Imported ${Object.keys(parsed).length} items`);
-      } catch { toast.error("Invalid JSON file"); }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  };
-
-  const handleExportCategories = () => {
-    const blob = new Blob([JSON.stringify(data.categories, null, 2)], { type: "application/json" });
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify({ categories: data.categories, items: data.items }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "Categories.json"; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportItems = () => {
-    const blob = new Blob([JSON.stringify(data.items, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "Items.json"; a.click();
+    a.href = url; a.download = "ShopData.json"; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -470,32 +470,27 @@ export default function ShopPage() {
   // ==========================================================================
 
   const handleAddItemToCategory = () => {
-    const shortname = newItemShortname.trim();
-    if (!shortname) { toast.error("Shortname is required"); return; }
     if (!selectedCategory) return;
-    if (data.categories[selectedCategory].Items.includes(shortname)) {
-      toast.error("Item already in category"); return;
-    }
-    setData(prev => {
-      const newItems = { ...prev.items };
-      if (!newItems[shortname]) {
-        newItems[shortname] = { ...defaultItem, Image: `${shortname}.png` };
-      }
-      return {
-        categories: {
-          ...prev.categories,
-          [selectedCategory]: {
-            ...prev.categories[selectedCategory],
-            Items: [...prev.categories[selectedCategory].Items, shortname],
-          },
+    const displayName = newCustomItemName.trim();
+    if (!displayName) { toast.error("Display name is required"); return; }
+    const key = `__custom_${Date.now()}`;
+    setData(prev => ({
+      categories: {
+        ...prev.categories,
+        [selectedCategory]: {
+          ...prev.categories[selectedCategory],
+          Items: [...prev.categories[selectedCategory].Items, key],
         },
-        items: newItems,
-      };
-    });
-    setSelectedItemShortname(shortname);
+      },
+      items: {
+        ...prev.items,
+        [key]: { ...defaultCustomItem, DisplayName: displayName },
+      },
+    }));
+    setSelectedItemShortname(key);
     setShowAddItemModal(false);
-    setNewItemShortname("");
-    toast.success(`Added "${shortname}"`);
+    setNewCustomItemName("");
+    toast.success(`Added custom item "${displayName}"`);
   };
 
   const handleRemoveItemFromCategory = () => {
@@ -593,12 +588,9 @@ export default function ShopPage() {
           <div className="w-px h-6 bg-[rgba(255,255,255,0.1)]" />
 
           {/* Import / Export */}
-          <input ref={fileInputRef} type="file" accept=".json" onChange={handleImportCategories} className="hidden" />
-          <input ref={itemsFileInputRef} type="file" accept=".json" onChange={handleImportItems} className="hidden" />
-          <IconButton onClick={() => fileInputRef.current?.click()} title="Import Categories.json"><Upload className="w-4 h-4" /></IconButton>
-          <IconButton onClick={() => itemsFileInputRef.current?.click()} title="Import Items.json"><Upload className="w-4 h-4 text-blue-400" /></IconButton>
-          <IconButton onClick={handleExportCategories} title="Export Categories.json"><Download className="w-4 h-4" /></IconButton>
-          <IconButton onClick={handleExportItems} title="Export Items.json"><Download className="w-4 h-4 text-blue-400" /></IconButton>
+          <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+          <IconButton onClick={() => fileInputRef.current?.click()} title="Import ShopData.json"><Upload className="w-4 h-4" /></IconButton>
+          <IconButton onClick={handleExport} title="Export ShopData.json"><Download className="w-4 h-4" /></IconButton>
 
           <div className="w-px h-6 bg-[rgba(255,255,255,0.1)]" />
 
@@ -676,8 +668,8 @@ export default function ShopPage() {
                 <div className="p-3 border-b border-[rgba(255,255,255,0.08)]">
                   <div className="flex items-center gap-2 mb-2">
                     <h2 className="text-sm font-semibold text-white flex-1 truncate">{selectedCategory} Items</h2>
-                    <IconButton onClick={() => setShowAddItemModal(true)} title="Add Item">
-                      <Plus className="w-3.5 h-3.5" />
+                    <IconButton onClick={() => setShowAddItemModal(true)} title="Add Custom Item">
+                      <Terminal className="w-3.5 h-3.5" />
                     </IconButton>
                   </div>
                   <div className="relative">
@@ -705,9 +697,11 @@ export default function ShopPage() {
                         <div className="font-medium truncate">{shortname}</div>
                         {item && (
                           <div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-60">
-                            <span>${item.BuyPrice}</span>
+                            {item.CashPrice > 0 && <span>${item.CashPrice}</span>}
+                            {item.GemPrice > 0 && <span className="text-purple-400">{item.GemPrice}g</span>}
+                            {item.CashPrice <= 0 && item.GemPrice <= 0 && <span>free</span>}
                             {item.SellPrice > 0 && <span className="text-amber-400">sell: ${item.SellPrice}</span>}
-                            {item.Skin > 0 && <span>skin: {item.Skin}</span>}
+                            {(item.Commands?.length > 0) && <span className="text-cyan-400">cmd</span>}
                           </div>
                         )}
                       </button>
@@ -746,10 +740,45 @@ export default function ShopPage() {
               <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)]">
                 <ShoppingCart className="w-12 h-12 mb-3 opacity-20" />
                 <p className="text-base font-medium mb-1">Shop Editor</p>
-                <p className="text-sm opacity-60">Import a Categories.json and Items.json to get started,<br />or load a saved config.</p>
+                <p className="text-sm opacity-60">Import a ShopData.json to get started,<br />or load a saved config.</p>
               </div>
             )}
           </div>
+
+          {/* Item Browser Sidebar */}
+          <LootItemBrowser
+            isOpen={showItemBrowser}
+            onToggle={() => setShowItemBrowser(!showItemBrowser)}
+            onAddItem={(shortname) => {
+              if (!selectedCategory) {
+                toast.error("Select a category first");
+                return;
+              }
+              if (data.categories[selectedCategory].Items.includes(shortname)) {
+                toast.error("Item already in category");
+                return;
+              }
+              setData(prev => {
+                const newItems = { ...prev.items };
+                if (!newItems[shortname]) {
+                  newItems[shortname] = { ...defaultItem, Image: `${shortname}.png` };
+                }
+                return {
+                  categories: {
+                    ...prev.categories,
+                    [selectedCategory]: {
+                      ...prev.categories[selectedCategory],
+                      Items: [...prev.categories[selectedCategory].Items, shortname],
+                    },
+                  },
+                  items: newItems,
+                };
+              });
+              setSelectedItemShortname(shortname);
+              toast.success(`Added "${shortname}"`);
+            }}
+            accentColor="emerald"
+          />
         </div>
       ) : (
         /* Mapping tab */
@@ -844,21 +873,25 @@ export default function ShopPage() {
         </div>
       </Modal>
 
-      {/* Add Item Modal */}
-      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} title="Add Item to Category">
+      {/* Add Custom Item Modal */}
+      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} title="Add Custom Item">
         <div className="space-y-4">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+            <Terminal className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+            <p className="text-xs text-cyan-300">Custom items run commands instead of giving game items. Use the Item Browser sidebar to add game items.</p>
+          </div>
           <div>
-            <label className="block text-sm text-[var(--text-muted)] mb-1">Item Shortname</label>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">Display Name</label>
             <Input
-              value={newItemShortname}
-              onChange={e => setNewItemShortname(e.target.value)}
-              placeholder="e.g. rifle.ak"
+              value={newCustomItemName}
+              onChange={e => setNewCustomItemName(e.target.value)}
+              placeholder="e.g. VIP Kit"
               onKeyDown={e => e.key === "Enter" && handleAddItemToCategory()}
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button onClick={() => setShowAddItemModal(false)}>Cancel</Button>
-            <Button onClick={handleAddItemToCategory} className="bg-emerald-500/20 text-emerald-400">Add</Button>
+            <Button onClick={handleAddItemToCategory} className="bg-cyan-500/20 text-cyan-400">Add</Button>
           </div>
         </div>
       </Modal>
@@ -1047,10 +1080,22 @@ function ItemEditor({ shortname, item, onUpdate, onDelete }: {
             <h3 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">Pricing</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-[var(--text-muted)] mb-1">Buy Price</label>
+                <label className="block text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />Cash Price
+                </label>
                 <NumberInput
-                  value={item.BuyPrice}
-                  onChange={v => onUpdate(shortname, "BuyPrice", v)}
+                  value={item.CashPrice}
+                  onChange={v => onUpdate(shortname, "CashPrice", v)}
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1">
+                  <Gem className="w-3 h-3" />Gem Price
+                </label>
+                <NumberInput
+                  value={item.GemPrice}
+                  onChange={v => onUpdate(shortname, "GemPrice", v)}
                   min={0}
                 />
               </div>
@@ -1060,14 +1105,6 @@ function ItemEditor({ shortname, item, onUpdate, onDelete }: {
                   value={item.SellPrice}
                   onChange={v => onUpdate(shortname, "SellPrice", v)}
                   min={0}
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-[var(--text-muted)] mb-1">Currency</label>
-                <Dropdown
-                  options={CURRENCY_OPTIONS}
-                  value={item.Currency}
-                  onChange={v => onUpdate(shortname, "Currency", v)}
                 />
               </div>
             </div>
@@ -1091,6 +1128,75 @@ function ItemEditor({ shortname, item, onUpdate, onDelete }: {
                   onChange={v => onUpdate(shortname, "BlockAmountChange", v)}
                 />
                 <label className="text-xs text-[var(--text-muted)]">Block Amount Change</label>
+              </div>
+            </div>
+          </div>
+
+          {/* Commands */}
+          <div className="border-t border-[rgba(255,255,255,0.08)] pt-4">
+            <h3 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">Commands</h3>
+            <div className="space-y-2">
+              {(item.Commands || []).map((cmd, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    value={cmd}
+                    onChange={e => {
+                      const cmds = [...(item.Commands || [])];
+                      cmds[i] = e.target.value;
+                      onUpdate(shortname, "Commands", cmds);
+                    }}
+                    placeholder="e.g. kit vip {player}"
+                    className="flex-1"
+                  />
+                  <IconButton
+                    onClick={() => {
+                      const cmds = (item.Commands || []).filter((_, idx) => idx !== i);
+                      onUpdate(shortname, "Commands", cmds);
+                    }}
+                    title="Remove command"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </IconButton>
+                </div>
+              ))}
+              <Button
+                onClick={() => onUpdate(shortname, "Commands", [...(item.Commands || []), ""])}
+                className="text-xs"
+              >
+                <Plus className="w-3 h-3 mr-1" />Add Command
+              </Button>
+              <p className="text-[10px] text-[var(--text-muted)]">Use {"{player}"} for steam ID, {"{name}"} for player name</p>
+            </div>
+          </div>
+
+          {/* Advanced */}
+          <div className="border-t border-[rgba(255,255,255,0.08)] pt-4">
+            <h3 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">Advanced</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-[var(--text-muted)] mb-1">Custom Image URL</label>
+                <Input
+                  value={item.ImageUrl || ""}
+                  onChange={e => onUpdate(shortname, "ImageUrl", e.target.value)}
+                  placeholder="https://example.com/item.png (for custom/command items)"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-[var(--text-muted)] mb-1">Cooldown (seconds)</label>
+                  <NumberInput
+                    value={item.CooldownSeconds || 0}
+                    onChange={v => onUpdate(shortname, "CooldownSeconds", v)}
+                    min={0}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Switch
+                    checked={item.OncePerWipe || false}
+                    onChange={v => onUpdate(shortname, "OncePerWipe", v)}
+                  />
+                  <label className="text-xs text-[var(--text-muted)]">Once Per Wipe</label>
+                </div>
               </div>
             </div>
           </div>
