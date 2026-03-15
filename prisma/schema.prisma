@@ -1118,3 +1118,47 @@ model ShopConfigVersion {
   @@map("shop_config_versions")
 }
 
+// =============================================================================
+// Gambling Plugin - Win Events and Leaderboard
+// =============================================================================
+
+model GamblingWinEvent {
+  id           String   @id @db.VarChar(60)
+  steamId      String   @map("steam_id") @db.VarChar(20)
+  playerName   String   @map("player_name") @db.VarChar(100)
+  gameType     String   @map("game_type") @db.VarChar(20)
+  wager        Int
+  winnings     Int
+  serverId     String   @map("server_id") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([steamId])
+  @@index([gameType])
+  @@index([serverId])
+  @@index([createdAt])
+  @@index([steamId, gameType])
+  @@map("gambling_win_events")
+}
+
+model GamblingPlayerStats {
+  id              String   @id @db.VarChar(60)
+  steamId         String   @map("steam_id") @db.VarChar(20)
+  playerName      String   @map("player_name") @db.VarChar(100)
+  serverId        String   @map("server_id") @db.VarChar(100)
+  gameType        String   @map("game_type") @db.VarChar(20)
+  wins            Int      @default(0)
+  totalWinnings   BigInt   @default(0) @map("total_winnings")
+  totalWagered    BigInt   @default(0) @map("total_wagered")
+  biggestWin      Int      @default(0) @map("biggest_win")
+  lastPlayedAt    DateTime @default(now()) @map("last_played_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([steamId, serverId, gameType])
+  @@index([serverId])
+  @@index([gameType])
+  @@index([wins])
+  @@index([totalWinnings])
+  @@map("gambling_player_stats")
+}
+

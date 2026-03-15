@@ -40,6 +40,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/giveaway',
   '/api/feedback',
   '/api/shop/download',
+  '/api/gambling',
   '/kits',
   '/_next',
   '/logos',

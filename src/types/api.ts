@@ -122,6 +122,10 @@ registerScope('feedback:write', 'Submit feedback and manage reward status', 'fee
 registerScope('shop:read', 'Read shop configurations from game servers', 'shop')
 registerScope('shop:write', 'Create and update shop configurations', 'shop')
 
+// Gambling plugin scopes
+registerScope('gambling:read', 'Read gambling statistics and leaderboards', 'gambling')
+registerScope('gambling:write', 'Submit gambling win events from game servers', 'gambling')
+
 /**
  * All available scopes (for backwards compatibility)
  */
@@ -363,6 +367,10 @@ registerResourceType('feedback_reward', 'Feedback Reward', 'feedback')
 // Shop plugin resources
 registerResourceType('shop_config', 'Shop Configuration', 'shop')
 registerResourceType('shop_mapping', 'Shop Mapping', 'shop')
+
+// Gambling plugin resources
+registerResourceType('gambling_win_event', 'Gambling Win Event', 'gambling')
+registerResourceType('gambling_player_stats', 'Gambling Player Stats', 'gambling')
 
 /**
  * Known resource types (for backwards compatibility and type hints)

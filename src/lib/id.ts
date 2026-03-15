@@ -149,6 +149,10 @@ registerPrefix('feedbackReward', 'fbrw', 'Feedback Reward', 'feedback')
 registerPrefix('shopConfig', 'shopcfg', 'Shop Config', 'shop')
 registerPrefix('shopMapping', 'shopmap', 'Shop Mapping', 'shop')
 
+// Gambling plugin entities
+registerPrefix('gamblingWinEvent', 'gamblewin', 'Gambling Win Event', 'gambling')
+registerPrefix('gamblingPlayerStats', 'gamblestats', 'Gambling Player Stats', 'gambling')
+
 // =============================================================================
 // Legacy Type Support
 // =============================================================================

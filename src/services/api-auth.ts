@@ -296,6 +296,20 @@ export async function requireShopWrite(request: NextRequest): Promise<AuthResult
 }
 
 /**
+ * Require authentication for gambling:read
+ */
+export async function requireGamblingRead(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'gambling:read')
+}
+
+/**
+ * Require authentication for gambling:write
+ */
+export async function requireGamblingWrite(request: NextRequest): Promise<AuthResult> {
+  return authenticateWithScope(request, 'gambling:write')
+}
+
+/**
  * Require session authentication only (no token auth)
  * Used for sensitive operations like token management
  */

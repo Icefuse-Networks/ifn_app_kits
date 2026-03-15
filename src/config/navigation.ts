@@ -1,7 +1,7 @@
 import {
   Package, Settings, BarChart2, Shield, Key, HardDrive,
   MessageSquare, MessageCircle, Box, ArrowRightLeft,
-  Gift, Castle, ShoppingCart, LucideIcon
+  Gift, Castle, ShoppingCart, Dice5, LucideIcon
 } from 'lucide-react'
 
 export interface NavItem {
@@ -46,6 +46,7 @@ export const dashboardSections: NavSection[] = [
     description: 'View server and player analytics',
     items: [
       { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics Hub', desc: 'Central analytics dashboard', gradient: 'from-purple-500 to-pink-500' },
+      { href: '/dashboard/gambling', icon: Dice5, label: 'Gambling', desc: 'Gambling leaderboard and statistics', gradient: 'from-yellow-500 to-amber-600' },
     ]
   },
   {
