@@ -21,28 +21,6 @@ function setCache(key: string, data: unknown): void {
   gamblingCache.set(key, { data, timestamp: Date.now() })
 }
 
-function getTimeframeDate(timeframe: string): Date | null {
-  const now = new Date()
-  switch (timeframe) {
-    case 'wipe': {
-      // Approximate: last Thursday (Rust force wipe day)
-      const day = now.getUTCDay()
-      const diff = day >= 4 ? day - 4 : day + 3
-      const wipeDate = new Date(now)
-      wipeDate.setUTCDate(wipeDate.getUTCDate() - diff)
-      wipeDate.setUTCHours(0, 0, 0, 0)
-      return wipeDate
-    }
-    case 'monthly': {
-      const monthStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)
-      return monthStart
-    }
-    case 'overall':
-    default:
-      return null
-  }
-}
-
 /**
  * GET /api/public/gambling
  * Public gambling leaderboard (used by in-game PlayerRanks UI)
@@ -50,7 +28,7 @@ function getTimeframeDate(timeframe: string): Date | null {
  * Query params:
  * - serverId (optional): filter by server
  * - gameType (optional): deathroll | coinflip | diceduel
- * - timeframe (optional): wipe | monthly | overall (default: overall)
+ * - since (optional): ISO date string — only include events after this date
  * - sort: wins | totalWinnings | biggestWin (default: totalWinnings)
  * - order: asc | desc (default: desc)
  * - start: offset (default: 0)
@@ -62,23 +40,24 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const serverId = searchParams.get('serverId')
     const gameType = searchParams.get('gameType')
-    const timeframe = searchParams.get('timeframe') || 'overall'
+    const sinceRaw = searchParams.get('since')
     const sort = searchParams.get('sort') || 'totalWinnings'
     const order = searchParams.get('order') || 'desc'
     const start = Math.max(0, parseInt(searchParams.get('start') || '0'))
     const length = Math.min(50, Math.max(1, parseInt(searchParams.get('length') || '10')))
     const search = searchParams.get('search')
 
-    const cacheKey = `pub:gamble:${serverId}:${gameType}:${timeframe}:${sort}:${order}:${start}:${length}:${search || ''}`
+    const sinceDate = sinceRaw ? new Date(sinceRaw) : null
+    const validSince = sinceDate && !isNaN(sinceDate.getTime()) ? sinceDate : null
+
+    const cacheKey = `pub:gamble:${serverId}:${gameType}:${sinceRaw || 'all'}:${sort}:${order}:${start}:${length}:${search || ''}`
     const cached = getCached(cacheKey)
     if (cached) {
       return NextResponse.json(cached)
     }
 
-    const sinceDate = getTimeframeDate(timeframe)
-
-    // If timeframe is overall, use pre-aggregated stats table (fast)
-    if (!sinceDate) {
+    // No since = overall, use pre-aggregated stats table (fast)
+    if (!validSince) {
       const where: Record<string, unknown> = {}
       if (serverId) where.serverId = serverId
       const validTypes = ['deathroll', 'coinflip', 'diceduel']
@@ -104,16 +83,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response)
     }
 
-    // For wipe/monthly: aggregate from win events table
+    // With since: aggregate from win events table
     const eventWhere: Record<string, unknown> = {
-      createdAt: { gte: sinceDate },
+      createdAt: { gte: validSince },
     }
     if (serverId) eventWhere.serverId = serverId
     const validTypes = ['deathroll', 'coinflip', 'diceduel']
     if (gameType && validTypes.includes(gameType)) eventWhere.gameType = gameType
     if (search) eventWhere.playerName = { contains: search, mode: 'insensitive' }
 
-    // Group by steamId + gameType to aggregate
     const grouped = await prisma.gamblingWinEvent.groupBy({
       by: ['steamId', 'playerName', 'gameType', 'serverId'],
       where: eventWhere,
@@ -122,7 +100,6 @@ export async function GET(request: NextRequest) {
       _max: { winnings: true },
     })
 
-    // Sort and paginate in-memory (groupBy doesn't support orderBy on aggregates)
     const mapped = grouped.map(g => ({
       steamId: g.steamId,
       playerName: g.playerName,

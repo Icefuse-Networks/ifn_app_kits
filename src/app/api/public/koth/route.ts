@@ -29,7 +29,7 @@ function setCache(key: string, data: unknown): void {
  *
  * Query params:
  * - serverId (optional): filter by server
- * - timeframe (optional): wipe | monthly | overall (default: overall)
+ * - since (optional): ISO date string — only include events after this date
  * - sort: wins | totalKills | avgKills (default: wins)
  * - order: asc | desc (default: desc)
  * - start: offset (default: 0)
@@ -40,27 +40,28 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
     const serverId = searchParams.get('serverId') || ''
-    const timeframe = searchParams.get('timeframe') || 'overall'
+    const sinceRaw = searchParams.get('since') || ''
     const sort = searchParams.get('sort') || 'wins'
     const order = searchParams.get('order') || 'desc'
     const start = Math.max(0, parseInt(searchParams.get('start') || '0'))
     const length = Math.min(50, Math.max(1, parseInt(searchParams.get('length') || '10')))
     const search = searchParams.get('search') || ''
 
-    const cacheKey = `pub:koth:${serverId}:${timeframe}:${sort}:${order}:${start}:${length}:${search}`
+    const cacheKey = `pub:koth:${serverId}:${sinceRaw || 'all'}:${sort}:${order}:${start}:${length}:${search}`
     const cached = getCached(cacheKey)
     if (cached) {
       return NextResponse.json(cached)
     }
 
-    // Build time filter
+    // Build time filter from since param
     let timeFilter = ''
     const timeParams: Record<string, unknown> = {}
-    if (timeframe === 'monthly') {
-      timeFilter = `AND timestamp >= toStartOfMonth(now64(3))`
-    } else if (timeframe === 'wipe') {
-      // Last Thursday (Rust force wipe)
-      timeFilter = `AND timestamp >= toStartOfDay(now64(3) - INTERVAL toDayOfWeek(now64(3), 1) - 4 < 0 ? toDayOfWeek(now64(3), 1) + 3 : toDayOfWeek(now64(3), 1) - 4 DAY)`
+    if (sinceRaw) {
+      const sinceDate = new Date(sinceRaw)
+      if (!isNaN(sinceDate.getTime())) {
+        timeFilter = `AND timestamp >= {since_date:DateTime64(3)}`
+        timeParams.since_date = sinceDate.toISOString().replace('T', ' ').replace('Z', '')
+      }
     }
 
     // Validate sort field
@@ -78,19 +79,6 @@ export async function GET(request: NextRequest) {
 
     // Server filter
     const serverFilter = serverId ? `AND server_id = {server_id:String}` : ''
-
-    // For wipe timeframe, use a simpler approach - calculate Thursday in the app
-    let wipeTimeFilter = ''
-    if (timeframe === 'wipe') {
-      const now = new Date()
-      const day = now.getUTCDay() // 0=Sun, 4=Thu
-      const diff = day >= 4 ? day - 4 : day + 3
-      const wipeDate = new Date(now)
-      wipeDate.setUTCDate(wipeDate.getUTCDate() - diff)
-      wipeDate.setUTCHours(0, 0, 0, 0)
-      timeFilter = `AND timestamp >= {wipe_date:DateTime64(3)}`
-      timeParams.wipe_date = wipeDate.toISOString().replace('T', ' ').replace('Z', '')
-    }
 
     // Count total
     const countResult = await clickhouse.query({
