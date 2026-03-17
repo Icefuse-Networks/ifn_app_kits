@@ -231,6 +231,19 @@ PARTITION BY toYYYYMM(updated_at)
 SETTINGS index_granularity = 8192
 `
 
+/**
+ * Stats Shadow Bans — players hidden from public leaderboards
+ */
+const STATS_SHADOW_BANS_SCHEMA = `
+CREATE TABLE IF NOT EXISTS stats_shadow_bans (
+    steamid String,
+    banned_at DateTime DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(banned_at)
+ORDER BY steamid
+SETTINGS index_granularity = 8192
+`
+
 const RUST_PLAYER_STATS_COLUMNS: Array<{ name: string; type: string }> = [
   { name: 'server_id', type: 'String' },
   { name: 'steamid', type: 'String' },
@@ -263,6 +276,7 @@ const SCHEMAS = [
   { name: 'rust_player_stats_wipe', schema: RUST_PLAYER_STATS_WIPE_SCHEMA },
   { name: 'rust_player_stats_monthly', schema: RUST_PLAYER_STATS_MONTHLY_SCHEMA },
   { name: 'rust_player_stats_overall', schema: RUST_PLAYER_STATS_OVERALL_SCHEMA },
+  { name: 'stats_shadow_bans', schema: STATS_SHADOW_BANS_SCHEMA },
 ]
 
 /**
@@ -326,6 +340,10 @@ const COLUMN_DEFINITIONS: Record<string, Array<{ name: string; type: string }>> 
   rust_player_stats_wipe: RUST_PLAYER_STATS_COLUMNS,
   rust_player_stats_monthly: RUST_PLAYER_STATS_COLUMNS,
   rust_player_stats_overall: RUST_PLAYER_STATS_COLUMNS,
+  stats_shadow_bans: [
+    { name: 'steamid', type: 'String' },
+    { name: 'banned_at', type: 'DateTime' },
+  ],
 }
 
 /**

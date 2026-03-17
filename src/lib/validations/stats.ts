@@ -95,12 +95,14 @@ export const ALLOWED_CLAN_SORT_COLUMNS = new Set(VALID_CLAN_SORT_FIELDS)
 /** Generate the clan SELECT SUM expressions from config */
 export function buildClanSelectColumns(): string {
   const sums = STAT_COLUMNS
-    .filter(c => c.aggregatable && c.column !== 'points')
+    .filter(c => c.aggregatable && c.column !== 'points' && c.column !== 'kills' && c.column !== 'deaths')
     .map(c => `SUM(${c.column}) as ${c.column}`)
   return [
     'clan',
+    `SUM(kills) as kills`,
+    `SUM(deaths) as deaths`,
     ...sums,
-    `IF(SUM(deaths) = 0, toFloat64(SUM(kills)), ROUND(toFloat64(SUM(kills)) / SUM(deaths), 2)) as kdr`,
+    `IF(deaths = 0, toFloat64(kills), ROUND(toFloat64(kills) / toFloat64(deaths), 2)) as kdr`,
     `SUM(points) as points`,
     `count() as member_count`,
   ].join(',\n        ')
@@ -204,34 +206,34 @@ export const statsServerParamSchema = z.object({
 })
 
 export const statsQuerySchema = z.object({
-  server_id: z.string().min(1).max(60),
+  server_id: z.string().min(1).max(60).nullish(),
   timeframe: z.enum(['wipe', 'monthly', 'overall']).default('wipe'),
   view: z.enum(['players', 'clans']).default('players'),
   sort: z.enum(VALID_SORT_FIELDS).default('kills'),
   order: z.enum(['asc', 'desc']).default('desc'),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
-  search: z.string().max(100).optional(),
+  search: z.string().max(100).nullish(),
 })
 
 export type StatsQuery = z.infer<typeof statsQuerySchema>
 
 export const publicStatsQuerySchema = z.object({
-  server_id: z.string().min(1).max(60),
+  server_id: z.string().min(1).max(60).nullish(),
   timeframe: z.enum(['wipe', 'monthly', 'overall']).default('wipe'),
   view: z.enum(['players', 'clans']).default('players'),
   sort: z.enum(VALID_SORT_FIELDS).default('kills'),
   order: z.enum(['asc', 'desc']).default('desc'),
   limit: z.coerce.number().int().min(1).max(50).default(50),
   offset: z.coerce.number().int().min(0).max(500).default(0),
-  search: z.string().max(100).optional(),
+  search: z.string().max(100).nullish(),
 })
 
 export type PublicStatsQuery = z.infer<typeof publicStatsQuerySchema>
 
 export const statsWipeSchema = z.object({
   server_id: z.string().min(1).max(60),
-  scope: z.enum(['wipe', 'monthly']).default('wipe'),
+  scope: z.literal('wipe'),
 })
 
 export type StatsWipeParams = z.infer<typeof statsWipeSchema>

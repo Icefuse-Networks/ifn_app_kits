@@ -17,6 +17,7 @@ const createSessionSchema = z.object({
   sourceServerId: z.string().min(1).max(60),
   holdingServerId: z.string().min(1).max(60),
   playerCount: z.number().min(0).max(10000).default(0),
+  playerSteamIds: z.array(z.string().min(1).max(20)).max(500).optional(),
 })
 
 const pollSessionSchema = z.object({
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { sourceServerId, holdingServerId, playerCount } = parsed.data
+    const { sourceServerId, holdingServerId, playerCount, playerSteamIds } = parsed.data
 
     const sourceServer = await prisma.serverIdentifier.findFirst({
       where: { hashedId: sourceServerId },
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
         holdingServerId,
         sourceServerName: sourceServer.name,
         playerCount,
+        playerSteamIds: playerSteamIds?.length ? playerSteamIds.join(',') : null,
         status: 'active',
       },
     })
@@ -200,6 +202,7 @@ export async function GET(request: NextRequest) {
         sourceServerIp: source?.ip || null,
         sourceServerPort: source?.port || null,
         playerCount: s.playerCount,
+        playerSteamIds: s.playerSteamIds ? s.playerSteamIds.split(',') : [],
         startedAt: s.startedAt.toISOString(),
         startedAtMs: s.startedAt.getTime(),
       }

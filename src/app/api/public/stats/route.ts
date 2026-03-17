@@ -20,6 +20,8 @@ import {
   buildClanSelectColumns,
 } from '@/lib/validations/stats'
 
+const SHADOW_BAN_FILTER = ` AND steamid NOT IN (SELECT steamid FROM stats_shadow_bans FINAL)`
+
 // =============================================================================
 // Cache (longer TTL for public)
 // =============================================================================
@@ -110,7 +112,7 @@ async function handlePlayersQuery(
   }
 
   const totalResult = await clickhouse.query({
-    query: `SELECT count() as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}`,
+    query: `SELECT count() as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}${SHADOW_BAN_FILTER}`,
     query_params: { server_id: serverId },
     format: 'JSONEachRow',
   })
@@ -120,7 +122,7 @@ async function handlePlayersQuery(
   let filteredTotal = total
   if (search) {
     const filteredResult = await clickhouse.query({
-      query: `SELECT count() as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}${whereSearch}`,
+      query: `SELECT count() as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}${SHADOW_BAN_FILTER}${whereSearch}`,
       query_params: params,
       format: 'JSONEachRow',
     })
@@ -129,7 +131,7 @@ async function handlePlayersQuery(
   }
 
   const dataResult = await clickhouse.query({
-    query: `SELECT * FROM ${table} FINAL WHERE server_id = {server_id:String}${whereSearch} ORDER BY ${sort} ${order} LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
+    query: `SELECT * FROM ${table} FINAL WHERE server_id = {server_id:String}${SHADOW_BAN_FILTER}${whereSearch} ORDER BY ${sort} ${order} LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
     query_params: params,
     format: 'JSONEachRow',
   })
@@ -159,10 +161,10 @@ async function handleClansQuery(
     whereSearch = ` AND clan ILIKE {search:String}`
   }
 
-  const baseWhere = `WHERE server_id = {server_id:String} AND clan != ''${whereSearch}`
+  const baseWhere = `WHERE server_id = {server_id:String}${SHADOW_BAN_FILTER} AND clan != ''${whereSearch}`
 
   const totalResult = await clickhouse.query({
-    query: `SELECT count(DISTINCT clan) as cnt FROM ${table} FINAL WHERE server_id = {server_id:String} AND clan != ''`,
+    query: `SELECT count(DISTINCT clan) as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}${SHADOW_BAN_FILTER} AND clan != ''`,
     query_params: { server_id: serverId },
     format: 'JSONEachRow',
   })

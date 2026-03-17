@@ -1,28 +1,26 @@
 /**
- * Stats Leaderboard & Wipe API
+ * Public Stats Leaderboard API
  *
- * GET  /api/stats - Query leaderboards (players or clans) with caching
- * DELETE /api/stats - Reset stats for a server (wipe or monthly scope)
- *
- * Uses modular STAT_COLUMNS config — adding a new stat requires zero changes here.
+ * GET /api/stats/public - Unauthenticated leaderboard query for website display.
+ * Uses stricter limits (max 50 rows, max offset 500) than the authenticated endpoint.
+ * Read-only — no mutations allowed.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateWithScope } from '@/services/api-auth'
 import { clickhouse } from '@/lib/clickhouse'
 import { logger } from '@/lib/logger'
 import {
-  statsQuerySchema,
-  statsWipeSchema,
+  publicStatsQuerySchema,
   TIMEFRAME_TABLE,
   CACHE_TTL,
   ALLOWED_SORT_COLUMNS,
+  ALLOWED_CLAN_SORT_COLUMNS,
   normalizeStatRow,
   buildClanSelectColumns,
 } from '@/lib/validations/stats'
 
 // =============================================================================
-// Cache
+// Cache (shared across requests within this module)
 // =============================================================================
 
 interface CacheEntry<T> {
@@ -30,10 +28,10 @@ interface CacheEntry<T> {
   timestamp: number
 }
 
-const statsCache = new Map<string, CacheEntry<unknown>>()
+const publicStatsCache = new Map<string, CacheEntry<unknown>>()
 
 function getCached<T>(key: string, ttl: number): T | null {
-  const entry = statsCache.get(key)
+  const entry = publicStatsCache.get(key)
   if (entry && Date.now() - entry.timestamp < ttl) {
     return entry.data as T
   }
@@ -41,25 +39,31 @@ function getCached<T>(key: string, ttl: number): T | null {
 }
 
 function setCache(key: string, data: unknown): void {
-  statsCache.set(key, { data, timestamp: Date.now() })
+  publicStatsCache.set(key, { data, timestamp: Date.now() })
 }
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function buildServerWhere(serverId: string | null, params: Record<string, string | number>): string {
+  if (serverId) {
+    params.server_id = serverId
+    return `server_id = {server_id:String}`
+  }
+  return '1 = 1'
+}
+
+const SHADOW_BAN_FILTER = ` AND steamid NOT IN (SELECT steamid FROM stats_shadow_bans FINAL)`
 
 // =============================================================================
 // GET Handler
 // =============================================================================
 
 export async function GET(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'stats:read')
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
   try {
     const { searchParams } = request.nextUrl
-    const query = statsQuerySchema.safeParse({
+    const query = publicStatsQuerySchema.safeParse({
       server_id: searchParams.get('server_id'),
       timeframe: searchParams.get('timeframe'),
       view: searchParams.get('view'),
@@ -82,10 +86,11 @@ export async function GET(request: NextRequest) {
     const table = TIMEFRAME_TABLE[timeframe]
     const ttl = CACHE_TTL[timeframe]
 
-    const safeSort = ALLOWED_SORT_COLUMNS.has(sort) ? sort : 'kills'
+    const allowedSet = view === 'clans' ? ALLOWED_CLAN_SORT_COLUMNS : ALLOWED_SORT_COLUMNS
+    const safeSort = allowedSet.has(sort) ? sort : 'kills'
     const safeOrder = order === 'asc' ? 'ASC' : 'DESC'
 
-    const cacheKey = `${view}:${table}:${serverId || 'all'}:${search || ''}:${safeSort}:${safeOrder}:${limit}:${offset}`
+    const cacheKey = `pub:${view}:${table}:${serverId || 'all'}:${search || ''}:${safeSort}:${safeOrder}:${limit}:${offset}`
     const cached = getCached(cacheKey, ttl)
     if (cached) {
       return NextResponse.json(cached)
@@ -97,20 +102,12 @@ export async function GET(request: NextRequest) {
 
     return handlePlayersQuery(table, serverId, search, safeSort, safeOrder, limit, offset, cacheKey)
   } catch (error) {
-    logger.stats.error('Failed to fetch stats', error as Error)
+    logger.stats.error('Failed to fetch public stats', error as Error)
     return NextResponse.json(
       { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch statistics' } },
       { status: 500 }
     )
   }
-}
-
-function buildServerWhere(serverId: string | null, params: Record<string, string | number>): string {
-  if (serverId) {
-    params.server_id = serverId
-    return `server_id = {server_id:String}`
-  }
-  return '1 = 1'
 }
 
 async function handlePlayersQuery(
@@ -127,7 +124,7 @@ async function handlePlayersQuery(
   }
 
   const totalResult = await clickhouse.query({
-    query: `SELECT count() as cnt FROM ${table} FINAL WHERE ${serverWhere}`,
+    query: `SELECT count() as cnt FROM ${table} FINAL WHERE ${serverWhere}${SHADOW_BAN_FILTER}`,
     query_params: params,
     format: 'JSONEachRow',
   })
@@ -137,7 +134,7 @@ async function handlePlayersQuery(
   let filteredTotal = total
   if (search) {
     const filteredResult = await clickhouse.query({
-      query: `SELECT count() as cnt FROM ${table} FINAL WHERE ${serverWhere}${whereSearch}`,
+      query: `SELECT count() as cnt FROM ${table} FINAL WHERE ${serverWhere}${SHADOW_BAN_FILTER}${whereSearch}`,
       query_params: params,
       format: 'JSONEachRow',
     })
@@ -146,7 +143,7 @@ async function handlePlayersQuery(
   }
 
   const dataResult = await clickhouse.query({
-    query: `SELECT * FROM ${table} FINAL WHERE ${serverWhere}${whereSearch} ORDER BY ${sort} ${order} LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
+    query: `SELECT * FROM ${table} FINAL WHERE ${serverWhere}${SHADOW_BAN_FILTER}${whereSearch} ORDER BY ${sort} ${order} LIMIT {limit:UInt32} OFFSET {offset:UInt32}`,
     query_params: params,
     format: 'JSONEachRow',
   })
@@ -176,13 +173,13 @@ async function handleClansQuery(
     whereSearch = ` AND clan ILIKE {search:String}`
   }
 
-  const baseWhere = `WHERE ${serverWhere} AND clan != ''${whereSearch}`
+  const baseWhere = `WHERE ${serverWhere}${SHADOW_BAN_FILTER} AND clan != ''${whereSearch}`
 
   const totalParams: Record<string, string | number> = {}
   buildServerWhere(serverId, totalParams)
 
   const totalResult = await clickhouse.query({
-    query: `SELECT count(DISTINCT clan) as cnt FROM ${table} FINAL WHERE ${serverWhere} AND clan != ''`,
+    query: `SELECT count(DISTINCT clan) as cnt FROM ${table} FINAL WHERE ${serverWhere}${SHADOW_BAN_FILTER} AND clan != ''`,
     query_params: totalParams,
     format: 'JSONEachRow',
   })
@@ -229,73 +226,4 @@ async function handleClansQuery(
 
   setCache(cacheKey, response)
   return NextResponse.json(response)
-}
-
-// =============================================================================
-// DELETE Handler — Wipe scope ONLY (triggered by OnNewSave hook)
-// Monthly resets are handled exclusively by /api/stats/monthly-reset
-// Overall stats are NEVER deleted through any endpoint
-// =============================================================================
-
-export async function DELETE(request: NextRequest) {
-  const authResult = await authenticateWithScope(request, 'stats:write')
-  if (!authResult.success) {
-    return NextResponse.json(
-      { success: false, error: { code: 'AUTH_ERROR', message: authResult.error } },
-      { status: authResult.status }
-    )
-  }
-
-  try {
-    const body = await request.json()
-    const parsed = statsWipeSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Only scope "wipe" is allowed. Monthly resets use /api/stats/monthly-reset.', details: parsed.error.flatten() } },
-        { status: 400 }
-      )
-    }
-
-    const { server_id } = parsed.data
-    const table = TIMEFRAME_TABLE.wipe
-
-    // Count rows before delete for logging
-    const countResult = await clickhouse.query({
-      query: `SELECT count() as cnt FROM ${table} FINAL WHERE server_id = {server_id:String}`,
-      query_params: { server_id },
-      format: 'JSONEachRow',
-    })
-    const countRows = await countResult.json<{ cnt: string }>()
-    const rowCount = Number(countRows[0]?.cnt || 0)
-
-    if (rowCount === 0) {
-      return NextResponse.json({ success: true, data: { rows_deleted: 0 } })
-    }
-
-    await clickhouse.command({
-      query: `ALTER TABLE ${table} DELETE WHERE server_id = {server_id:String}`,
-      query_params: { server_id },
-    })
-
-    // Invalidate cache for this server
-    for (const key of statsCache.keys()) {
-      if (key.includes(server_id)) {
-        statsCache.delete(key)
-      }
-    }
-
-    logger.stats.info('Wipe stats reset', {
-      server: server_id,
-      rows_deleted: rowCount,
-      actor: authResult.context.actorId,
-    })
-
-    return NextResponse.json({ success: true, data: { rows_deleted: rowCount } })
-  } catch (error) {
-    logger.stats.error('Failed to wipe stats', error as Error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to wipe stats' } },
-      { status: 500 }
-    )
-  }
 }

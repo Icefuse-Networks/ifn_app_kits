@@ -17,7 +17,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-banned": "tsx scripts/seed-banned-words.ts",
     "db:studio": "prisma studio",
-    "clickhouse:sync": "tsx scripts/sync-clickhouse-schema.ts"
+    "clickhouse:sync": "tsx scripts/sync-clickhouse-schema.ts",
+    "migrate:stats": "tsx scripts/migrate-stats.ts",
+    "migrate:stats:dry": "tsx scripts/migrate-stats.ts --dry-run"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -42,6 +42,8 @@ const PUBLIC_PATH_PREFIXES = [
   '/api/shop/download',
   '/api/shop-purchases',
   '/api/gambling',
+  '/api/stats',
+  '/api/cron',
   '/kits',
   '/_next',
   '/logos',

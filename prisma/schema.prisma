@@ -947,6 +947,7 @@ model HoldingSession {
   sourceServerName   String?   @map("source_server_name") @db.VarChar(100)
   status             String    @default("active") @db.VarChar(20)
   playerCount        Int       @default(0) @map("player_count")
+  playerSteamIds     String?   @map("player_steam_ids") @db.Text
   startedAt          DateTime  @default(now()) @map("started_at")
   completedAt        DateTime? @map("completed_at")
   createdAt          DateTime  @default(now()) @map("created_at")

@@ -1,28 +1,25 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
-  Target, Users, Server, RefreshCw, Trash2, AlertTriangle, Search,
-  ChevronLeft, ChevronRight, ArrowUpDown,
+  Target, Users, Server, RefreshCw, Trash2, AlertTriangle,
+  ChevronLeft, ChevronRight, ArrowUpDown, X, EyeOff, Eye, Save,
 } from "lucide-react"
 import { StatCard } from "@/components/analytics"
 import { STAT_COLUMNS } from "@/lib/validations/stats"
 import { Dropdown } from "@/components/global/Dropdown"
 import { SearchInput } from "@/components/ui/SearchInput"
-import { Loading, Skeleton } from "@/components/ui/Loading"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { Alert } from "@/components/ui/Alert"
-import { Button } from "@/components/ui/Button"
-import { SimplePagination } from "@/components/ui/Pagination"
 
-// Derive display columns from config (exclude json/computed fields not useful in table)
 const TABLE_COLUMNS = STAT_COLUMNS.filter(c => c.format !== 'json' && c.sortable)
+const EDITABLE_COLUMNS = STAT_COLUMNS.filter(c => c.aggregatable && c.column !== 'points')
 
 interface PlayerRow {
   steamid: string
   name: string
   clan: string
+  server_id?: string
   playtimeFormatted?: string
+  member_count?: number
   [key: string]: unknown
 }
 
@@ -32,13 +29,13 @@ interface StatsResponse {
   meta: { total: number; filteredTotal: number; limit: number; offset: number; hasMore: boolean }
 }
 
-interface ServerSummary {
+interface ServerInfo {
   server_id: string
-  player_count: number
+  name: string
 }
 
 export default function StatsManagementPage() {
-  const [servers, setServers] = useState<ServerSummary[]>([])
+  const [servers, setServers] = useState<ServerInfo[]>([])
   const [selectedServer, setSelectedServer] = useState<string>("")
   const [timeframe, setTimeframe] = useState<string>("wipe")
   const [view, setView] = useState<string>("players")
@@ -54,39 +51,38 @@ export default function StatsManagementPage() {
   const [error, setError] = useState<string | null>(null)
   const [wipeLoading, setWipeLoading] = useState(false)
 
-  // Fetch server list from identifiers
+  // Player management
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
+  const [editStats, setEditStats] = useState<Record<string, number>>({})
+  const [playerShadowBanned, setPlayerShadowBanned] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const isAllServers = !selectedServer
+
+  const serverMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const s of servers) map[s.server_id] = s.name
+    return map
+  }, [servers])
+
   const fetchServers = useCallback(async () => {
     try {
       const res = await fetch("/api/public/identifiers")
       if (!res.ok) return
       const json = await res.json()
-      const ids = (json.identifiers || []).map((i: { id: string; name: string }) => ({
+      setServers((json.identifiers || []).map((i: { id: string; name: string }) => ({
         server_id: i.id,
-        player_count: 0,
-      }))
-      setServers(ids)
-      if (ids.length > 0 && !selectedServer) {
-        setSelectedServer(ids[0].server_id)
-      }
-    } catch {
-      // fallback: no servers
-    }
-  }, [selectedServer])
+        name: i.name,
+      })))
+    } catch { /* no servers */ }
+  }, [])
 
   const fetchStats = useCallback(async () => {
-    if (!selectedServer) return
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({
-        server_id: selectedServer,
-        timeframe,
-        view,
-        sort,
-        order,
-        limit: String(limit),
-        offset: String(offset),
-      })
+      const params = new URLSearchParams({ timeframe, view, sort, order, limit: String(limit), offset: String(offset) })
+      if (selectedServer) params.set("server_id", selectedServer)
       if (search) params.set("search", search)
 
       const res = await fetch(`/api/stats?${params}`)
@@ -109,7 +105,8 @@ export default function StatsManagementPage() {
 
   const handleWipe = async (scope: string) => {
     if (!selectedServer) return
-    if (!confirm(`Are you sure you want to wipe ${scope} stats for ${selectedServer}?`)) return
+    const serverName = serverMap[selectedServer] || selectedServer
+    if (!confirm(`Are you sure you want to wipe ${scope} stats for ${serverName}?`)) return
     setWipeLoading(true)
     try {
       const res = await fetch("/api/stats", {
@@ -128,11 +125,71 @@ export default function StatsManagementPage() {
   }
 
   const handleSort = (col: string) => {
-    if (sort === col) {
-      setOrder(order === "desc" ? "asc" : "desc")
-    } else {
-      setSort(col)
-      setOrder("desc")
+    if (sort === col) setOrder(order === "desc" ? "asc" : "desc")
+    else { setSort(col); setOrder("desc") }
+  }
+
+  // Player management
+  const openPlayerPanel = async (row: PlayerRow) => {
+    setSelectedPlayer(row)
+    const stats: Record<string, number> = {}
+    for (const col of EDITABLE_COLUMNS) {
+      stats[col.column] = Number(row[col.column]) || 0
+    }
+    setEditStats(stats)
+
+    // Check shadow ban status
+    try {
+      const servId = row.server_id || selectedServer
+      const res = await fetch(`/api/stats/player/${row.steamid}?server_id=${servId}&timeframe=${timeframe}`)
+      const json = await res.json()
+      setPlayerShadowBanned(json.shadowBanned || false)
+    } catch {
+      setPlayerShadowBanned(false)
+    }
+  }
+
+  const closePlayerPanel = () => {
+    setSelectedPlayer(null)
+    setEditStats({})
+  }
+
+  const handleSaveStats = async () => {
+    if (!selectedPlayer) return
+    const servId = selectedPlayer.server_id || selectedServer
+    if (!servId) { alert("Select a server first"); return }
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/stats/player/${selectedPlayer.steamid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ server_id: servId, timeframe, stats: editStats }),
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error?.message || "Failed to save")
+      closePlayerPanel()
+      fetchStats()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save stats")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleShadowBan = async () => {
+    if (!selectedPlayer) return
+    setSaving(true)
+    try {
+      const method = playerShadowBanned ? "PUT" : "DELETE"
+      const res = await fetch(`/api/stats/player/${selectedPlayer.steamid}`, { method })
+      const json = await res.json()
+      if (!json.success) throw new Error("Failed")
+      setPlayerShadowBanned(!playerShadowBanned)
+      fetchStats()
+    } catch {
+      alert("Failed to toggle shadow ban")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -153,16 +210,14 @@ export default function StatsManagementPage() {
             </h1>
             <p className="text-[var(--text-muted)] mt-2">Manage player statistics and leaderboards</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => fetchStats()}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)] text-white text-sm transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={() => fetchStats()}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-primary)] text-white text-sm transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
         </div>
 
         {/* Summary Cards */}
@@ -180,7 +235,10 @@ export default function StatsManagementPage() {
               <Dropdown
                 value={selectedServer}
                 onChange={value => setSelectedServer(value ?? '')}
-                options={servers.map(s => ({ value: s.server_id, label: s.server_id }))}
+                options={[
+                  { value: '', label: 'All Servers' },
+                  ...servers.map(s => ({ value: s.server_id, label: s.name })),
+                ]}
               />
             </div>
             <div>
@@ -224,13 +282,6 @@ export default function StatsManagementPage() {
                 >
                   <Trash2 className="h-3 w-3" /> Wipe
                 </button>
-                <button
-                  onClick={() => handleWipe("monthly")}
-                  disabled={wipeLoading || !selectedServer}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[var(--status-warning)]/20 hover:bg-[var(--status-warning)]/30 text-[var(--status-warning)] text-xs font-medium transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="h-3 w-3" /> Monthly
-                </button>
               </div>
             </div>
           </div>
@@ -244,7 +295,7 @@ export default function StatsManagementPage() {
           </div>
         )}
 
-        {/* Data Table — columns from config */}
+        {/* Data Table */}
         <div className="rounded-xl bg-white/[0.02] border border-white/5 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -257,6 +308,9 @@ export default function StatsManagementPage() {
                   {view === "clans" && (
                     <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase text-left">Clan</th>
                   )}
+                  {isAllServers && (
+                    <th className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase text-left">Server</th>
+                  )}
                   {TABLE_COLUMNS.map(col => (
                     <th
                       key={col.column}
@@ -265,9 +319,7 @@ export default function StatsManagementPage() {
                     >
                       <div className="flex items-center justify-end gap-1">
                         {col.label}
-                        {sort === col.column && (
-                          <ArrowUpDown className="h-3 w-3 text-[var(--accent-primary)]" />
-                        )}
+                        {sort === col.column && <ArrowUpDown className="h-3 w-3 text-[var(--accent-primary)]" />}
                       </div>
                     </th>
                   ))}
@@ -287,20 +339,24 @@ export default function StatsManagementPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={TABLE_COLUMNS.length + 3} className="text-center py-12 text-[var(--text-muted)]">
+                    <td colSpan={99} className="text-center py-12 text-[var(--text-muted)]">
                       <RefreshCw className="h-6 w-6 mx-auto animate-spin text-[var(--accent-primary)] mb-2" />
                       Loading...
                     </td>
                   </tr>
                 ) : data.length === 0 ? (
                   <tr>
-                    <td colSpan={TABLE_COLUMNS.length + 3} className="text-center py-12 text-[var(--text-muted)]">
+                    <td colSpan={99} className="text-center py-12 text-[var(--text-muted)]">
                       No data available
                     </td>
                   </tr>
                 ) : (
                   data.map((row, idx) => (
-                    <tr key={row.steamid || (row.clan as string) || idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                    <tr
+                      key={`${row.steamid || row.clan}-${row.server_id || idx}`}
+                      onClick={() => view === "players" && row.steamid ? openPlayerPanel(row) : null}
+                      className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors ${view === "players" ? "cursor-pointer" : ""}`}
+                    >
                       <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{offset + idx + 1}</td>
                       {view === "players" && (
                         <td className="px-4 py-3 text-sm">
@@ -313,6 +369,11 @@ export default function StatsManagementPage() {
                       )}
                       {view === "clans" && (
                         <td className="px-4 py-3 text-sm text-white font-medium">{row.clan}</td>
+                      )}
+                      {isAllServers && (
+                        <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
+                          {serverMap[row.server_id as string] || row.server_id || "—"}
+                        </td>
                       )}
                       {TABLE_COLUMNS.map(col => (
                         <td key={col.column} className="px-4 py-3 text-sm text-right text-[var(--text-secondary)]">
@@ -360,6 +421,89 @@ export default function StatsManagementPage() {
           )}
         </div>
       </div>
+
+      {/* Player Management Panel */}
+      {selectedPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closePlayerPanel}>
+          <div
+            className="w-full max-w-lg rounded-xl border border-white/10 p-6"
+            style={{ background: 'var(--bg-secondary)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Panel Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-white">{selectedPlayer.name || "Unknown"}</h2>
+                <p className="text-xs text-[var(--text-muted)]">{selectedPlayer.steamid}</p>
+                {isAllServers && selectedPlayer.server_id && (
+                  <p className="text-xs text-[var(--accent-primary)] mt-1">{serverMap[selectedPlayer.server_id] || selectedPlayer.server_id}</p>
+                )}
+              </div>
+              <button onClick={closePlayerPanel} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                <X className="h-5 w-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+
+            {/* Shadow Ban Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03] border border-white/5 mb-6">
+              <div className="flex items-center gap-2">
+                {playerShadowBanned ? <EyeOff className="h-4 w-4 text-[var(--status-error)]" /> : <Eye className="h-4 w-4 text-[var(--status-success)]" />}
+                <span className="text-sm text-[var(--text-secondary)]">
+                  {playerShadowBanned ? "Shadow banned — hidden from public leaderboards" : "Visible on public leaderboards"}
+                </span>
+              </div>
+              <button
+                onClick={handleToggleShadowBan}
+                disabled={saving}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                  playerShadowBanned
+                    ? "bg-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/30"
+                    : "bg-[var(--status-error)]/20 text-[var(--status-error)] hover:bg-[var(--status-error)]/30"
+                }`}
+              >
+                {playerShadowBanned ? "Unban" : "Shadow Ban"}
+              </button>
+            </div>
+
+            {/* Edit Stats */}
+            <div className="space-y-3 mb-6">
+              <h3 className="text-sm font-medium text-[var(--text-muted)]">Edit Stats ({timeframe})</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {EDITABLE_COLUMNS.map(col => (
+                  <div key={col.column}>
+                    <label className="block text-xs text-[var(--text-muted)] mb-1">{col.label}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editStats[col.column] ?? 0}
+                      onChange={e => setEditStats(prev => ({ ...prev, [col.column]: Number(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closePlayerPanel}
+                className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveStats}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/80 text-white text-sm transition-colors disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
