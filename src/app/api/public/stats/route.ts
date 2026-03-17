@@ -84,11 +84,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached)
     }
 
+    const serverId = server_id || ''
+    const searchStr = search || undefined
+
     if (view === 'clans') {
-      return handleClansQuery(table, server_id, search, safeSort, safeOrder, limit, offset, cacheKey, ttl)
+      return handleClansQuery(table, serverId, searchStr, safeSort, safeOrder, limit, offset, cacheKey, ttl)
     }
 
-    return handlePlayersQuery(table, server_id, search, safeSort, safeOrder, limit, offset, cacheKey, ttl)
+    return handlePlayersQuery(table, serverId, searchStr, safeSort, safeOrder, limit, offset, cacheKey, ttl)
   } catch (error) {
     logger.stats.error('Failed to fetch public stats', error as Error)
     return NextResponse.json(
