@@ -93,16 +93,30 @@ export async function GET(request: NextRequest) {
     if (search) eventWhere.playerName = { contains: search, mode: 'insensitive' }
 
     const grouped = await prisma.gamblingWinEvent.groupBy({
-      by: ['steamId', 'playerName', 'gameType', 'serverId'],
+      by: ['steamId', 'gameType', 'serverId'],
       where: eventWhere,
       _count: { id: true },
       _sum: { winnings: true, wager: true },
       _max: { winnings: true },
     })
 
+    // Resolve latest playerName per steamId from the stats table (authoritative)
+    const uniqueSteamIds = [...new Set(grouped.map(g => g.steamId))]
+    const nameRows = uniqueSteamIds.length > 0
+      ? await prisma.gamblingPlayerStats.findMany({
+          where: { steamId: { in: uniqueSteamIds } },
+          select: { steamId: true, playerName: true, lastPlayedAt: true },
+          orderBy: { lastPlayedAt: 'desc' },
+        })
+      : []
+    const nameMap = new Map<string, string>()
+    for (const row of nameRows) {
+      if (!nameMap.has(row.steamId)) nameMap.set(row.steamId, row.playerName)
+    }
+
     const mapped = grouped.map(g => ({
       steamId: g.steamId,
-      playerName: g.playerName,
+      playerName: nameMap.get(g.steamId) || g.steamId,
       gameType: g.gameType,
       serverId: g.serverId,
       wins: g._count.id,
